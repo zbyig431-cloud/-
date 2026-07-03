@@ -18,16 +18,7 @@
             overflow-x: hidden;
         }
 
-        /* サイバーグリッド背景 */
-        body::before {
-            content: "";
-            position: fixed;
-            top: 0; left: 0; width: 100%; height: 100%;
-            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06));
-            background-size: 100% 2px, 3px 100%;
-            pointer-events: none;
-            z-index: 1000;
-        }
+        /* 方眼紙模様（サイバーグリッド）を除去し、滑らかな背景に修正 */
 
         h1 {
             font-size: 1.4rem;
@@ -426,7 +417,6 @@
                 if (streamObject) {
                     streamObject.getTracks().forEach(track => track.stop());
                 }
-                // 画質向上：理想解像度をフルHD(1920x1080)に引き上げ
                 const constraints = {
                     video: { facingMode: { exact: "environment" }, width: { ideal: 1920 }, height: { ideal: 1080 } },
                     audio: false
@@ -445,15 +435,13 @@
             const carousel = document.getElementById('log-carousel');
             const apiKey = document.getElementById('api-key').value.trim();
 
-            if (!apiKey) return alert("先にPASS（Vision API Key）を入力してください。");
+            if (!apiKey) return alert("先にPASSを入力してください。");
             if (!video.srcObject) return alert("カメラストリームが不完全です。");
 
-            // カメラの実際の映像幅から100%劣化なしのサイズでキャンバスを生成
             canvas.width = video.videoWidth;
             canvas.height = video.videoHeight;
             canvas.getContext('2d').drawImage(video, 0, 0, canvas.width, canvas.height);
             
-            // 画質向上：圧縮品質を 0.85 から 0.95 に引き上げ
             const base64Image = canvas.toDataURL('image/jpeg', 0.95);
             const logId = "log-" + Date.now() + "-" + Math.random().toString(36).substr(2, 5);
             
