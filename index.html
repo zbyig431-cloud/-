@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>CYBER OCR SYSTEM [HYBRID RAPID UI]</title>
+    <title>絶望要塞IG かくれんぼツール</title>
     <style>
         * { box-sizing: border-box; font-family: 'Courier New', Courier, monospace, sans-serif; }
         body { 
@@ -30,7 +30,7 @@
         }
 
         h1 {
-            font-size: 1.3rem;
+            font-size: 1.4rem;
             text-align: center;
             margin: 0 0 15px 0;
             color: #8cc8ff;
@@ -103,7 +103,7 @@
             transform: scale(0.98);
         }
 
-        /* 撮影ログ・プレビューカルーセル */
+        /* 撮影ログ・プレビューカルーせる */
         .log-carousel {
             display: flex;
             gap: 8px;
@@ -135,7 +135,7 @@
         .log-item.processing .status-badge { color: #ffcc00; }
         .log-item.error .status-badge { color: #ff3333; }
 
-        /* APIキー入力エリア（折りたたみ） */
+        /* PASS入力エリア */
         .config-box {
             background: rgba(140, 200, 255, 0.05);
             border: 1px solid rgba(140, 200, 255, 0.2);
@@ -203,7 +203,7 @@
             text-align: right;
         }
 
-        /* お題スキャン用ボタン＆アクションパネル */
+        /* アクションパネル */
         .action-panel {
             display: flex;
             gap: 8px;
@@ -324,17 +324,18 @@
 </head>
 <body>
 
-    <h1>CYBER OCR SYSTEM v2.5</h1>
+    <!-- タイトル変更：絶望要塞IG かくれんぼツール -->
+    <h1>絶望要塞IG かくれんぼツール</h1>
 
-    <!-- 設定エリア -->
+    <!-- 設定エリア変更：PASS -->
     <div class="config-box">
-        <div style="font-size:0.75rem; margin-bottom:5px; color:#8cc8ff;">VISION API KEY:</div>
+        <div style="font-size:0.75rem; margin-bottom:5px; color:#8cc8ff;">PASS:</div>
         <input type="password" id="api-key" placeholder="AIzaSy..." onchange="saveApiKey()">
     </div>
 
-    <!-- 01: DATABASE IMAGES (常時起動ストリーム) -->
+    <!-- 01セクション変更：【01】検索したいエリアを撮影(連射可能) -->
     <div class="section-title">
-        <span>[01] DATABASE STREAM</span>
+        <span>【01】検索したいエリアを撮影(連射可能)</span>
         <span id="db-counter" style="color:#8cc8ff;">STOCKS: 0</span>
     </div>
     
@@ -343,19 +344,19 @@
         <div class="loading-dimmer" id="scan-indicator"></div>
     </div>
 
-    <!-- 超高速連続シャッターボタン -->
+    <!-- ボタン変更：スキャン -->
     <div class="shutter-panel">
         <button class="btn-shutter" id="shutter-trigger">
-            ⚡ RAPID CAPTURE & SCAN
+            スキャン
         </button>
     </div>
 
     <!-- 撮影履歴ログ -->
     <div class="log-carousel" id="log-carousel"></div>
 
-    <!-- 02: TARGET INPUT (5スロット) -->
+    <!-- 02セクション変更：【02】検索したい数字を入力(写真可) -->
     <div class="section-title">
-        <span>[02] TARGET SLOTS (手入力可)</span>
+        <span>【02】検索したい数字を入力(写真可)</span>
         <span id="detected-tag-status" style="color:#b57cff; font-size:0.75rem;"></span>
     </div>
 
@@ -392,19 +393,18 @@
     <!-- 非表示のお題カメラ用input -->
     <input type="file" id="question-camera-input" accept="image/*" style="display: none;">
 
+    <!-- ボタン変更：問題を撮影 / 検索する -->
     <div class="action-panel">
-        <!-- お題をスキャンして自動入力するボタンを復活 -->
-        <button class="btn-purple" onclick="document.getElementById('question-camera-input').click()">📸 SCAN TARGET</button>
-        <button class="btn-success" id="btn-search">EXECUTE SEARCH</button>
+        <button class="btn-purple" onclick="document.getElementById('question-camera-input').click()">問題を撮影</button>
+        <button class="btn-success" id="btn-search">検索する</button>
     </div>
 
-    <!-- 03: MONITOR SUMMARY (一目でわかる横5並びスクショ) -->
-    <div class="section-title">[03] MONITOR SUMMARY</div>
-    <div id="summary-gallery-area" class="summary-gallery">
-        <!-- 検索結果カードがここに横並びで5つ生成されます -->
-    </div>
+    <!-- 03セクション変更：【03】答えを表示 -->
+    <div class="section-title">【03】答えを表示</div>
+    <div id="summary-gallery-area" class="summary-gallery"></div>
 
-    <button class="btn-reset" id="btn-reset-all">FULL RESET SYSTEM</button>
+    <!-- ボタン変更：全てリセット -->
+    <button class="btn-reset" id="btn-reset-all">全てリセット</button>
 
     <canvas id="capture-canvas" style="display:none;"></canvas>
 
@@ -448,14 +448,13 @@
             }
         }
 
-        // [01] 連続キャプチャ＆スキャン
         async function captureAndScan() {
             const video = document.getElementById('camera-stream');
             const canvas = document.getElementById('capture-canvas');
             const carousel = document.getElementById('log-carousel');
             const apiKey = document.getElementById('api-key').value.trim();
 
-            if (!apiKey) return alert("先にVision API Keyを入力してください。");
+            if (!apiKey) return alert("先にPASS（Vision API Key）を入力してください。");
             if (!video.srcObject) return alert("カメラストリームが不完全です。");
 
             canvas.width = video.videoWidth;
@@ -465,14 +464,12 @@
             const base64Image = canvas.toDataURL('image/jpeg', 0.85);
             const logId = "log-" + Date.now() + "-" + Math.random().toString(36).substr(2, 5);
             
-            // ログカルーセル追加
             const logItem = document.createElement('div');
             logItem.className = 'log-item processing';
             logItem.id = logId;
             logItem.innerHTML = `<img src="${base64Image}"><div class="status-badge">RUNNING</div>`;
             carousel.insertBefore(logItem, carousel.firstChild);
 
-            // フラッシュ演出
             const indicator = document.getElementById('scan-indicator');
             indicator.style.display = 'flex'; setTimeout(() => { indicator.style.display = 'none'; }, 150);
 
@@ -554,13 +551,12 @@
             return parsedBlocks;
         }
 
-        // [02] お題カメラ写真から数字を自動認識してスロットに流し込む（復活＆高精度化機能）
         async function scanQuestionImage(e) {
             const file = e.target.files[0];
             if (!file || !file.type.startsWith('image/')) return;
 
             const apiKey = document.getElementById('api-key').value.trim();
-            if (!apiKey) return alert("先にVision API Keyを入力してください。");
+            if (!apiKey) return alert("先にPASSを入力してください。");
 
             const loading = document.getElementById('target-loading');
             loading.style.display = 'block';
@@ -581,13 +577,6 @@
 
                     if (data.responses?.[0]?.textAnnotations) {
                         const annotations = data.responses[0].textAnnotations.slice(1);
-                        
-                        // 単純に数字だけのカタマリ(純粋な数字)を抽出
-                        let foundNumbers = annotations
-                            .map(a => a.description.trim())
-                            .filter(txt => /^\d+$/.test(txt));
-
-                        // 重複を削除して左から順に入れたいため、一応座標順にソートするロジック
                         let mapped = annotations
                             .filter(a => /^\d+$/.test(a.description.trim()))
                             .map(a => ({ text: a.description.trim(), x: a.boundingPoly.vertices[0].x ?? 0 }));
@@ -596,7 +585,6 @@
                         let finalNumbers = [...new Set(mapped.map(m => m.text))];
 
                         if (finalNumbers.length > 0) {
-                            // 5スロット枠をリセットしてから自動適用
                             searchBoxes.forEach(box => box.value = "");
                             finalNumbers.slice(0, 5).forEach((num, idx) => {
                                 searchBoxes[idx].value = num;
@@ -617,10 +605,9 @@
             reader.readAsDataURL(file);
         }
 
-        // [03] 5スロット同時一斉検索＆横並びスクショ出力
         function executeSearch() {
             const summaryArea = document.getElementById('summary-gallery-area');
-            summaryArea.innerHTML = ''; // 以前のサマリーをクリア
+            summaryArea.innerHTML = ''; 
             clearSlotResults();
 
             let matchedCount = 0;
@@ -630,7 +617,6 @@
                 const resSpan = document.getElementById(`res-${index}`);
 
                 if (!query) {
-                    // 空欄のスロットにはダミーの空枠を置いてデザインを横5列キープ
                     createEmptySummaryCard(summaryArea, "---");
                     return;
                 }
@@ -638,7 +624,6 @@
                 let foundMatch = null;
                 let sourcePhotoBase64 = null;
 
-                // 最新のストック（逆順）から一番にヒットするものを探す
                 for (let i = allPhotosData.length - 1; i >= 0; i--) {
                     const photo = allPhotosData[i];
                     const match = photo.blocks.find(b => b.number === query);
@@ -648,15 +633,14 @@
                 if (foundMatch && sourcePhotoBase64) {
                     matchedCount++;
                     const alphaStr = foundMatch.alphabet.toUpperCase();
-                    resSpan.innerText = alphaStr; // スロットの横に結果を配置
+                    resSpan.innerText = alphaStr; 
 
-                    // 横並びサマリーカード（数字のみ）を生成
                     const card = document.createElement('div');
                     card.className = 'summary-card';
 
                     const header = document.createElement('div');
                     header.className = 'summary-header';
-                    header.innerText = query; // 無駄なテキストを省いた純粋な数字
+                    header.innerText = query; 
                     card.appendChild(header);
 
                     const canvasWrapper = document.createElement('div');
@@ -714,13 +698,14 @@
 
         function initSummaryAreaPlaceholder() {
             const summaryArea = document.getElementById('summary-gallery-area');
-            summaryArea.innerHTML = '<div style="font-size: 11px; color: #6688aa; padding: 10px; grid-column: span 5; text-align: center;">EXECUTE SEARCHを実行すると、ここに結果が横並びで表示されます</div>';
+            summaryArea.innerHTML = '<div style="font-size: 11px; color: #6688aa; padding: 10px; grid-column: span 5; text-align: center;">検索を実行すると、ここに結果が横並びで表示されます</div>';
         }
 
         function clearSlotResults() {
             for(let i=0; i<5; i++) { document.getElementById(`res-${i}`).innerText = ""; }
         }
 
+        // フルリセット
         function resetSystem() {
             if (!confirm("データベースおよび全入力スロットを完全リセットしますか？")) return;
             allPhotosData = [];
