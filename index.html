@@ -1,0 +1,635 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>CYBER OCR SYSTEM [COMPACT UI]</title>
+    <style>
+        /* 全体のサイバーSFスタイル */
+        * { box-sizing: border-box; font-family: 'Courier New', Courier, monospace, sans-serif; }
+        body { 
+            background-color: #060d13; 
+            color: #cceeff; 
+            margin: 0; 
+            padding: 25px; 
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+            box-shadow: inset 15px 0 30px -15px rgba(0, 255, 100, 0.4), inset -15px 0 30px -15px rgba(0, 255, 100, 0.4);
+            overflow-x: hidden;
+        }
+
+        /* モニター外枠 */
+        .monitor-frame {
+            position: fixed;
+            top: 10px; left: 10px; right: 10px; bottom: 10px;
+            border: 2px solid #8cc8ff;
+            pointer-events: none;
+            z-index: 9999;
+            box-shadow: 0 0 15px rgba(140, 200, 255, 0.2);
+        }
+        .monitor-frame::before {
+            content: '';
+            position: absolute;
+            top: 6px; left: 6px; right: 6px; bottom: 6px;
+            border: 1px dashed rgba(140, 200, 255, 0.6);
+        }
+        .corner { position: absolute; width: 24px; height: 24px; border: 2px solid #8cc8ff; }
+        .c-tl { top: -2px; left: -2px; border-right: none; border-bottom: none; }
+        .c-tl::after { content: '◆'; position: absolute; top: 2px; left: 2px; font-size: 8px; color: #8cc8ff; }
+        .c-tr { top: -2px; right: -2px; border-left: none; border-bottom: none; }
+        .c-tr::after { content: '◆'; position: absolute; top: 2px; right: 2px; font-size: 8px; color: #8cc8ff; }
+        .c-bl { bottom: -2px; left: -2px; border-right: none; border-top: none; }
+        .c-bl::after { content: '◆'; position: absolute; bottom: 2px; left: 2px; font-size: 8px; color: #8cc8ff; }
+        .c-br { bottom: -2px; right: -2px; border-left: none; border-top: none; }
+        .c-br::after { content: '◆'; position: absolute; bottom: 2px; right: 2px; font-size: 8px; color: #8cc8ff; }
+
+        header { text-align: center; margin-bottom: 15px; border-bottom: 1px solid rgba(140,200,255,0.3); padding-bottom: 10px; }
+        header h1 { margin: 0; font-size: 20px; letter-spacing: 3px; color: #8cc8ff; text-shadow: 0 0 8px rgba(140,200,255,0.6); }
+
+        .main-container { display: flex; flex-direction: column; gap: 15px; flex: 1; padding-bottom: 20px; }
+        @media (min-width: 768px) or (orientation: landscape) {
+            .main-container { flex-direction: row; }
+            .panel-left { flex: 1; display: flex; flex-direction: column; gap: 15px; }
+            .panel-right { flex: 1.2; }
+        }
+
+        .panel {
+            background: rgba(10, 25, 40, 0.75);
+            border: 1px solid rgba(140, 200, 255, 0.4);
+            border-radius: 6px;
+            padding: 15px;
+            backdrop-filter: blur(4px);
+        }
+        .panel h3 { margin-top: 0; margin-bottom: 12px; font-size: 14px; color: #8cc8ff; text-transform: uppercase; border-left: 3px solid #00ff64; padding-left: 8px; }
+
+        .panel-left .panel { margin-bottom: 0; }
+
+        button {
+            padding: 12px 18px; font-size: 13px; font-weight: bold; border: 1px solid #8cc8ff; border-radius: 4px; cursor: pointer;
+            background: rgba(140, 200, 255, 0.1); color: #8cc8ff; transition: all 0.2s ease; text-shadow: 0 0 4px rgba(140,200,255,0.5);
+            margin-right: 4px; margin-bottom: 6px; width: 100%;
+        }
+        @media (min-width: 480px) { button { width: auto; } }
+        button:active { background: #8cc8ff; color: #060d13; box-shadow: 0 0 15px #8cc8ff; }
+        
+        .btn-purple { border-color: #b57cff; color: #b57cff; background: rgba(181, 124, 255, 0.1); text-shadow: 0 0 4px #b57cff; }
+        .btn-purple:active { background: #b57cff; color: #060d13; box-shadow: 0 0 15px #b57cff; }
+        .btn-success { border-color: #00ff64; color: #00ff64; background: rgba(0, 255, 100, 0.1); text-shadow: 0 0 4px #00ff64; }
+        .btn-success:active { background: #00ff64; color: #060d13; box-shadow: 0 0 15px #00ff64; }
+        .btn-danger { border-color: #ff4a4a; color: #ff4a4a; background: rgba(255, 74, 74, 0.1); text-shadow: 0 0 4px #ff4a4a; }
+        .btn-danger:active { background: #ff4a4a; color: #060d13; box-shadow: 0 0 15px #ff4a4a; }
+
+        .photo-gallery { display: grid; grid-template-columns: repeat(auto-fill, minmax(90px, 1fr)); gap: 10px; margin-top: 10px; }
+        .photo-container { position: relative; aspect-ratio: 4 / 3; overflow: hidden; border: 1px solid rgba(140,200,255,0.4); border-radius: 4px; background: #000; cursor: pointer; }
+        .photo-container img { width: 100%; height: 100%; object-fit: cover; opacity: 0.8; }
+        .re-take-badge { position: absolute; bottom: 0; left: 0; right: 0; background: rgba(6,13,19,0.8); color: #8cc8ff; font-size: 10px; text-align: center; padding: 2px 0; border-top: 1px solid rgba(140,200,255,0.3); }
+        
+        .search-inputs { display: flex; flex-direction: column; gap: 10px; }
+        .search-item { background: rgba(6, 19, 31, 0.6); padding: 12px; border-radius: 4px; border: 1px solid rgba(140,200,255,0.2); }
+        .search-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+        .search-row label { font-size: 12px; color: #8cc8ff; font-weight: bold; }
+        
+        .search-item input { 
+            background: #02070c; border: 1px solid rgba(140,200,255,0.5); color: #00ff64; padding: 8px; 
+            font-size: 15px; width: 90px; border-radius: 4px; text-align: center; font-weight: bold; text-shadow: 0 0 4px rgba(0,255,100,0.5);
+        }
+        .search-item input:focus { outline: none; border-color: #00ff64; box-shadow: 0 0 8px rgba(0,255,100,0.3); }
+        
+        .result-text { font-weight: bold; color: #ff007f; font-size: 18px; text-shadow: 0 0 10px #ff007f, 0 0 20px #ff007f; min-width: 50px; text-align: right; }
+        
+        .crop-area { display: none; margin-top: 10px; background: #000; padding: 6px; border: 1px dashed #ff4a4a; border-radius: 4px; }
+        .crop-area canvas { border: 1px solid rgba(255,74,74,0.4); max-height: 110px; width: auto; display: block; margin: 0 auto; }
+        .crop-label { font-size: 10px; color: #ff4a4a; font-weight: bold; margin-bottom: 4px; text-transform: uppercase; letter-spacing: 1px; }
+
+        .info-tag { font-size: 12px; color: #00ff64; background: rgba(0,255,100,0.1); padding: 8px; border-radius: 4px; border: 1px solid rgba(0,255,100,0.3); width: 100%; text-align: center; margin-top: 5px; font-weight: bold; }
+        
+        /* 元の横並び（グリッド）をキープしつつ無駄を省いたサマリースタイル */
+        .summary-gallery { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; margin-top: 5px; width: 100%; }
+        .summary-card { 
+            background: rgba(4, 12, 20, 0.8); 
+            border: 1px solid rgba(140, 200, 255, 0.25); 
+            border-radius: 4px; 
+            padding: 6px; 
+            display: flex; 
+            flex-direction: column; 
+            gap: 5px;
+            text-align: center;
+        }
+        .summary-header { 
+            font-size: 18px; 
+            font-weight: bold; 
+            color: #00ff64; 
+            text-shadow: 0 0 6px rgba(0,255,100,0.6);
+            letter-spacing: 1px;
+            line-height: 1.1;
+        }
+        .summary-canvas-wrapper { 
+            background: #000; 
+            border: 1px solid rgba(255, 74, 74, 0.4); 
+            border-radius: 3px; 
+            overflow: hidden; 
+        }
+        .summary-canvas-wrapper canvas { 
+            width: 100%; 
+            height: auto; 
+            display: block; 
+            max-height: 75px; 
+            object-fit: contain; 
+        }
+
+        #loading { 
+            display: none; color: #00ff64; font-weight: bold; font-size: 13px; text-align: center; 
+            padding: 10px; background: rgba(0,255,100,0.1); border: 1px solid #00ff64; border-radius: 4px;
+            animation: pulse 1.5s infinite; margin-bottom: 10px;
+        }
+        @keyframes pulse { 0% { opacity: 0.6; } 50% { opacity: 1; } 100% { opacity: 0.6; } }
+    </style>
+</head>
+<body>
+
+    <div class="monitor-frame">
+        <div class="corner c-tl"></div><div class="corner c-tr"></div>
+        <div class="corner c-bl"></div><div class="corner c-br"></div>
+    </div>
+
+    <header>
+        <h1>SYSTEM TERMINAL</h1>
+    </header>
+
+    <div class="main-container">
+        
+        <div class="panel-left">
+            <div class="panel">
+                <h3>[01] DATABASE IMAGES</h3>
+                <input type="file" id="camera-input" accept="image/*" style="display: none;">
+                <button onclick="startAddNewPhoto()">+ ADD PAIR IMAGE</button>
+                <div id="loading">SYSTEM SCANNING IN PROGRESS...</div>
+                <div class="photo-gallery" id="photo-gallery"></div>
+            </div>
+
+            <div class="panel">
+                <h3>[02] TARGET INPUT</h3>
+                <input type="file" id="question-camera-input" accept="image/*" style="display: none;">
+                <button class="btn-purple" onclick="document.getElementById('question-camera-input').click()">📸 SCAN QUESTION IMAGE</button>
+                <div id="detected-numbers-display" class="info-tag">TARGET NUMBERS: (NOT DETECTED)</div>
+            </div>
+
+            <div class="panel" style="flex: 1; min-height: 150px;">
+                <h3>[04] MONITOR SUMMARY</h3>
+                <div id="summary-gallery-area" class="summary-gallery">
+                    <div style="font-size: 11px; color: #6688aa; padding: 10px; grid-column: span 5; text-align: left;">検索を実行すると、ここに結果がシンプルに一覧表示されます</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="panel-right">
+            <div class="panel" style="margin-bottom: 15px;">
+                <h3>[03] SEARCH ANALYSIS</h3>
+                <div class="search-inputs">
+                    <div class="search-item">
+                        <div class="search-row"><label>SLOT 01</label> <input type="number" class="search-box" placeholder="---"> <span class="result-text" id="res-0"></span></div>
+                        <div class="crop-area" id="crop-area-0"><div class="crop-label">🔍 MATCH VISUAL:</div><canvas id="canvas-0"></canvas></div>
+                    </div>
+                    <div class="search-item">
+                        <div class="search-row"><label>SLOT 02</label> <input type="number" class="search-box" placeholder="---"> <span class="result-text" id="res-1"></span></div>
+                        <div class="crop-area" id="crop-area-1"><div class="crop-label">🔍 MATCH VISUAL:</div><canvas id="canvas-1"></canvas></div>
+                    </div>
+                    <div class="search-item">
+                        <div class="search-row"><label>SLOT 03</label> <input type="number" class="search-box" placeholder="---"> <span class="result-text" id="res-2"></span></div>
+                        <div class="crop-area" id="crop-area-2"><div class="crop-label">🔍 MATCH VISUAL:</div><canvas id="canvas-2"></canvas></div>
+                    </div>
+                    <div class="search-item">
+                        <div class="search-row"><label>SLOT 04</label> <input type="number" class="search-box" placeholder="---"> <span class="result-text" id="res-3"></span></div>
+                        <div class="crop-area" id="crop-area-3"><div class="crop-label">🔍 MATCH VISUAL:</div><canvas id="canvas-3"></canvas></div>
+                    </div>
+                    <div class="search-item">
+                        <div class="search-row"><label>SLOT 05</label> <input type="number" class="search-box" placeholder="---"> <span class="result-text" id="res-4"></span></div>
+                        <div class="crop-area" id="crop-area-4"><div class="crop-label">🔍 MATCH VISUAL:</div><canvas id="canvas-4"></canvas></div>
+                    </div>
+                </div>
+                
+                <div style="margin-top: 15px; display: flex; gap: 8px;">
+                    <button class="btn-success" style="flex: 2;" onclick="searchNumbersInAllImages()">EXECUTE SEARCH</button>
+                    <button class="btn-secondary" style="flex: 1; border-color:#aaa; color:#aaa; background:rgba(255,255,255,0.05);" onclick="resetSearchBoxes()">RESET</button>
+                </div>
+            </div>
+
+            <button class="btn-danger" style="width: 100%;" onclick="resetAll()">⚠️ FULL RESET SYSTEM</button>
+        </div>
+
+    </div>
+
+    <script>
+        const API_KEY = 'AIzaSyBqitf2aX5c4Bokf0KZT2ZjTx0VOHfWkgA';
+        
+        const cameraInput = document.getElementById('camera-input');
+        const questionCameraInput = document.getElementById('question-camera-input');
+        const photoGallery = document.getElementById('photo-gallery');
+        const searchBoxes = document.querySelectorAll('.search-box');
+        const loadingText = document.getElementById('loading');
+        const detectedDisplay = document.getElementById('detected-numbers-display');
+        const summaryGalleryArea = document.getElementById('summary-gallery-area');
+
+        let allPhotosData = {};
+        let targetPhotoId = null;
+
+        function startAddNewPhoto() {
+            targetPhotoId = null;
+            cameraInput.click();
+        }
+
+        function parseAnnotationsWithOffset(annotations, offsetX, offsetY) {
+            return annotations.map(annotation => {
+                const v = annotation.boundingPoly.vertices;
+                const x0 = (v[0].x ?? 0) + offsetX, y0 = (v[0].y ?? 0) + offsetY;
+                const x1 = (v[1].x ?? 0) + offsetX, y1 = (v[1].y ?? 0) + offsetY;
+                const x2 = (v[2].x ?? 0) + offsetX, y2 = (v[2].y ?? 0) + offsetY;
+                const x3 = (v[3].x ?? 0) + offsetX, y3 = (v[3].y ?? 0) + offsetY;
+
+                const centerX = (x0 + x1 + x2 + x3) / 4;
+                const centerY = (y0 + y1 + y2 + y3) / 4;
+                
+                const topX = x1 - x0;
+                const topY = y1 - y0;
+                const textWidth = Math.sqrt(topX*topX + topY*topY);
+
+                const dirX = x3 - x0;
+                const dirY = y3 - y0;
+                const textHeight = Math.sqrt(dirX*dirX + dirY*dirY);
+
+                const bottomCenterX = (x2 + x3) / 2;
+                const bottomCenterY = (y2 + y3) / 2;
+
+                return {
+                    text: annotation.description.trim(),
+                    x: centerX, y: centerY,
+                    bottomX: bottomCenterX, bottomY: bottomCenterY,
+                    dirX: dirX, dirY: dirY, 
+                    textWidth: textWidth, textHeight: textHeight,
+                    v: [ {x:x0, y:y0}, {x:x1, y:y1}, {x:x2, y:y2}, {x:x3, y:y3} ]
+                };
+            });
+        }
+
+        questionCameraInput.addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (!file || !file.type.startsWith('image/')) return;
+
+            loadingText.innerText = "SCANNING QUESTION LAYER...";
+            loadingText.style.display = 'block';
+
+            const reader = new FileReader();
+            reader.onload = function(event) {
+                const base64Image = event.target.result.split(',')[1];
+                
+                fetch(`https://vision.googleapis.com/v1/images:annotate?key=${API_KEY}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        requests: [{
+                            image: { content: base64Image },
+                            features: [{ type: 'DOCUMENT_TEXT_DETECTION' }]
+                        }]
+                    })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    loadingText.style.display = 'none';
+                    resetSearchBoxes();
+
+                    if (data.responses && data.responses[0] && data.responses[0].textAnnotations) {
+                        const annotations = data.responses[0].textAnnotations.slice(1);
+                        const words = parseAnnotationsWithOffset(annotations, 0, 0);
+                        
+                        const allNumbers = words.filter(w => /^\d+$/.test(w.text));
+                        const validQuestions = [];
+
+                        allNumbers.forEach(num => {
+                            const checkAreaX = num.bottomX + (num.dirX * 1.5);
+                            const checkAreaY = num.bottomY + (num.dirY * 1.5);
+                            const tolerance = num.textHeight * 2.0;
+
+                            const conflictingWord = words.find(w => {
+                                if (w.text === num.text && w.x === num.x && w.y === num.y) return false;
+                                const dx = w.x - checkAreaX;
+                                const dy = w.y - checkAreaY;
+                                return Math.sqrt(dx * dx + dy * dy) < tolerance;
+                            });
+
+                            if (!conflictingWord) {
+                                validQuestions.push(num);
+                            }
+                        });
+
+                        validQuestions.sort((a, b) => a.x - b.x);
+                        const resultNumbers = validQuestions.map(v => v.text);
+
+                        if (resultNumbers.length > 0) {
+                            detectedDisplay.innerText = `TARGET NUMBERS: ${resultNumbers.join(', ')}`;
+                            resultNumbers.slice(0, 5).forEach((num, idx) => {
+                                searchBoxes[idx].value = num;
+                            });
+                        } else {
+                            detectedDisplay.innerText = `TARGET NUMBERS: NOT FOUND`;
+                        }
+                    }
+                    questionCameraInput.value = '';
+                })
+                .catch(err => {
+                    loadingText.style.display = 'none';
+                    questionCameraInput.value = '';
+                    console.error(err);
+                });
+            };
+            reader.readAsDataURL(file);
+        });
+
+        cameraInput.addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (!file || !file.type.startsWith('image/')) return;
+
+            loadingText.innerText = "INITIALIZING QUAD-GRID SCANNING...";
+            loadingText.style.display = 'block';
+
+            const reader = new FileReader();
+            reader.onload = function(event) {
+                const sourceImg = new Image();
+                sourceImg.src = event.target.result;
+                
+                sourceImg.onload = function() {
+                    const w = sourceImg.naturalWidth;
+                    const h = sourceImg.naturalHeight;
+                    const halfW = Math.floor(w / 2);
+                    const halfH = Math.floor(h / 2);
+
+                    const overlap = Math.floor(w * 0.03);
+                    const quadrants = [
+                        { name: "左上", sx: 0, sy: 0, sw: halfW + overlap, sh: halfH + overlap, ox: 0, oy: 0 },
+                        { name: "右上", sx: halfW - overlap, sy: 0, sw: w - halfW + overlap, sh: halfH + overlap, ox: halfW - overlap, oy: 0 },
+                        { name: "左下", sx: 0, sy: halfH - overlap, sw: halfW + overlap, sh: h - halfH + overlap, ox: 0, oy: halfH - overlap },
+                        { name: "右下", sx: halfW - overlap, sy: halfH - overlap, sw: w - halfW + overlap, sh: h - halfH + overlap, ox: halfW - overlap, oy: halfH - overlap }
+                    ];
+
+                    const fetchPromises = quadrants.map(quad => {
+                        return new Promise((resolve) => {
+                            const canvas = document.createElement('canvas');
+                            canvas.width = quad.sw;
+                            canvas.height = quad.sh;
+                            const ctx = canvas.getContext('2d');
+                            ctx.drawImage(sourceImg, quad.sx, quad.sy, quad.sw, quad.sh, 0, 0, quad.sw, quad.sh);
+                            
+                            const base64 = canvas.toDataURL('image/jpeg', 0.95).split(',')[1];
+
+                            fetch(`https://vision.googleapis.com/v1/images:annotate?key=${API_KEY}`, {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({
+                                    requests: [{
+                                        image: { content: base64 },
+                                        features: [{ type: 'DOCUMENT_TEXT_DETECTION' }]
+                                    }]
+                                })
+                            })
+                            .then(res => res.json())
+                            .then(data => {
+                                if (data.responses && data.responses[0] && data.responses[0].textAnnotations) {
+                                    const annotations = data.responses[0].textAnnotations.slice(1);
+                                    const correctedWords = parseAnnotationsWithOffset(annotations, quad.ox, quad.oy);
+                                    resolve(correctedWords);
+                                } else {
+                                    resolve([]);
+                                }
+                            })
+                            .catch(err => {
+                                console.error(`${quad.name} エラー:`, err);
+                                resolve([]);
+                            });
+                        });
+                    });
+
+                    Promise.all(fetchPromises).then(results => {
+                        loadingText.style.display = 'none';
+                        
+                        let mergedWords = [];
+                        results.forEach(wordsArray => { mergedWords = mergedWords.concat(wordsArray); });
+
+                        const uniqueWords = [];
+                        mergedWords.forEach(word => {
+                            const isDuplicate = uniqueWords.find(u => 
+                                u.text === word.text && 
+                                Math.abs(u.x - word.x) < 15 && 
+                                Math.abs(u.y - word.y) < 15
+                            );
+                            if (!isDuplicate) { uniqueWords.push(word); }
+                        });
+
+                        const photoId = targetPhotoId || 'photo-' + Date.now();
+                        allPhotosData[photoId] = {
+                            words: uniqueWords,
+                            imgObj: sourceImg
+                        };
+
+                        if (targetPhotoId) {
+                            const container = document.getElementById(targetPhotoId);
+                            container.querySelector('img').src = event.target.result;
+                        } else {
+                            const container = document.createElement('div');
+                            container.className = 'photo-container';
+                            container.id = photoId;
+                            container.onclick = function() {
+                                if(confirm('RE-TAKE THIS IMAGE?')) {
+                                    targetPhotoId = photoId;
+                                    cameraInput.click();
+                                }
+                            };
+                            const img = document.createElement('img');
+                            img.src = event.target.result;
+                            const badge = document.createElement('div');
+                            badge.className = 're-take-badge';
+                            badge.innerText = 'TAP TO RE-TAKE';
+                            container.appendChild(img);
+                            container.appendChild(badge);
+                            photoGallery.appendChild(container);
+                        }
+                    });
+                };
+            };
+            reader.readAsDataURL(file);
+        });
+
+        function searchNumbersInAllImages() {
+            if (Object.keys(allPhotosData).length === 0) {
+                alert('先に「①ペア用の写真」を追加してください。');
+                return;
+            }
+
+            summaryGalleryArea.innerHTML = '';
+            let validMatchesForSummary = [];
+
+            searchBoxes.forEach((box, index) => {
+                const searchValue = box.value.trim();
+                const resultSpan = document.getElementById(`res-${index}`);
+                const cropArea = document.getElementById(`crop-area-${index}`);
+                const canvas = document.getElementById(`canvas-${index}`);
+                
+                resultSpan.innerText = '';
+                if(cropArea) cropArea.style.display = 'none';
+
+                if (!searchValue) return;
+
+                let foundMatchInLoop = false;
+
+                for (const photoId in allPhotosData) {
+                    if (foundMatchInLoop) break;
+
+                    const photoData = allPhotosData[photoId];
+                    const words = photoData.words;
+                    
+                    const targetNumber = words.find(w => {
+                        return w.text === searchValue || w.text.includes(searchValue);
+                    });
+
+                    if (!targetNumber) continue; 
+
+                    const hLength = Math.sqrt(targetNumber.dirX * targetNumber.dirX + targetNumber.dirY * targetNumber.dirY);
+                    const unitDirX = targetNumber.dirX / hLength;
+                    const unitDirY = targetNumber.dirY / hLength;
+
+                    const alphabets = words.filter(w => /^[A-Za-z]$/.test(w.text));
+                    let bestAlphabetObj = null;
+                    let minVerticalDistance = Infinity;
+
+                    const laneWidthTolerance = Math.max(targetNumber.textWidth, targetNumber.textHeight) * 0.8;
+
+                    alphabets.forEach(alpha => {
+                        const dx = alpha.x - targetNumber.bottomX;
+                        const dy = alpha.y - targetNumber.bottomY;
+
+                        const verticalDist = dx * unitDirX + dy * unitDirY; 
+                        const lateralDist = Math.abs(dx * (-unitDirY) + dy * unitDirX); 
+
+                        if (lateralDist <= laneWidthTolerance && verticalDist > 0) {
+                            if (verticalDist < minVerticalDistance) {
+                                minVerticalDistance = verticalDist;
+                                bestAlphabetObj = alpha;
+                            }
+                        }
+                    });
+
+                    if (bestAlphabetObj) {
+                        const detectedLetter = bestAlphabetObj.text.toUpperCase();
+                        
+                        resultSpan.innerText = detectedLetter;
+                        if(cropArea) cropArea.style.display = 'block';
+                        
+                        const ctx = canvas.getContext('2d');
+                        
+                        const minX = Math.min(targetNumber.v[0].x, targetNumber.v[1].x, targetNumber.v[2].x, targetNumber.v[3].x, bestAlphabetObj.v[0].x, bestAlphabetObj.v[1].x, bestAlphabetObj.v[2].x, bestAlphabetObj.v[3].x);
+                        const maxX = Math.max(targetNumber.v[0].x, targetNumber.v[1].x, targetNumber.v[2].x, targetNumber.v[3].x, bestAlphabetObj.v[0].x, bestAlphabetObj.v[1].x, bestAlphabetObj.v[2].x, bestAlphabetObj.v[3].x);
+                        const minY = Math.min(targetNumber.v[0].y, targetNumber.v[1].y, targetNumber.v[2].y, targetNumber.v[3].y, bestAlphabetObj.v[0].y, bestAlphabetObj.v[1].y, bestAlphabetObj.v[2].y, bestAlphabetObj.v[3].y);
+                        const maxY = Math.max(targetNumber.v[0].y, targetNumber.v[1].y, targetNumber.v[2].y, targetNumber.v[3].y, bestAlphabetObj.v[0].y, bestAlphabetObj.v[1].y, bestAlphabetObj.v[2].y, bestAlphabetObj.v[3].y);
+                        
+                        const padding = targetNumber.textWidth * 1.2;
+                        const sourceX = Math.max(0, minX - padding);
+                        const sourceY = Math.max(0, minY - padding);
+                        const sourceWidth = (maxX - minX) + (padding * 2);
+                        const sourceHeight = (maxY - minY) + (padding * 2);
+
+                        canvas.width = sourceWidth;
+                        canvas.height = sourceHeight;
+
+                        ctx.drawImage(
+                            photoData.imgObj, 
+                            sourceX, sourceY, sourceWidth, sourceHeight, 
+                            0, 0, sourceWidth, sourceHeight
+                        );
+
+                        const circleX = bestAlphabetObj.x - sourceX;
+                        const circleY = bestAlphabetObj.y - sourceY;
+                        const radius = Math.max(bestAlphabetObj.textWidth, bestAlphabetObj.textHeight, 8) * 1.3;
+
+                        ctx.beginPath();
+                        ctx.arc(circleX, circleY, radius, 0, 2 * Math.PI);
+                        ctx.strokeStyle = '#ff4a4a';
+                        ctx.lineWidth = 3;
+                        ctx.stroke();
+
+                        validMatchesForSummary.push({
+                            num: searchValue,
+                            imgObj: photoData.imgObj,
+                            sx: sourceX, sy: sourceY, sw: sourceWidth, sh: sourceHeight,
+                            cx: circleX, cy: circleY, r: radius
+                        });
+
+                        foundMatchInLoop = true;
+                    }
+                }
+
+                if (!foundMatchInLoop) {
+                    resultSpan.innerText = 'ERR';
+                    if(cropArea) cropArea.style.display = 'none';
+                }
+            });
+
+            // 【UI修正】元の横5並びをそのままキープし、文字だけを「数字」に絞る
+            if(validMatchesForSummary.length > 0) {
+                validMatchesForSummary.forEach(match => {
+                    const card = document.createElement('div');
+                    card.className = 'summary-card';
+
+                    // 1. 大きめに検索した数字を最上部に配置
+                    const headerDiv = document.createElement('div');
+                    headerDiv.className = 'summary-header';
+                    headerDiv.innerText = match.num;
+                    card.appendChild(headerDiv);
+
+                    // 2. そのすぐ真下にスクショ画像を配置
+                    const canvasWrapper = document.createElement('div');
+                    canvasWrapper.className = 'summary-canvas-wrapper';
+                    
+                    const smCanvas = document.createElement('canvas');
+                    smCanvas.width = match.sw;
+                    smCanvas.height = match.sh;
+                    const smCtx = smCanvas.getContext('2d');
+                    
+                    smCtx.drawImage(match.imgObj, match.sx, match.sy, match.sw, match.sh, 0, 0, match.sw, match.sh);
+                    
+                    smCtx.beginPath();
+                    smCtx.arc(match.cx, match.cy, match.r, 0, 2 * Math.PI);
+                    smCtx.strokeStyle = '#ff4a4a';
+                    smCtx.lineWidth = 3;
+                    smCtx.stroke();
+
+                    canvasWrapper.appendChild(smCanvas);
+                    card.appendChild(canvasWrapper);
+                    summaryGalleryArea.appendChild(card);
+                });
+            } else {
+                summaryGalleryArea.innerHTML = '<div style="font-size: 11px; color: #ff4a4a; padding: 10px; grid-column: span 5;">MATCHING DATA NOT FOUND</div>';
+            }
+        }
+
+        function resetSearchBoxes() {
+            searchBoxes.forEach((box, index) => {
+                box.value = '';
+                document.getElementById(`res-${index}`).innerText = '';
+                const crop = document.getElementById(`crop-area-${index}`);
+                if(crop) crop.style.display = 'none';
+            });
+            detectedDisplay.innerText = "TARGET NUMBERS: (NOT DETECTED)";
+            summaryGalleryArea.innerHTML = '<div style="font-size: 11px; color: #6688aa; padding: 10px; grid-column: span 5; text-align: left;">検索を実行すると、ここに結果がシンプルに一覧表示されます</div>';
+        }
+
+        function resetAll() {
+            photoGallery.innerHTML = '';
+            cameraInput.value = '';
+            questionCameraInput.value = '';
+            allPhotosData = {};
+            targetPhotoId = null;
+            resetSearchBoxes();
+        }
+    </script>
+</body>
+</html>
