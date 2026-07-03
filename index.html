@@ -18,8 +18,6 @@
             overflow-x: hidden;
         }
 
-        /* 画面全体のノイズ・方眼紙模様エフェクト（body::before）を完全に削除 */
-
         h1 {
             font-size: 1.4rem;
             text-align: center;
@@ -42,7 +40,6 @@
             align-items: center;
         }
 
-        /* [01] 常時起動カメラビューファインダー */
         .camera-container {
             width: 100%;
             background: #000;
@@ -61,7 +58,6 @@
             object-fit: cover;
         }
 
-        /* スキャン用超高速シャッターUI */
         .shutter-panel {
             display: flex;
             gap: 10px;
@@ -94,7 +90,6 @@
             transform: scale(0.98);
         }
 
-        /* 撮影ログ・プレビューカルーセル */
         .log-carousel {
             display: flex;
             gap: 8px;
@@ -126,7 +121,6 @@
         .log-item.processing .status-badge { color: #ffcc00; }
         .log-item.error .status-badge { color: #ff3333; }
 
-        /* PASS入力エリア */
         .config-box {
             background: rgba(140, 200, 255, 0.05);
             border: 1px solid rgba(140, 200, 255, 0.2);
@@ -144,7 +138,6 @@
             border-radius: 2px;
         }
 
-        /* [02] 5スロット入力エリア */
         .search-inputs-list {
             display: flex;
             flex-direction: column;
@@ -183,7 +176,6 @@
             border-color: #00ff64;
         }
         
-        /* 5スロットの個別アルファベット出力欄 */
         .slot-result-text {
             font-weight: bold;
             color: #ff007f;
@@ -194,7 +186,6 @@
             text-align: right;
         }
 
-        /* アクションパネル */
         .action-panel {
             display: flex;
             gap: 8px;
@@ -235,7 +226,6 @@
             box-shadow: 0 0 15px #00ff64;
         }
 
-        /* [03] 横並び極小サマリー表示領域 */
         .summary-gallery {
             display: grid;
             grid-template-columns: repeat(5, 1fr);
@@ -262,7 +252,7 @@
         }
         .summary-canvas-wrapper { 
             background: #000; 
-            border: 1px solid rgba(255, 74, 74, 0.4); 
+            border: 1px solid rgba(140, 200, 255, 0.3); 
             border-radius: 3px; 
             overflow: hidden; 
         }
@@ -270,7 +260,7 @@
             width: 100%; 
             height: auto; 
             display: block; 
-            max-height: 75px; 
+            max-height: 85px; 
             object-fit: contain; 
         }
 
@@ -287,7 +277,6 @@
         }
         .btn-reset:active { background: #ff3333; color: #fff; }
 
-        /* スキャン中インジケータ */
         .loading-dimmer {
             display: none;
             position: absolute;
@@ -333,9 +322,7 @@
     </div>
 
     <div class="shutter-panel">
-        <button class="btn-shutter" id="shutter-trigger">
-            スキャン
-        </button>
+        <button class="btn-shutter" id="shutter-trigger">スキャン</button>
     </div>
 
     <div class="log-carousel" id="log-carousel"></div>
@@ -356,7 +343,7 @@
         <div class="search-row-item">
             <label>SLOT 02</label>
             <input type="tel" class="search-box" id="box-1" placeholder="---">
-            <span class="slot-result-text" id="res-2"></span>
+            <span class="slot-result-text" id="res-1"></span>
         </div>
         <div class="search-row-item">
             <label>SLOT 03</label>
@@ -489,6 +476,7 @@
             }
         }
 
+        // 改良された解析ロジック
         function parseOcrAnnotations(annotations) {
             const rawBlocks = annotations.slice(1);
             let charObjects = rawBlocks.map(b => {
@@ -509,22 +497,36 @@
             numberBlocks.forEach(numBlk => {
                 let bestMatchAlpha = null;
                 let minDistance = Infinity;
+
+                // 1つのパネル（数字高さをHとする）に対して、アルファベットが存在すべき妥当な最大縦距離を設定
+                // 下すぎる位置にある別のパネル（Fなど）を巻き込まないための制限
+                const maxAllowedYDiff = numBlk.height * 4.0; 
+
                 alphaBlocks.forEach(alphaBlk => {
                     const xDiff = Math.abs(numBlk.centerX - alphaBlk.centerX);
                     const yDiff = alphaBlk.centerY - numBlk.centerY;
-                    if (yDiff > 0 && xDiff < (numBlk.width * 1.5)) {
+
+                    // 数字より下にあり、かつ横方向のズレが数字の幅の1.2倍以内、かつ縦距離が近距離であること
+                    if (yDiff > 0 && yDiff < maxAllowedYDiff && xDiff < (numBlk.width * 1.2)) {
                         const distance = Math.sqrt(xDiff * xDiff + yDiff * yDiff);
-                        if (distance < minDistance) { minDistance = distance; bestMatchAlpha = alphaBlk; }
+                        if (distance < minDistance) { 
+                            minDistance = distance; 
+                            bestMatchAlpha = alphaBlk; 
+                        }
                     }
                 });
+
                 if (bestMatchAlpha) {
+                    // 【修正ポイント】切り抜き範囲を「数字と正解アルファベット」の幅ピッタリに極限までタイトにする
+                    // 余白の追加を最小限（左右+4px、上下+4px）にし、下のパネルが絶対に侵入しないように縮小
                     parsedBlocks.push({
-                        number: numBlk.text, alphabet: bestMatchAlpha.text,
+                        number: numBlk.text, 
+                        alphabet: bestMatchAlpha.text,
                         cropArea: {
-                            minX: Math.min(numBlk.minX, bestMatchAlpha.minX) - 12,
-                            minY: Math.min(numBlk.minY, bestMatchAlpha.minY) - 12,
-                            maxX: Math.max(numBlk.maxX, bestMatchAlpha.maxX) + 12,
-                            maxY: Math.max(numBlk.maxY, bestMatchAlpha.maxY) + 12
+                            minX: Math.max(0, Math.min(numBlk.minX, bestMatchAlpha.minX) - 4),
+                            minY: Math.max(0, numBlk.minY - 6),
+                            maxX: Math.max(numBlk.maxX, bestMatchAlpha.maxX) + 4,
+                            maxY: bestMatchAlpha.maxY + 8
                         }
                     });
                 }
@@ -605,6 +607,7 @@
                 let foundMatch = null;
                 let sourcePhotoBase64 = null;
 
+                // 最新のストックから優先して探す
                 for (let i = allPhotosData.length - 1; i >= 0; i--) {
                     const photo = allPhotosData[i];
                     const match = photo.blocks.find(b => b.number === query);
