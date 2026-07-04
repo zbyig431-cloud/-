@@ -318,7 +318,7 @@
     <!-- Firebase SDKの読み込み -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-        import { getFirestore, doc, setDoc, onSnapshot, updateDoc, deleteDoc, collection, getDocs } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+        import { getFirestore, doc, setDoc, onSnapshot, deleteDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyBkBDexKsmmzKc3HAd8PMdV56-Lxxz8uyk",
@@ -371,14 +371,26 @@
             const roomId = document.getElementById('room-id').value.trim() || 'default_room';
             if (unsubscribeRoom) unsubscribeRoom();
 
-            // 自分の名前を新ルームに報告
-            reportPresence();
+            // 部屋に入ったらまず名前を即報告
+            setTimeout(reportPresence, 500);
 
             unsubscribeRoom = onSnapshot(doc(db, "rooms", roomId), (docSnap) => {
-                if (!docSnap.exists()) return;
-                const data = docSnap.data();
-
                 isSyncingFromCloud = true;
+
+                if (!docSnap.exists()) {
+                    // ルームが空、またはリセットされたとき
+                    document.getElementById('member-list-text').innerText = `ONLINE: 待機中...`;
+                    searchBoxes.forEach(box => box.value = "");
+                    allPhotosData = [];
+                    document.getElementById('db-counter').innerText = "STOCKS: 0";
+                    document.getElementById('log-carousel').innerHTML = '';
+                    clearSlotResults();
+                    initSummaryAreaPlaceholder();
+                    isSyncingFromCloud = false;
+                    return;
+                }
+
+                const data = docSnap.data();
 
                 // メンバーリストの更新表示
                 if (data.members) {
@@ -387,7 +399,7 @@
                     if (count > 0) {
                         document.getElementById('member-list-text').innerText = `ONLINE: ${onlineNames.join(', ')} (${count}人)`;
                     } else {
-                        document.getElementById('member-list-text').innerText = `ONLINE: 未入力の端末のみ (${Object.keys(data.members).length}台)`;
+                        document.getElementById('member-list-text').innerText = `ONLINE: 未入力の端末 (${Object.keys(data.members).length}台)`;
                     }
                 } else {
                     document.getElementById('member-list-text').innerText = `ONLINE: 待機中...`;
@@ -430,9 +442,10 @@
             const roomId = document.getElementById('room-id').value.trim() || 'default_room';
             const name = document.getElementById('user-name').value.trim() || `ゲスト-${myDeviceId.substr(4,4)}`;
             
-            const updateObj = {};
-            updateObj[`members.${myDeviceId}`] = name;
+            const updateObj = { members: {} };
+            updateObj.members[myDeviceId] = name;
             try {
+                // 安全に値をマージ（部屋がなくても強制作成）
                 await setDoc(doc(db, "rooms", roomId), updateObj, { merge: true });
             } catch (e) { console.error("Presence Error:", e); }
         }
@@ -440,8 +453,8 @@
         // 退室時に名前を消す
         async function removePresence() {
             const roomId = document.getElementById('room-id').value.trim() || 'default_room';
-            const updateObj = {};
-            updateObj[`members.${myDeviceId}`] = null; // フィールド消去
+            const updateObj = { members: {} };
+            updateObj.members[myDeviceId] = null;
             try {
                 await setDoc(doc(db, "rooms", roomId), updateObj, { merge: true });
             } catch (e) {}
@@ -453,7 +466,7 @@
             const slotsData = searchBoxes.map(b => b.value.trim());
             try {
                 await setDoc(doc(db, "rooms", roomId), { slots: slotsData }, { merge: true });
-            } catch (e) { console.error("Cloud Save Error:", e); }
+            } catch (e) { console.error("Cloud Slot Save Error:", e); }
         }
 
         async function savePhotosToCloud() {
@@ -714,7 +727,7 @@
                 clearSlotResults();
                 initSummaryAreaPlaceholder();
                 alert("ルーム内のデータをリセットしました。");
-                reportPresence(); // リセット後に自分を再登録
+                setTimeout(reportPresence, 500); // リセット後に自分を再登録
             } catch(e) { alert("リセットエラー"); }
         }
 
