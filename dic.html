@@ -1,0 +1,541 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>絶望要塞IG 辞書ツール</title>
+    <style>
+        * { box-sizing: border-box; font-family: 'Courier New', Courier, monospace, sans-serif; }
+        body { 
+            background-color: #0c0714; 
+            color: #ebd6ff; 
+            margin: 0; 
+            padding: 15px; 
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow-x: hidden;
+        }
+
+        h1 {
+            font-size: 1.3rem;
+            text-align: center;
+            margin: 0 0 12px 0;
+            color: #b57cff;
+            text-shadow: 0 0 8px rgba(181, 124, 255, 0.6);
+            letter-spacing: 1px;
+            border-bottom: 1px solid rgba(181, 124, 255, 0.3);
+            padding-bottom: 5px;
+        }
+
+        .config-box {
+            background: rgba(181, 124, 255, 0.05);
+            border: 1px solid rgba(181, 124, 255, 0.2);
+            padding: 8px 12px;
+            border-radius: 4px;
+            margin-bottom: 12px;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+        .config-box label { font-size: 0.7rem; color: #b57cff; font-weight: bold; }
+        .config-box input {
+            width: 100%;
+            background: #140d21;
+            border: 1px solid #b57cff;
+            color: #00ff66;
+            padding: 6px;
+            font-size: 0.85rem;
+            border-radius: 2px;
+        }
+
+        .section-title {
+            font-size: 0.85rem;
+            font-weight: bold;
+            color: #b57cff;
+            margin-bottom: 8px;
+            text-shadow: 0 0 5px rgba(181, 124, 255, 0.4);
+        }
+
+        .camera-container {
+            width: 100%;
+            background: #000;
+            border: 2px solid #b57cff;
+            box-shadow: 0 0 15px rgba(181, 124, 255, 0.2);
+            position: relative;
+            border-radius: 4px;
+            overflow: hidden;
+            margin-bottom: 12px;
+            aspect-ratio: 4 / 3;
+        }
+
+        #camera-stream { width: 100%; height: 100%; object-fit: cover; }
+
+        .btn-shutter {
+            width: 100%;
+            background: linear-gradient(135deg, #5500aa, #220055);
+            color: #ebd6ff;
+            border: 2px solid #b57cff;
+            padding: 14px;
+            font-size: 1.1rem;
+            font-weight: bold;
+            border-radius: 4px;
+            cursor: pointer;
+            box-shadow: 0 0 10px rgba(181, 124, 255, 0.4);
+            text-shadow: 0 0 5px #ebd6ff;
+            margin-bottom: 15px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        .btn-shutter:active {
+            background: #00ff64;
+            color: #000;
+            border-color: #ffffff;
+            box-shadow: 0 0 15px #00ff64;
+        }
+
+        /* スロット表示エリア */
+        .slots-container {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 6px;
+            margin-bottom: 12px;
+        }
+        .slot-box {
+            background: #150f24;
+            border: 1px solid rgba(181, 124, 255, 0.4);
+            border-radius: 4px;
+            padding: 6px;
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            position: relative;
+        }
+        .slot-box .label { font-size: 0.6rem; color: #b57cff; }
+        .slot-box .kanji-input {
+            width: 100%;
+            background: transparent;
+            border: none;
+            border-bottom: 1px dashed rgba(181, 124, 255, 0.5);
+            color: #ffffff;
+            font-size: 1.1rem;
+            text-align: center;
+            font-weight: bold;
+            padding: 2px 0;
+        }
+        .slot-box .kanji-input:focus { outline: none; border-bottom-color: #00ff64; }
+        .slot-box .page-output {
+            font-size: 1rem;
+            font-weight: bold;
+            color: #00ff64;
+            text-shadow: 0 0 4px rgba(0,255,100,0.5);
+            min-height: 1.2rem;
+        }
+
+        /* 「もしかして」サジェストエリア */
+        .suggest-container {
+            background: rgba(0, 0, 0, 0.4);
+            border: 1px dashed rgba(181, 124, 255, 0.2);
+            padding: 8px;
+            border-radius: 4px;
+            margin-bottom: 15px;
+            min-height: 48px;
+        }
+        .suggest-title { font-size: 0.65rem; color: #aaa; margin-bottom: 4px; }
+        .suggest-buttons { display: flex; flex-wrap: wrap; gap: 6px; }
+        .btn-suggest {
+            background: #25163a;
+            border: 1px solid #b57cff;
+            color: #ebd6ff;
+            padding: 4px 8px;
+            font-size: 0.75rem;
+            border-radius: 3px;
+            cursor: pointer;
+        }
+        .btn-suggest:active { background: #00ff64; color: #000; }
+
+        /* 計算コントロールセンター */
+        .calc-panel {
+            background: rgba(27, 15, 46, 0.6);
+            border: 1px solid rgba(181, 124, 255, 0.3);
+            border-radius: 6px;
+            padding: 12px;
+            margin-bottom: 15px;
+        }
+        .result-display {
+            background: #06030a;
+            border: 1px solid #b57cff;
+            border-radius: 4px;
+            padding: 12px;
+            text-align: center;
+            margin-bottom: 12px;
+            box-shadow: inset 0 0 10px rgba(0,0,0,0.8);
+        }
+        .result-display .res-title { font-size: 0.7rem; color: #b57cff; margin-bottom: 4px; letter-spacing: 1px; }
+        .result-display .res-num { font-size: 2.2rem; font-weight: bold; color: #ff007f; text-shadow: 0 0 12px #ff007f; }
+        
+        .calc-buttons {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 8px;
+        }
+        .btn-calc {
+            background: #2b124c;
+            border: 1px solid #ff007f;
+            color: #ff007f;
+            text-shadow: 0 0 3px #ff007f;
+            padding: 10px;
+            font-size: 0.85rem;
+            font-weight: bold;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        .btn-calc:active { background: #ff007f; color: #000; box-shadow: 0 0 10px #ff007f; }
+        .btn-clear {
+            grid-column: span 4;
+            background: #441111;
+            border: 1px solid #ff3333;
+            color: #ff8888;
+            padding: 8px;
+            font-size: 0.8rem;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-top: 4px;
+        }
+        .btn-clear:active { background: #ff3333; color: #fff; }
+
+        .loading-dimmer {
+            display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(20, 5, 35, 0.5); z-index: 10; justify-content: center; align-items: center;
+            font-size: 0.9rem; color: #00ff66; text-shadow: 0 0 5px #00ff66;
+        }
+        .loading-dimmer::after { content: "SCANNING KANJI..."; animation: blink 0.5s infinite alternate; }
+        @keyframes blink { from { opacity: 0.3; } to { opacity: 1; } }
+    </style>
+</head>
+<body>
+
+    <h1>絶望要塞IG 辞書ツール</h1>
+
+    <!-- 鍵（PASS）設定 -->
+    <div class="config-box">
+        <label>VISION API PASS (PASSを入れてから使用してください):</label>
+        <input type="password" id="api-key" placeholder="AIzaSy...">
+    </div>
+
+    <!-- カメラコンテナ -->
+    <div class="section-title">【01】問題文スキャン (「」内を自動検出)</div>
+    <div class="camera-container">
+        <video id="camera-stream" autoplay playsinline muted></video>
+        <div class="loading-dimmer" id="scan-indicator"></div>
+    </div>
+    <button class="btn-shutter" id="shutter-trigger">スキャン実行</button>
+
+    <!-- 検索結果スロット -->
+    <div class="section-title">【02】抽出漢字とページ数 (手入力での変更も可能)</div>
+    <div class="slots-container">
+        <div class="slot-box">
+            <span class="label">SLOT 1</span>
+            <input type="text" class="kanji-input" id="slot-k-0" maxlength="1" placeholder="-">
+            <span class="page-output" id="slot-p-0">---</span>
+        </div>
+        <div class="slot-box">
+            <span class="label">SLOT 2</span>
+            <input type="text" class="kanji-input" id="slot-k-1" maxlength="1" placeholder="-">
+            <span class="page-output" id="slot-p-1">---</span>
+        </div>
+        <div class="slot-box">
+            <span class="label">SLOT 3</span>
+            <input type="text" class="kanji-input" id="slot-k-2" maxlength="1" placeholder="-">
+            <span class="page-output" id="slot-p-2">---</span>
+        </div>
+        <div class="slot-box">
+            <span class="label">SLOT 4</span>
+            <input type="text" class="kanji-input" id="slot-k-3" maxlength="1" placeholder="-">
+            <span class="page-output" id="slot-p-3">---</span>
+        </div>
+    </div>
+
+    <!-- 「もしかして」サジェストエリア -->
+    <div class="suggest-container">
+        <div class="suggest-title">⚠️ もしかしてこれですか？ (タップで空いているスロットに適用)</div>
+        <div class="suggest-buttons" id="suggest-area">
+            <span style="color:rgba(181,124,255,0.3); font-size:0.75rem;">スキャンすると誤認識補正候補がここに並びます</span>
+        </div>
+    </div>
+
+    <!-- 計算コントロールセンター -->
+    <div class="section-title">【03】計算コントロールセンター</div>
+    <div class="calc-panel">
+        <div class="result-display">
+            <div class="res-title">TOTAL ANSWER</div>
+            <div class="res-num" id="calc-result">000</div>
+        </div>
+        <div class="calc-buttons">
+            <button class="btn-calc" onclick="calculate('add')">➕ 足す</button>
+            <button class="btn-calc" onclick="calculate('sub')">➖ 引く</button>
+            <button class="btn-calc" onclick="calculate('rem')">✖ 余り</button>
+            <button class="btn-calc" onclick="calculate('maxsub')">🔺大 - 小</button>
+            <button class="btn-clear" id="btn-reset-all">スロット＆計算をリセット</button>
+        </div>
+    </div>
+
+    <canvas id="capture-canvas" style="display:none;"></canvas>
+
+    <script type="module">
+        // 提供いただいた合計204個の漢字とページデータのマスター辞書
+        const KANJI_DICTIONARY = {
+            "七":7,"下":8,"丈":16,"丘":22,"並":25,"丸":29,"丼":31,"衣":31,"也":36,"井":48,
+            "仁":57,"会":64,"全":66,"伝":67,"倹":87,"健":93,"僕":101,"舗":102,"六":116,
+            "典":119,"円":120,"写":125,"冶":127,"凍":129,"出":133,"券":139,"列":141,"判":142,
+            "劣":153,"勝":159,"匣":167,"十":168,"卅":171,"卍":172,"卞":176,"卵":179,"参":184,
+            "収":185,"反":187,"叢":191,"右":197,"台":197,"叫":199,"合":200,"呉":206,"告":208,
+            "命":212,"器":228,"嚮":230,"国":236,"圧":241,"地":242,"坂":244,"執":249,"場":251,
+            "塊":254,"壊":258,"夜":269,"天":275,"奈":280,"姫":293,"媒":295,"孵":305,"実":310,
+            "寅":318,"対":326,"当":334,"尹":337,"岩":346,"峰":348,"巧":354,"帝":361,"廣":373,
+            "序":374,"庫":377,"庭":378,"廻":382,"廾":383,"彬":396,"径":398,"必":413,"急":418,
+            "想":431,"情":444,"愉":446,"懐":450,"撃":464,"投":470,"摂":494,"放":504,"教":509,
+            "敲":513,"新":522,"既":528,"昇":536,"映":539,"景":549,"智":551,"暢":554,"有":560,
+            "胤":565,"朗":572,"望":574,"本":586,"札":586,"机":590,"杉":592,"来":594,"東":597,
+            "林":600,"柱":604,"桜":607,"桂":608,"栞":608,"根":610,"梁":616,"棗":620,"棲":620,
+            "業":624,"森":620,"樅":633,"檬":638,"欅":640,"欧":642,"正":646,"歪":650,"残":653,
+            "氈":662,"氷":669,"泰":670,"汎":674,"津":690,"洋":692,"湯":715,"溶":721,"滝":722,
+            "瀟":734,"煙":740,"燃":743,"照":753,"采":757,"爾":759,"物":765,"狂":771,"猟":776,
+            "率":780,"班":784,"瓶":792,"産":797,"画":803,"異":806,"畿":809,"病":813,"癒":818,
+            "百":824,"皆":826,"盛":831,"春":837,"看":837,"相":838,"眼":842,"眠":842,"短":850,
+            "砂":854,"碧":860,"礼":864,"福":871,"程":879,"空":885,"突":887,"競":895,"笛":898,
+            "箱":906,"簾":910,"粉":913,"系":920,"約":922,"組":929,"絶":934,"紫":934,"続":938,
+            "緜":947,"缶":954,"罪":956,"美":959,"義":961,"羸":963,"耐":970,"耕":971,"耽":973,
+            "聞":975,"腐":979,"興":985,"船":989,"良":991,"艱":992,"苦":1001,"茶":1007,"葉":1018,
+            "蘭":1036,"虚":1038,"蜜":1047,"表":1058,"裁":1060,"裏":1061,"褒":1063,"補":1066,"襷":1070,
+            "臣":1073,"解":1080,"計":1083,"誠":1093,"誉":1094,"謄":1108,"謦":1109,"象":1115,"財":1119,
+            "買":1123,"贋":1130,"踊":1139,"転":1147,"載":1150,"込":1158,"述":1161,"邪":1188,"酒":1192,
+            "醸":1197,"重":1199,"針":1205,"釘":1205,"銜":1209,"鍵":1216,"鏖":1219,"鑿":1222,"開":1226,
+            "険":1238,"雇":1247,"難":1251,"需":1256,"霖":1257,"靖":1260,"響":1269,"預":1273,"顔":1276,
+            "飆":1282,"飴":1286,"餅":1287,"首":1290,"馮":1293,"駐":1296,"騰":1298,"髪":1305,"髭":1305,
+            "鬨":1306,"鮭":1312,"鳴":1319,"鸞":1326,"麾":1330,"黄":1331,"黐":1332,"黶":1334
+        };
+
+        let streamObject = null;
+        const inputs = [
+            document.getElementById('slot-k-0'),
+            document.getElementById('slot-k-1'),
+            document.getElementById('slot-k-2'),
+            document.getElementById('slot-k-3')
+        ];
+        const outputs = [
+            document.getElementById('slot-p-0'),
+            document.getElementById('slot-p-1'),
+            document.getElementById('slot-p-2'),
+            document.getElementById('slot-p-3')
+        ];
+
+        window.addEventListener('DOMContentLoaded', () => {
+            const savedKey = localStorage.getItem('page_ocr_api_key');
+            if (savedKey) document.getElementById('api-key').value = savedKey;
+
+            initCameraStream();
+
+            document.getElementById('shutter-trigger').addEventListener('click', captureAndScan);
+            document.getElementById('btn-reset-all').addEventListener('click', resetAll);
+            document.getElementById('api-key').addEventListener('change', () => {
+                localStorage.setItem('page_ocr_api_key', document.getElementById('api-key').value);
+            });
+
+            // 手入力イベントの監視
+            inputs.forEach((input, idx) => {
+                input.addEventListener('input', () => {
+                    const val = input.value.trim();
+                    if (KANJI_DICTIONARY[val]) {
+                        outputs[idx].innerText = KANJI_DICTIONARY[val];
+                    } else {
+                        outputs[idx].innerText = "---";
+                    }
+                });
+            });
+        });
+
+        async function initCameraStream() {
+            const video = document.getElementById('camera-stream');
+            try {
+                const constraints = {
+                    video: { facingMode: { exact: "environment" }, width: { ideal: 1280 }, height: { ideal: 720 } },
+                    audio: false
+                };
+                streamObject = await navigator.mediaDevices.getUserMedia(constraints)
+                    .catch(() => navigator.mediaDevices.getUserMedia({ video: true, audio: false }));
+                video.srcObject = streamObject;
+            } catch (err) { alert("カメラ起動失敗: " + err.message); }
+        }
+
+        async function captureAndScan() {
+            const video = document.getElementById('camera-stream');
+            const canvas = document.getElementById('capture-canvas');
+            const apiKey = document.getElementById('api-key').value.trim();
+
+            if (!apiKey) return alert("先にVISION API PASSを入力してください。");
+            if (!video.srcObject) return alert("カメラが準備できていません。");
+
+            const indicator = document.getElementById('scan-indicator');
+            indicator.style.display = 'flex';
+
+            canvas.width = 1280;
+            canvas.height = 720;
+            canvas.getContext('2d').drawImage(video, 0, 0, canvas.width, canvas.height);
+            const base64Image = canvas.toDataURL('image/jpeg', 0.85).replace(/^data:image\/jpeg;base64,/, "");
+
+            try {
+                const response = await fetch(`https://vision.googleapis.com/v1/images:annotate?key=${apiKey}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ requests: [{ image: { content: base64Image }, features: [{ type: "TEXT_DETECTION" }] }] })
+                });
+                const data = await response.json(); FullText
+                const fullText = data.responses[0]?.textAnnotations?.[0]?.description || "";
+                
+                processDetectedText(fullText);
+            } catch (e) { alert("スキャン通信エラーが発生しました"); }
+            indicator.style.display = 'none';
+        }
+
+        function processDetectedText(text) {
+            const regex = /[「『](.*?)[」』]/g;
+            let matches = [];
+            let match;
+            while ((match = regex.exec(text)) !== null) {
+                if (match[1]) {
+                    for (let char of match[1]) {
+                        if (char.trim()) matches.push(char);
+                    }
+                }
+            }
+
+            if (matches.length === 0) {
+                for (let char of text) {
+                    if (KANJI_DICTIONARY[char]) {
+                        matches.push(char);
+                    }
+                }
+            }
+
+            inputs.forEach(input => input.value = "");
+            outputs.forEach(out => out.innerText = "---");
+
+            let foundCount = 0;
+            let missedKanji = "";
+
+            matches.forEach(char => {
+                if (foundCount >= 4) return;
+                if (KANJI_DICTIONARY[char]) {
+                    inputs[foundCount].value = char;
+                    outputs[foundCount].innerText = KANJI_DICTIONARY[char];
+                    foundCount++;
+                } else {
+                    missedKanji += char;
+                }
+            });
+
+            if (missedKanji || text) {
+                generateSuggestions(missedKanji || text);
+            }
+        }
+
+        function generateSuggestions(targetText) {
+            const suggestArea = document.getElementById('suggest-area');
+            suggestArea.innerHTML = "";
+
+            const dictionaryKanjiList = Object.keys(KANJI_DICTIONARY);
+            let candidates = [];
+
+            dictionaryKanjiList.forEach(dictK => {
+                for (let rawChar of targetText) {
+                    let score = 0;
+                    const codeDiff = Math.abs(dictK.charCodeAt(0) - rawChar.charCodeAt(0));
+                    if (codeDiff === 0) continue;
+                    
+                    if (codeDiff < 100) score += 40;
+                    else if (codeDiff < 500) score += 20;
+                    else if (codeDiff < 2000) score += 10;
+
+                    const heavyRadicals = ["鬨", "謦", "銜", "鑿", "鸞", "麾", "黐", "黶", "鏖", "⏳", "飆"];
+                    if (heavyRadicals.includes(dictK) && heavyRadicals.some(r => targetText.includes(r) || Math.abs(r.charCodeAt(0) - rawChar.charCodeAt(0)) < 3000 )) {
+                        score += 30;
+                    }
+
+                    if (score > 0) {
+                        candidates.push({ kanji: dictK, score: score + (1000 / (codeDiff + 1)) });
+                    }
+                }
+            });
+
+            candidates.sort((a, b) => b.score - a.score);
+            let uniqueCandidates = [];
+            let seen = new Set();
+            for (let c of candidates) {
+                if (!seen.has(c.kanji)) {
+                    seen.add(c.kanji);
+                    uniqueCandidates.push(c.kanji);
+                }
+                if (uniqueCandidates.length >= 4) break;
+            }
+
+            if (uniqueCandidates.length === 0) {
+                uniqueCandidates = ["鬨", "鏖", "鑿", "銜"];
+            }
+
+            uniqueCandidates.forEach(kanji => {
+                const btn = document.createElement('button');
+                btn.className = 'btn-suggest';
+                btn.innerText = `${kanji} (${KANJI_DICTIONARY[kanji]}p)`;
+                btn.onclick = () => {
+                    let targetIdx = 0;
+                    for (let i = 0; i < 4; i++) {
+                        if (!inputs[i].value) { targetIdx = i; break; }
+                    }
+                    inputs[targetIdx].value = kanji;
+                    outputs[targetIdx].innerText = KANJI_DICTIONARY[kanji];
+                };
+                suggestArea.appendChild(btn);
+            });
+        }
+
+        window.calculate = function(type) {
+            let pages = [];
+            for (let i = 0; i < 4; i++) {
+                const pVal = parseInt(outputs[i].innerText);
+                if (!isNaN(pVal)) pages.push(pVal);
+            }
+
+            if (pages.length === 0) {
+                document.getElementById('calc-result').innerText = "ERR";
+                return;
+            }
+
+            let result = 0;
+            if (type === 'add') {
+                result = pages.reduce((a, b) => a + b, 0);
+            } else if (type === 'sub') {
+                result = pages.reduce((a, b) => a - b);
+            } else if (type === 'rem') {
+                if (pages.length < 2) return alert("余り計算には2つ以上の数字が必要です");
+                result = pages[0] % pages[1];
+            } else if (type === 'maxsub') {
+                const max = Math.max(...pages);
+                const min = Math.min(...pages);
+                result = max - min;
+            }
+
+            document.getElementById('calc-result').innerText = result;
+        }
+
+        function resetAll() {
+            inputs.forEach(input => input.value = "");
+            outputs.forEach(out => out.innerText = "---");
+            document.getElementById('calc-result').innerText = "000";
+            document.getElementById('suggest-area').innerHTML = '<span style="color:rgba(181,124,255,0.3); font-size:0.75rem;">スロットをクリアしました</span>';
+        }
+    </script>
+</body>
+</html>
