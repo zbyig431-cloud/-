@@ -115,7 +115,6 @@
             cursor: pointer;
             transition: all 0.2s ease;
         }
-        /* 選択されたスロットのスタイル */
         .slot-box.selected {
             border: 2px solid #ff007f;
             box-shadow: 0 0 10px rgba(255, 0, 127, 0.6);
@@ -204,18 +203,25 @@
             cursor: pointer;
         }
         .btn-calc:active { background: #ff007f; color: #000; box-shadow: 0 0 10px #ff007f; }
-        .btn-clear {
+        
+        /* リセットボタンエリア */
+        .reset-container {
             grid-column: span 4;
-            background: #441111;
-            border: 1px solid #ff3333;
-            color: #ff8888;
-            padding: 8px;
-            font-size: 0.8rem;
-            border-radius: 4px;
-            cursor: pointer;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
             margin-top: 4px;
         }
-        .btn-clear:active { background: #ff3333; color: #fff; }
+        .btn-reset-half {
+            background: #3a1525;
+            border: 1px solid #ff3388;
+            color: #ff99cc;
+            padding: 8px;
+            font-size: 0.75rem;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        .btn-reset-half:active { background: #ff3388; color: #fff; }
 
         /* 余り計算用の数字セレクターポップアップ */
         .mod-selector-overlay {
@@ -290,7 +296,7 @@
         <video id="camera-stream" autoplay playsinline muted></video>
         <div class="loading-dimmer" id="scan-indicator"></div>
     </div>
-    <button class="btn-shutter" id="shutter-trigger">スキャン</button>
+    <button class="btn-shutter" id="shutter-trigger">スキャン実行</button>
 
     <!-- 検索結果スロット -->
     <div class="section-title">【02】抽出漢字とページ数 (タップして計算対象を選択)</div>
@@ -329,7 +335,7 @@
     <div class="section-title">【03】計算コントロールセンター</div>
     <div class="calc-panel">
         
-        <!-- 余り計算用数字パネル選択画面（通常は隠れている） -->
+        <!-- 余り計算用数字パネル選択画面 -->
         <div class="mod-selector-overlay" id="mod-overlay">
             <div class="mod-selector-title">何で割りますか？ (1〜9)</div>
             <div class="mod-grid">
@@ -353,9 +359,14 @@
         <div class="calc-buttons">
             <button class="btn-calc" onclick="calculate('add')">➕ 足す</button>
             <button class="btn-calc" onclick="calculate('sub')">➖ 引く</button>
-            <button class="btn-calc" onclick="calculate('rem')">✖ 余り</button>
-            <button class="btn-calc" onclick="calculate('maxsub')">🔺大 - 小</button>
-            <button class="btn-clear" id="btn-reset-all">スロット＆計算をリセット</button>
+            <button class="btn-calc" onclick="calculate('rem')">【余り】</button>
+            <button class="btn-calc" onclick="calculate('sort_digits')">🔁</button>
+            
+            <!-- 分割されたリセットボタン -->
+            <div class="reset-container">
+                <button class="btn-reset-half" id="btn-clear-slots">スロットのみクリア</button>
+                <button class="btn-reset-half" id="btn-clear-result">計算結果のみクリア</button>
+            </div>
         </div>
     </div>
 
@@ -395,7 +406,7 @@
         };
 
         let streamObject = null;
-        let selectedSlots = new Set(); // 選択されたスロットのインデックスを保持
+        let selectedSlots = new Set();
         
         const inputs = [
             document.getElementById('slot-k-0'),
@@ -423,12 +434,15 @@
             initCameraStream();
 
             document.getElementById('shutter-trigger').addEventListener('click', captureAndScan);
-            document.getElementById('btn-reset-all').addEventListener('click', resetAll);
+            
+            // 分割したリセットイベントの登録
+            document.getElementById('btn-clear-slots').addEventListener('click', clearSlotsOnly);
+            document.getElementById('btn-clear-result').addEventListener('click', clearResultOnly);
+
             document.getElementById('api-key').addEventListener('change', () => {
                 localStorage.setItem('page_ocr_api_key', document.getElementById('api-key').value);
             });
 
-            // 手入力イベントの監視
             inputs.forEach((input, idx) => {
                 input.addEventListener('input', () => {
                     const val = input.value.trim();
@@ -454,7 +468,6 @@
             } catch (err) { alert("カメラ起動失敗: " + err.message); }
         }
 
-        // スロットタップ時の選択切り替え
         window.toggleSlotSelect = function(idx) {
             if (selectedSlots.has(idx)) {
                 selectedSlots.delete(idx);
@@ -494,7 +507,6 @@
             } catch (e) { 
                 alert("スキャン通信エラーが発生しました"); 
             } finally {
-                // エラーが起きても確実にインジケーターを消し、フリーズを防ぐ
                 indicator.style.display = 'none';
             }
         }
@@ -521,7 +533,6 @@
 
             inputs.forEach(input => input.value = "");
             outputs.forEach(out => out.innerText = "---");
-            // スロット選択状態もリセット
             selectedSlots.clear();
             containers.forEach(c => c.classList.remove('selected'));
 
@@ -604,15 +615,40 @@
         }
 
         window.calculate = function(type) {
-            // 選択されたスロットからページ数を抽出
+            // 新機能：大きい順に並び替えて下一桁を結合（選択に関わらず、数字が入っている全てが対象）
+            if (type === 'sort_digits') {
+                let allPages = [];
+                for (let i = 0; i < 4; i++) {
+                    const pVal = parseInt(outputs[i].innerText);
+                    if (!isNaN(pVal)) allPages.push(pVal);
+                }
+                
+                if (allPages.length === 0) {
+                    document.getElementById('calc-result').innerText = "ERR";
+                    return;
+                }
+
+                // 大きい順（降順）にソート
+                allPages.sort((a, b) => b - a);
+
+                // 各数字の下一桁を取り出して文字として連結
+                let combinedResult = "";
+                allPages.forEach(p => {
+                    combinedResult += (p % 10).toString();
+                });
+
+                document.getElementById('calc-result').innerText = combinedResult;
+                return;
+            }
+
+            // 選択されたスロットからページ数を抽出（通常の計算用）
             let pages = [];
             selectedSlots.forEach(idx => {
                 const pVal = parseInt(outputs[idx].innerText);
                 if (!isNaN(pVal)) pages.push(pVal);
             });
 
-            // もし何も選択されていなければ、すべての有効なスロットを対象にする（救済措置）
-            if (pages.length === 0) {
+            if (pages.length === 0 && (type === 'add' || type === 'sub')) {
                 for (let i = 0; i < 4; i++) {
                     const pVal = parseInt(outputs[i].innerText);
                     if (!isNaN(pVal)) pages.push(pVal);
@@ -627,35 +663,24 @@
             let result = 0;
 
             if (type === 'add') {
-                // タップされたものをすべて足し算
                 result = pages.reduce((a, b) => a + b, 0);
-            } else if (type === 'sub' || type === 'maxsub') {
-                // 引き算、および大-小の処理。
-                // 選択されたのが2つの場合、自動的に大きい方から小さい方を引く
+            } else if (type === 'sub') {
                 if (pages.length === 2) {
                     result = Math.max(...pages) - Math.min(...pages);
                 } else {
-                    // それ以外は従来通り順番に引くか、最大-最小
-                    if (type === 'maxsub') {
-                        result = Math.max(...pages) - Math.min(...pages);
-                    } else {
-                        result = pages.reduce((a, b) => a - b);
-                    }
+                    result = pages.reduce((a, b) => a - b);
                 }
             } else if (type === 'rem') {
-                // 余り計算の新しい仕様：スロットが1つだけ選択されているか確認
                 if (pages.length !== 1) {
                     return alert("余り計算を行うには、スロットを1つだけ選択（タップしてピンク枠に）してください。");
                 }
-                // 数字選択パネルを出す
                 document.getElementById('mod-overlay').style.display = 'flex';
-                return; // ここで一旦終了（ボタンが押されたら続きを実行）
+                return;
             }
 
             document.getElementById('calc-result').innerText = result;
         }
 
-        // 余り計算の数字パネルで数字が選ばれた時
         window.execModCalculated = function(divisor) {
             let basePage = 0;
             selectedSlots.forEach(idx => {
@@ -663,7 +688,6 @@
                 if (!isNaN(pVal)) basePage = pVal;
             });
             
-            // 計算実行
             const result = basePage % divisor;
             document.getElementById('calc-result').innerText = result;
             closeModOverlay();
@@ -673,13 +697,18 @@
             document.getElementById('mod-overlay').style.display = 'none';
         }
 
-        function resetAll() {
+        // スロットのみクリア
+        function clearSlotsOnly() {
             inputs.forEach(input => input.value = "");
             outputs.forEach(out => out.innerText = "---");
             selectedSlots.clear();
             containers.forEach(c => c.classList.remove('selected'));
-            document.getElementById('calc-result').innerText = "000";
             document.getElementById('suggest-area').innerHTML = '<span style="color:rgba(181,124,255,0.3); font-size:0.75rem;">スロットをクリアしました</span>';
+        }
+
+        // 計算結果のみクリア
+        function clearResultOnly() {
+            document.getElementById('calc-result').innerText = "000";
             closeModOverlay();
         }
     </script>
