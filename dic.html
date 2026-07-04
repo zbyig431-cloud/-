@@ -299,7 +299,7 @@
     <button class="btn-shutter" id="shutter-trigger">スキャン実行</button>
 
     <!-- 検索結果スロット -->
-    <div class="section-title">【02】抽出漢字とページ数 (タップして計算対象を選択)</div>
+    <div class="section-title">【02】抽出漢字とページ数 (タップして計算対象を選択/ホールド)</div>
     <div class="slots-container">
         <div class="slot-box" id="slot-container-0" onclick="toggleSlotSelect(0)">
             <span class="label">SLOT 1</span>
@@ -435,7 +435,6 @@
 
             document.getElementById('shutter-trigger').addEventListener('click', captureAndScan);
             
-            // 分割したリセットイベントの登録
             document.getElementById('btn-clear-slots').addEventListener('click', clearSlotsOnly);
             document.getElementById('btn-clear-result').addEventListener('click', clearResultOnly);
 
@@ -476,6 +475,12 @@
                 selectedSlots.add(idx);
                 containers[idx].classList.add('selected');
             }
+        }
+
+        // 選択状態（ホールド）をリセットする共通関数
+        function clearAllSelections() {
+            selectedSlots.clear();
+            containers.forEach(c => c.classList.remove('selected'));
         }
 
         async function captureAndScan() {
@@ -531,20 +536,44 @@
                 }
             }
 
-            inputs.forEach(input => input.value = "");
-            outputs.forEach(out => out.innerText = "---");
-            selectedSlots.clear();
-            containers.forEach(c => c.classList.remove('selected'));
+            // 新仕様：選択（ホールド）されていないスロットだけを初期化
+            for (let i = 0; i < 4; i++) {
+                if (!selectedSlots.has(i)) {
+                    inputs[i].value = "";
+                    outputs[i].innerText = "---";
+                }
+            }
 
-            let foundCount = 0;
             let missedKanji = "";
 
             matches.forEach(char => {
-                if (foundCount >= 4) return;
-                if (KANJI_DICTIONARY[char]) {
-                    inputs[foundCount].value = char;
-                    outputs[foundCount].innerText = KANJI_DICTIONARY[char];
-                    foundCount++;
+                if (!KANJI_DICTIONARY[char]) {
+                    missedKanji += char;
+                    return;
+                }
+
+                // 重複チェック（ホールド中のものも含めて、すでに同じ漢字があればスキップ）
+                let isDuplicate = false;
+                for (let i = 0; i < 4; i++) {
+                    if (inputs[i].value === char) {
+                        isDuplicate = true;
+                        break;
+                    }
+                }
+                if (isDuplicate) return;
+
+                // ホールドされておらず、かつ中身が空の最初のスロットを探す
+                let targetIdx = -1;
+                for (let i = 0; i < 4; i++) {
+                    if (!selectedSlots.has(i) && !inputs[i].value) {
+                        targetIdx = i;
+                        break;
+                    }
+                }
+
+                if (targetIdx !== -1) {
+                    inputs[targetIdx].value = char;
+                    outputs[targetIdx].innerText = KANJI_DICTIONARY[char];
                 } else {
                     missedKanji += char;
                 }
@@ -615,7 +644,7 @@
         }
 
         window.calculate = function(type) {
-            // 新機能：大きい順に並び替えて下一桁を結合（選択に関わらず、数字が入っている全てが対象）
+            // 新機能：大きい順に並び替えて下一桁を結合
             if (type === 'sort_digits') {
                 let allPages = [];
                 for (let i = 0; i < 4; i++) {
@@ -628,20 +657,20 @@
                     return;
                 }
 
-                // 大きい順（降順）にソート
                 allPages.sort((a, b) => b - a);
 
-                // 各数字の下一桁を取り出して文字として連結
                 let combinedResult = "";
                 allPages.forEach(p => {
                     combinedResult += (p % 10).toString();
                 });
 
                 document.getElementById('calc-result').innerText = combinedResult;
+                
+                // 計算完了に付きホールド解除
+                clearAllSelections();
                 return;
             }
 
-            // 選択されたスロットからページ数を抽出（通常の計算用）
             let pages = [];
             selectedSlots.forEach(idx => {
                 const pVal = parseInt(outputs[idx].innerText);
@@ -675,10 +704,13 @@
                     return alert("余り計算を行うには、スロットを1つだけ選択（タップしてピンク枠に）してください。");
                 }
                 document.getElementById('mod-overlay').style.display = 'flex';
-                return;
+                return; // 余りはモーダルで決定した時に解除する
             }
 
             document.getElementById('calc-result').innerText = result;
+            
+            // 計算完了に付きホールド解除
+            clearAllSelections();
         }
 
         window.execModCalculated = function(divisor) {
@@ -691,22 +723,22 @@
             const result = basePage % divisor;
             document.getElementById('calc-result').innerText = result;
             closeModOverlay();
+            
+            // 計算完了に付きホールド解除
+            clearAllSelections();
         }
 
         window.closeModOverlay = function() {
             document.getElementById('mod-overlay').style.display = 'none';
         }
 
-        // スロットのみクリア
         function clearSlotsOnly() {
             inputs.forEach(input => input.value = "");
             outputs.forEach(out => out.innerText = "---");
-            selectedSlots.clear();
-            containers.forEach(c => c.classList.remove('selected'));
+            clearAllSelections();
             document.getElementById('suggest-area').innerHTML = '<span style="color:rgba(181,124,255,0.3); font-size:0.75rem;">スロットをクリアしました</span>';
         }
 
-        // 計算結果のみクリア
         function clearResultOnly() {
             document.getElementById('calc-result').innerText = "000";
             closeModOverlay();
