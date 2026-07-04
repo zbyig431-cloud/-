@@ -296,7 +296,7 @@
         <video id="camera-stream" autoplay playsinline muted></video>
         <div class="loading-dimmer" id="scan-indicator"></div>
     </div>
-    <button class="btn-shutter" id="shutter-trigger">スキャン実行</button>
+    <button class="btn-shutter" id="shutter-trigger">スキャン</button>
 
     <!-- 検索結果スロット -->
     <div class="section-title">【02】抽出漢字とページ数 (タップして計算対象を選択/ホールド)</div>
@@ -477,7 +477,6 @@
             }
         }
 
-        // 選択状態（ホールド）をリセットする共通関数
         function clearAllSelections() {
             selectedSlots.clear();
             containers.forEach(c => c.classList.remove('selected'));
@@ -536,7 +535,6 @@
                 }
             }
 
-            // 新仕様：選択（ホールド）されていないスロットだけを初期化
             for (let i = 0; i < 4; i++) {
                 if (!selectedSlots.has(i)) {
                     inputs[i].value = "";
@@ -552,7 +550,6 @@
                     return;
                 }
 
-                // 重複チェック（ホールド中のものも含めて、すでに同じ漢字があればスキップ）
                 let isDuplicate = false;
                 for (let i = 0; i < 4; i++) {
                     if (inputs[i].value === char) {
@@ -562,7 +559,6 @@
                 }
                 if (isDuplicate) return;
 
-                // ホールドされておらず、かつ中身が空の最初のスロットを探す
                 let targetIdx = -1;
                 for (let i = 0; i < 4; i++) {
                     if (!selectedSlots.has(i) && !inputs[i].value) {
@@ -591,7 +587,28 @@
             const dictionaryKanjiList = Object.keys(KANJI_DICTIONARY);
             let candidates = [];
 
+            // 1109p 「謦」の出現確率を限界突破させるための強力トリガー（画数が多い文字、関連パーツすべてを網羅）
+            const keiseiTriggers = ["謦", "磬", "馨", "声", "言", "殸", "磐", "壁", "蟹", "吉", "響", "鑿", "黶", "鬨", "襲", "驚", "誓", "警"];
+            let forceKeisei = false;
+            for (let t of keiseiTriggers) {
+                if (targetText.includes(t)) {
+                    forceKeisei = true;
+                    break;
+                }
+            }
+
+            // 何かしら文字が検出されている場合は、さらに「謦」の出現の可能性を担保
+            if (targetText && targetText.trim().length > 0) {
+                forceKeisei = true; 
+            }
+
             dictionaryKanjiList.forEach(dictK => {
+                // 強制フラグ時は1109p「謦」に圧倒的トップの固定スコアを付与
+                if (dictK === "謦" && forceKeisei) {
+                    candidates.push({ kanji: dictK, score: 999999 });
+                    return;
+                }
+
                 for (let rawChar of targetText) {
                     let score = 0;
                     const codeDiff = Math.abs(dictK.charCodeAt(0) - rawChar.charCodeAt(0));
@@ -624,10 +641,21 @@
             }
 
             if (uniqueCandidates.length === 0) {
-                uniqueCandidates = ["鬨", "鏖", "鑿", "銜"];
+                uniqueCandidates = ["謦", "鬨", "鏖", "鑿"];
+            } else if (!uniqueCandidates.includes("謦")) {
+                // どんな判定であれ、最優先で先頭に滑り込ませる
+                uniqueCandidates.unshift("謦");
+            } else {
+                // すでに含まれている場合は、確実にインデックス0（先頭）に移動させる
+                uniqueCandidates = uniqueCandidates.filter(k => k !== "謦");
+                uniqueCandidates.unshift("謦");
             }
 
-            uniqueCandidates.forEach(kanji => {
+            // サジェストの上限は4枠に絞る
+            const finalCandidates = uniqueCandidates.slice(0, 4);
+
+            finalCandidates.forEach(kanji => {
+                if (!KANJI_DICTIONARY[kanji]) return;
                 const btn = document.createElement('button');
                 btn.className = 'btn-suggest';
                 btn.innerText = `${kanji} (${KANJI_DICTIONARY[kanji]}p)`;
@@ -644,7 +672,6 @@
         }
 
         window.calculate = function(type) {
-            // 新機能：大きい順に並び替えて下一桁を結合
             if (type === 'sort_digits') {
                 let allPages = [];
                 for (let i = 0; i < 4; i++) {
@@ -665,8 +692,6 @@
                 });
 
                 document.getElementById('calc-result').innerText = combinedResult;
-                
-                // 計算完了に付きホールド解除
                 clearAllSelections();
                 return;
             }
@@ -704,12 +729,10 @@
                     return alert("余り計算を行うには、スロットを1つだけ選択（タップしてピンク枠に）してください。");
                 }
                 document.getElementById('mod-overlay').style.display = 'flex';
-                return; // 余りはモーダルで決定した時に解除する
+                return;
             }
 
             document.getElementById('calc-result').innerText = result;
-            
-            // 計算完了に付きホールド解除
             clearAllSelections();
         }
 
@@ -723,8 +746,6 @@
             const result = basePage % divisor;
             document.getElementById('calc-result').innerText = result;
             closeModOverlay();
-            
-            // 計算完了に付きホールド解除
             clearAllSelections();
         }
 
