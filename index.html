@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>絶望要塞IG かくれんぼツール (ROOM同期版)</title>
+    <title>絶望要塞IG かくれんぼツール (メンバー確認版)</title>
     <style>
         * { box-sizing: border-box; font-family: 'Courier New', Courier, monospace, sans-serif; }
         body { 
@@ -21,12 +21,36 @@
         h1 {
             font-size: 1.4rem;
             text-align: center;
-            margin: 0 0 15px 0;
+            margin: 0 0 10px 0;
             color: #8cc8ff;
             text-shadow: 0 0 8px rgba(140, 200, 255, 0.6);
             letter-spacing: 2px;
             border-bottom: 1px solid rgba(140, 200, 255, 0.3);
             padding-bottom: 5px;
+        }
+
+        /* メンバー確認用のスタイル */
+        .member-status-bar {
+            background: rgba(0, 255, 100, 0.1);
+            border: 1px solid rgba(0, 255, 100, 0.3);
+            padding: 6px 10px;
+            border-radius: 4px;
+            font-size: 0.8rem;
+            color: #00ff66;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            text-shadow: 0 0 4px rgba(0, 255, 100, 0.4);
+        }
+        .online-dot {
+            width: 8px;
+            height: 8px;
+            background-color: #00ff66;
+            border-radius: 50%;
+            display: inline-block;
+            box-shadow: 0 0 6px #00ff66;
+            animation: blink 1s infinite alternate;
         }
 
         .section-title {
@@ -122,24 +146,25 @@
         .log-item.processing .status-badge { color: #ffcc00; }
         .log-item.error .status-badge { color: #ff3333; }
 
+        /* 設定ボックスを3カラムに変更 */
         .config-box {
             background: rgba(140, 200, 255, 0.05);
             border: 1px solid rgba(140, 200, 255, 0.2);
             padding: 10px;
             border-radius: 4px;
-            margin-bottom: 15px;
+            margin-bottom: 12px;
             display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 10px;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 8px;
         }
         .config-box div { display: flex; flex-direction: column; gap: 4px; }
-        .config-box label { font-size: 0.75rem; color: #8cc8ff; }
+        .config-box label { font-size: 0.7rem; color: #8cc8ff; }
         .config-box input {
             width: 100%;
             background: #0b1520;
             border: 1px solid #8cc8ff;
             color: #00ff66;
-            padding: 8px;
+            padding: 6px;
             font-size: 0.8rem;
             border-radius: 2px;
         }
@@ -295,7 +320,6 @@
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
         import { getFirestore, doc, setDoc, onSnapshot, updateDoc, deleteDoc, collection, getDocs } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
-        // あなたの取得したFirebaseの鍵をセットしました！
         const firebaseConfig = {
             apiKey: "AIzaSyBkBDexKsmmzKc3HAd8PMdV56-Lxxz8uyk",
             authDomain: "ig-tool-97279.firebaseapp.com",
@@ -311,6 +335,7 @@
         let allPhotosData = []; 
         let streamObject = null;
         let isSyncingFromCloud = false; 
+        const myDeviceId = "dev-" + Math.random().toString(36).substr(2, 9); // 端末識別用
 
         const searchBoxes = [
             document.getElementById('box-0'),
@@ -333,7 +358,12 @@
             
             searchBoxes.forEach(box => box.addEventListener('input', saveCurrentSlotsToCloud));
             document.getElementById('room-id').addEventListener('change', () => { saveConfig(); setupRoomSync(); });
+            document.getElementById('user-name').addEventListener('input', () => { saveConfig(); reportPresence(); });
             document.getElementById('api-key').addEventListener('change', saveConfig);
+
+            // ページを閉じる・離れるときに名前リストから消去
+            window.addEventListener('beforeunload', removePresence);
+            window.addEventListener('pagehide', removePresence);
         });
 
         let unsubscribeRoom = null;
@@ -341,11 +371,27 @@
             const roomId = document.getElementById('room-id').value.trim() || 'default_room';
             if (unsubscribeRoom) unsubscribeRoom();
 
+            // 自分の名前を新ルームに報告
+            reportPresence();
+
             unsubscribeRoom = onSnapshot(doc(db, "rooms", roomId), (docSnap) => {
                 if (!docSnap.exists()) return;
                 const data = docSnap.data();
 
                 isSyncingFromCloud = true;
+
+                // メンバーリストの更新表示
+                if (data.members) {
+                    const onlineNames = Object.values(data.members).filter(name => name && name.trim() !== "");
+                    const count = onlineNames.length;
+                    if (count > 0) {
+                        document.getElementById('member-list-text').innerText = `ONLINE: ${onlineNames.join(', ')} (${count}人)`;
+                    } else {
+                        document.getElementById('member-list-text').innerText = `ONLINE: 未入力の端末のみ (${Object.keys(data.members).length}台)`;
+                    }
+                } else {
+                    document.getElementById('member-list-text').innerText = `ONLINE: 待機中...`;
+                }
 
                 if (data.slots) {
                     data.slots.forEach((val, idx) => {
@@ -377,6 +423,28 @@
                 executeSearch();
                 isSyncingFromCloud = false;
             });
+        }
+
+        // 自分の名前情報をクラウドに送信する
+        async function reportPresence() {
+            const roomId = document.getElementById('room-id').value.trim() || 'default_room';
+            const name = document.getElementById('user-name').value.trim() || `ゲスト-${myDeviceId.substr(4,4)}`;
+            
+            const updateObj = {};
+            updateObj[`members.${myDeviceId}`] = name;
+            try {
+                await setDoc(doc(db, "rooms", roomId), updateObj, { merge: true });
+            } catch (e) { console.error("Presence Error:", e); }
+        }
+
+        // 退室時に名前を消す
+        async function removePresence() {
+            const roomId = document.getElementById('room-id').value.trim() || 'default_room';
+            const updateObj = {};
+            updateObj[`members.${myDeviceId}`] = null; // フィールド消去
+            try {
+                await setDoc(doc(db, "rooms", roomId), updateObj, { merge: true });
+            } catch (e) {}
         }
 
         async function saveCurrentSlotsToCloud() {
@@ -646,18 +714,22 @@
                 clearSlotResults();
                 initSummaryAreaPlaceholder();
                 alert("ルーム内のデータをリセットしました。");
+                reportPresence(); // リセット後に自分を再登録
             } catch(e) { alert("リセットエラー"); }
         }
 
         function saveConfig() {
             localStorage.setItem('cyber_ocr_api_key', document.getElementById('api-key').value);
             localStorage.setItem('cyber_room_id', document.getElementById('room-id').value);
+            localStorage.setItem('cyber_user_name', document.getElementById('user-name').value);
         }
         function loadConfig() {
             const savedKey = localStorage.getItem('cyber_ocr_api_key');
             if (savedKey) document.getElementById('api-key').value = savedKey;
             const savedRoom = localStorage.getItem('cyber_room_id');
             document.getElementById('room-id').value = savedRoom || "team1";
+            const savedName = localStorage.getItem('cyber_user_name');
+            document.getElementById('user-name').value = savedName || "";
         }
     </script>
 </head>
@@ -665,13 +737,24 @@
 
     <h1>絶望要塞IG かくれんぼツール</h1>
 
+    <!-- リアルタイムメンバー確認バー -->
+    <div class="member-status-bar">
+        <span class="online-dot"></span>
+        <span id="member-list-text">ONLINE: 待機中...</span>
+    </div>
+
+    <!-- 設定ボックス (3カラム化) -->
     <div class="config-box">
         <div>
-            <label>ROOM ID (2人で統一):</label>
+            <label>ROOM ID:</label>
             <input type="text" id="room-id" placeholder="team1">
         </div>
         <div>
-            <label>PASS (Vision API):</label>
+            <label>YOUR NAME:</label>
+            <input type="text" id="user-name" placeholder="プレイヤー名">
+        </div>
+        <div>
+            <label>PASS:</label>
             <input type="password" id="api-key" placeholder="AIzaSy...">
         </div>
     </div>
