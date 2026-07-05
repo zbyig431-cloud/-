@@ -106,13 +106,15 @@
             background: #150f24;
             border: 1px solid rgba(181, 124, 255, 0.4);
             border-radius: 4px;
-            padding: 6px;
+            padding: 8px 6px;
             text-align: center;
             display: flex;
             flex-direction: column;
             gap: 4px;
             position: relative;
             cursor: pointer;
+            user-select: none;
+            -webkit-user-select: none;
             transition: all 0.2s ease;
         }
         .slot-box.selected {
@@ -122,18 +124,16 @@
         }
         .slot-box .label { font-size: 0.6rem; color: #b57cff; pointer-events: none; }
         .slot-box.selected .label { color: #ff007f; }
-        .slot-box .kanji-input {
-            width: 100%;
-            background: transparent;
-            border: none;
-            border-bottom: 1px dashed rgba(181, 124, 255, 0.5);
+        
+        /* 完全に選択専用テキストに変更 */
+        .slot-box .kanji-display {
+            font-size: 1.3rem;
             color: #ffffff;
-            font-size: 1.1rem;
-            text-align: center;
             font-weight: bold;
-            padding: 2px 0;
+            min-height: 1.5rem;
+            line-height: 1.5rem;
+            pointer-events: none;
         }
-        .slot-box .kanji-input:focus { outline: none; border-bottom-color: #00ff64; }
         .slot-box .page-output {
             font-size: 1rem;
             font-weight: bold;
@@ -164,6 +164,42 @@
             cursor: pointer;
         }
         .btn-suggest:active { background: #00ff64; color: #000; }
+
+        /* 新設：手入力検索コントロール */
+        .manual-search-container {
+            background: rgba(26, 11, 46, 0.4);
+            border: 1px solid rgba(181, 124, 255, 0.3);
+            padding: 8px 12px;
+            border-radius: 4px;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .manual-search-input {
+            flex: 1;
+            background: #140d21;
+            border: 1px solid #b57cff;
+            color: #ffffff;
+            padding: 8px;
+            font-size: 1rem;
+            border-radius: 3px;
+            text-align: center;
+            font-weight: bold;
+        }
+        .manual-search-input:focus { outline: none; border-color: #00ff66; box-shadow: 0 0 5px rgba(0,255,102,0.5); }
+        .btn-manual-submit {
+            background: #4a1c6d;
+            border: 1px solid #b57cff;
+            color: #ebd6ff;
+            padding: 8px 16px;
+            font-size: 0.85rem;
+            font-weight: bold;
+            border-radius: 3px;
+            cursor: pointer;
+            white-space: nowrap;
+        }
+        .btn-manual-submit:active { background: #00ff64; color: #000; border-color: #ffffff; }
 
         /* 計算コントロールセンター */
         .calc-panel {
@@ -286,7 +322,7 @@
 
     <!-- 鍵（PASS）設定 -->
     <div class="config-box">
-        <label>VISION API PASS (PASSを入れてから使用してください):</label>
+        <label>VISION API PASS:</label>
         <input type="password" id="api-key" placeholder="AIzaSy...">
     </div>
 
@@ -299,26 +335,26 @@
     <button class="btn-shutter" id="shutter-trigger">スキャン</button>
 
     <!-- 検索結果スロット -->
-    <div class="section-title">【02】抽出漢字とページ数 (タップして計算対象を選択/ホールド)</div>
+    <div class="section-title">【02】抽出漢字とページ数 (ワンタップでホールド/解除)</div>
     <div class="slots-container">
         <div class="slot-box" id="slot-container-0" onclick="toggleSlotSelect(0)">
             <span class="label">SLOT 1</span>
-            <input type="text" class="kanji-input" id="slot-k-0" maxlength="1" placeholder="-" onclick="event.stopPropagation();">
+            <div class="kanji-display" id="slot-k-0">-</div>
             <span class="page-output" id="slot-p-0">---</span>
         </div>
         <div class="slot-box" id="slot-container-1" onclick="toggleSlotSelect(1)">
             <span class="label">SLOT 2</span>
-            <input type="text" class="kanji-input" id="slot-k-1" maxlength="1" placeholder="-" onclick="event.stopPropagation();">
+            <div class="kanji-display" id="slot-k-1">-</div>
             <span class="page-output" id="slot-p-1">---</span>
         </div>
         <div class="slot-box" id="slot-container-2" onclick="toggleSlotSelect(2)">
             <span class="label">SLOT 3</span>
-            <input type="text" class="kanji-input" id="slot-k-2" maxlength="1" placeholder="-" onclick="event.stopPropagation();">
+            <div class="kanji-display" id="slot-k-2">-</div>
             <span class="page-output" id="slot-p-2">---</span>
         </div>
         <div class="slot-box" id="slot-container-3" onclick="toggleSlotSelect(3)">
             <span class="label">SLOT 4</span>
-            <input type="text" class="kanji-input" id="slot-k-3" maxlength="1" placeholder="-" onclick="event.stopPropagation();">
+            <div class="kanji-display" id="slot-k-3">-</div>
             <span class="page-output" id="slot-p-3">---</span>
         </div>
     </div>
@@ -329,6 +365,13 @@
         <div class="suggest-buttons" id="suggest-area">
             <span style="color:rgba(181,124,255,0.3); font-size:0.75rem;">スキャンすると誤認識補正候補がここに並びます</span>
         </div>
+    </div>
+
+    <!-- 新設：手入力検索エリア -->
+    <div class="section-title">🔍 漢字手入力検索 (未認識時用)</div>
+    <div class="manual-search-container">
+        <input type="text" class="manual-search-input" id="manual-kanji-input" maxlength="1" placeholder="漢字を1文字入力">
+        <button class="btn-manual-submit" onclick="submitManualKanji()">スロットへ登録</button>
     </div>
 
     <!-- 計算コントロールセンター -->
@@ -408,7 +451,7 @@
         let streamObject = null;
         let selectedSlots = new Set();
         
-        const inputs = [
+        const displays = [
             document.getElementById('slot-k-0'),
             document.getElementById('slot-k-1'),
             document.getElementById('slot-k-2'),
@@ -434,23 +477,11 @@
             initCameraStream();
 
             document.getElementById('shutter-trigger').addEventListener('click', captureAndScan);
-            
             document.getElementById('btn-clear-slots').addEventListener('click', clearSlotsOnly);
             document.getElementById('btn-clear-result').addEventListener('click', clearResultOnly);
 
             document.getElementById('api-key').addEventListener('change', () => {
                 localStorage.setItem('page_ocr_api_key', document.getElementById('api-key').value);
-            });
-
-            inputs.forEach((input, idx) => {
-                input.addEventListener('input', () => {
-                    const val = input.value.trim();
-                    if (KANJI_DICTIONARY[val]) {
-                        outputs[idx].innerText = KANJI_DICTIONARY[val];
-                    } else {
-                        outputs[idx].innerText = "---";
-                    }
-                });
             });
         });
 
@@ -467,6 +498,7 @@
             } catch (err) { alert("カメラ起動失敗: " + err.message); }
         }
 
+        // スロット切り替え（完全にワンタップで切り替わる安全設計）
         window.toggleSlotSelect = function(idx) {
             if (selectedSlots.has(idx)) {
                 selectedSlots.delete(idx);
@@ -480,6 +512,53 @@
         function clearAllSelections() {
             selectedSlots.clear();
             containers.forEach(c => c.classList.remove('selected'));
+        }
+
+        // 新設：手動検索入力ボタンの実行ロジック
+        window.submitManualKanji = function() {
+            const inputEl = document.getElementById('manual-kanji-input');
+            const kanji = inputEl.value.trim();
+            
+            if (!kanji) {
+                alert("漢字が入力されていません。");
+                return;
+            }
+
+            // 空きスロット（ホールドされておらず、文字が入っていない場所）を探す
+            let targetIdx = -1;
+            for (let i = 0; i < 4; i++) {
+                if (!selectedSlots.has(i) && (displays[i].innerText === "-" || !displays[i].innerText)) {
+                    targetIdx = i;
+                    break;
+                }
+            }
+
+            // 空きがなければ、ホールドされていない一番若いスロットを上書き
+            if (targetIdx === -1) {
+                for (let i = 0; i < 4; i++) {
+                    if (!selectedSlots.has(i)) {
+                        targetIdx = i;
+                        break;
+                    }
+                }
+            }
+
+            if (targetIdx === -1) {
+                alert("すべてのスロットがホールド(選択)されています。解除するかクリアしてください。");
+                return;
+            }
+
+            // 反映
+            displays[targetIdx].innerText = kanji;
+            if (KANJI_DICTIONARY[kanji]) {
+                outputs[targetIdx].innerText = KANJI_DICTIONARY[kanji];
+            } else {
+                outputs[targetIdx].innerText = "未登録";
+            }
+
+            // 入力欄をクリアしてキーボードを閉じる
+            inputEl.value = "";
+            inputEl.blur();
         }
 
         async function captureAndScan() {
@@ -537,7 +616,7 @@
 
             for (let i = 0; i < 4; i++) {
                 if (!selectedSlots.has(i)) {
-                    inputs[i].value = "";
+                    displays[i].innerText = "-";
                     outputs[i].innerText = "---";
                 }
             }
@@ -552,7 +631,7 @@
 
                 let isDuplicate = false;
                 for (let i = 0; i < 4; i++) {
-                    if (inputs[i].value === char) {
+                    if (displays[i].innerText === char) {
                         isDuplicate = true;
                         break;
                     }
@@ -561,14 +640,14 @@
 
                 let targetIdx = -1;
                 for (let i = 0; i < 4; i++) {
-                    if (!selectedSlots.has(i) && !inputs[i].value) {
+                    if (!selectedSlots.has(i) && (displays[i].innerText === "-" || !displays[i].innerText)) {
                         targetIdx = i;
                         break;
                     }
                 }
 
                 if (targetIdx !== -1) {
-                    inputs[targetIdx].value = char;
+                    displays[targetIdx].innerText = char;
                     outputs[targetIdx].innerText = KANJI_DICTIONARY[char];
                 } else {
                     missedKanji += char;
@@ -587,7 +666,6 @@
             const dictionaryKanjiList = Object.keys(KANJI_DICTIONARY);
             let candidates = [];
 
-            // 1109p「謦」および 1306p「鬨」の超強力トリガー
             const keiseiTriggers = ["謦", "磬", "馨", "声", "言", "殸", "磐", "壁", "兵", "吉"];
             const tokiTriggers = ["鬨", "開", "門", "閧", "関", "共"];
             
@@ -601,7 +679,6 @@
                 if (targetText.includes(t)) { forceToki = true; break; }
             }
 
-            // 何か文字が入っていれば保険でトリガーをON
             if (targetText && targetText.trim().length > 0) {
                 forceKeisei = true;
                 forceToki = true;
@@ -643,7 +720,6 @@
                 if (uniqueCandidates.length >= 4) break;
             }
 
-            // 「謦」と「鬨」を最優先で必ず1番目と2番目に滑り込ませる
             uniqueCandidates = uniqueCandidates.filter(k => k !== "謦" && k !== "鬨");
             uniqueCandidates.unshift("鬨");
             uniqueCandidates.unshift("謦");
@@ -658,9 +734,9 @@
                 btn.onclick = () => {
                     let targetIdx = 0;
                     for (let i = 0; i < 4; i++) {
-                        if (!inputs[i].value) { targetIdx = i; break; }
+                        if (displays[i].innerText === "-" || !displays[i].innerText) { targetIdx = i; break; }
                     }
-                    inputs[targetIdx].value = kanji;
+                    displays[targetIdx].innerText = kanji;
                     outputs[targetIdx].innerText = KANJI_DICTIONARY[kanji];
                 };
                 suggestArea.appendChild(btn);
@@ -668,7 +744,6 @@
         }
 
         window.calculate = function(type) {
-            // スロットに入っているすべての有効な数字を集める
             let allPages = [];
             for (let i = 0; i < 4; i++) {
                 const pVal = parseInt(outputs[i].innerText);
@@ -685,7 +760,6 @@
                 return;
             }
 
-            // 【引き算の超スマート化】選択状態を問わず、スロット内の「最大値 - 最小値」を即座に実行
             if (type === 'sub') {
                 if (allPages.length < 1) {
                     document.getElementById('calc-result').innerText = "ERR";
@@ -698,7 +772,6 @@
                 return;
             }
 
-            // 【余りボタンのフルオート化】スロット内の最大値を自動判別するためポップアップを開く
             if (type === 'rem') {
                 if (allPages.length === 0) {
                     alert("スロットに漢字が1つも入っていません。");
@@ -708,7 +781,6 @@
                 return;
             }
 
-            // 足し算（通常モード）
             let pages = [];
             selectedSlots.forEach(idx => {
                 const pVal = parseInt(outputs[idx].innerText);
@@ -733,7 +805,6 @@
             clearAllSelections();
         }
 
-        // 【余り】の確定処理：スロット内の最大値を自動で割り算する
         window.execModCalculated = function(divisor) {
             let allPages = [];
             for (let i = 0; i < 4; i++) {
@@ -746,7 +817,6 @@
                 return;
             }
 
-            // 一番ページ数が大きい数字を自動選定
             const maxPage = Math.max(...allPages);
             const result = maxPage % divisor;
             
@@ -760,7 +830,7 @@
         }
 
         function clearSlotsOnly() {
-            inputs.forEach(input => input.value = "");
+            displays.forEach(disp => disp.innerText = "-");
             outputs.forEach(out => out.innerText = "---");
             clearAllSelections();
             document.getElementById('suggest-area').innerHTML = '<span style="color:rgba(181,124,255,0.3); font-size:0.75rem;">スロットをクリアしました</span>';
