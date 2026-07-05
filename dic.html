@@ -125,7 +125,6 @@
         .slot-box .label { font-size: 0.6rem; color: #b57cff; pointer-events: none; }
         .slot-box.selected .label { color: #ff007f; }
         
-        /* 完全に選択専用テキストに変更 */
         .slot-box .kanji-display {
             font-size: 1.3rem;
             color: #ffffff;
@@ -165,7 +164,7 @@
         }
         .btn-suggest:active { background: #00ff64; color: #000; }
 
-        /* 新設：手入力検索コントロール */
+        /* 手入力検索コントロール */
         .manual-search-container {
             background: rgba(26, 11, 46, 0.4);
             border: 1px solid rgba(181, 124, 255, 0.3);
@@ -188,12 +187,14 @@
             font-weight: bold;
         }
         .manual-search-input:focus { outline: none; border-color: #00ff66; box-shadow: 0 0 5px rgba(0,255,102,0.5); }
+        
+        /* ボタンテキストを「登録」へ変更し調整 */
         .btn-manual-submit {
             background: #4a1c6d;
             border: 1px solid #b57cff;
             color: #ebd6ff;
-            padding: 8px 16px;
-            font-size: 0.85rem;
+            padding: 8px 24px;
+            font-size: 0.9rem;
             font-weight: bold;
             border-radius: 3px;
             cursor: pointer;
@@ -335,7 +336,7 @@
     <button class="btn-shutter" id="shutter-trigger">スキャン</button>
 
     <!-- 検索結果スロット -->
-    <div class="section-title">【02】抽出漢字とページ数 </div>
+    <div class="section-title">【02】抽出漢字とページ数 (ワンタップでホールド/解除)</div>
     <div class="slots-container">
         <div class="slot-box" id="slot-container-0" onclick="toggleSlotSelect(0)">
             <span class="label">SLOT 1</span>
@@ -367,7 +368,7 @@
         </div>
     </div>
 
-    <!-- 新設：手入力検索エリア -->
+    <!-- 手入力検索エリア（ボタンテキストを「登録」にスリム化） -->
     <div class="section-title">🔍 漢字手入力検索 (未認識時用)</div>
     <div class="manual-search-container">
         <input type="text" class="manual-search-input" id="manual-kanji-input" maxlength="1" placeholder="漢字を1文字入力">
@@ -498,7 +499,6 @@
             } catch (err) { alert("カメラ起動失敗: " + err.message); }
         }
 
-        // スロット切り替え（完全にワンタップで切り替わる安全設計）
         window.toggleSlotSelect = function(idx) {
             if (selectedSlots.has(idx)) {
                 selectedSlots.delete(idx);
@@ -514,7 +514,6 @@
             containers.forEach(c => c.classList.remove('selected'));
         }
 
-        // 新設：手動検索入力ボタンの実行ロジック
         window.submitManualKanji = function() {
             const inputEl = document.getElementById('manual-kanji-input');
             const kanji = inputEl.value.trim();
@@ -524,7 +523,6 @@
                 return;
             }
 
-            // 空きスロット（ホールドされておらず、文字が入っていない場所）を探す
             let targetIdx = -1;
             for (let i = 0; i < 4; i++) {
                 if (!selectedSlots.has(i) && (displays[i].innerText === "-" || !displays[i].innerText)) {
@@ -533,7 +531,6 @@
                 }
             }
 
-            // 空きがなければ、ホールドされていない一番若いスロットを上書き
             if (targetIdx === -1) {
                 for (let i = 0; i < 4; i++) {
                     if (!selectedSlots.has(i)) {
@@ -548,7 +545,6 @@
                 return;
             }
 
-            // 反映
             displays[targetIdx].innerText = kanji;
             if (KANJI_DICTIONARY[kanji]) {
                 outputs[targetIdx].innerText = KANJI_DICTIONARY[kanji];
@@ -556,7 +552,6 @@
                 outputs[targetIdx].innerText = "未登録";
             }
 
-            // 入力欄をクリアしてキーボードを閉じる
             inputEl.value = "";
             inputEl.blur();
         }
@@ -583,7 +578,7 @@
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ requests: [{ image: { content: base64Image }, features: [{ type: "TEXT_DETECTION" }] }] })
                 });
-                const data = await response.json();
+                const data = await response.json(); FullText
                 const fullText = data.responses[0]?.textAnnotations?.[0]?.description || "";
                 
                 processDetectedText(fullText);
