@@ -337,7 +337,7 @@
         
         <!-- 余り計算用数字パネル選択画面 -->
         <div class="mod-selector-overlay" id="mod-overlay">
-            <div class="mod-selector-title">何で割りますか？ (1〜9)</div>
+            <div class="mod-selector-title">スロット内最大数を何で割りますか？ (1〜9)</div>
             <div class="mod-grid">
                 <button class="btn-mod-num" onclick="execModCalculated(1)">1</button>
                 <button class="btn-mod-num" onclick="execModCalculated(2)">2</button>
@@ -587,25 +587,33 @@
             const dictionaryKanjiList = Object.keys(KANJI_DICTIONARY);
             let candidates = [];
 
-            // 1109p 「謦」の出現確率を限界突破させるための強力トリガー（画数が多い文字、関連パーツすべてを網羅）
-            const keiseiTriggers = ["謦", "磬", "馨", "声", "言", "殸", "磐", "壁", "蟹", "吉", "響", "鑿", "黶", "鬨", "襲", "驚", "誓", "警"];
+            // 1109p「謦」および 1306p「鬨」の超強力トリガー
+            const keiseiTriggers = ["謦", "磬", "馨", "声", "言", "殸", "磐", "壁", "兵", "吉"];
+            const tokiTriggers = ["鬨", "開", "門", "閧", "関", "共"];
+            
             let forceKeisei = false;
+            let forceToki = false;
+
             for (let t of keiseiTriggers) {
-                if (targetText.includes(t)) {
-                    forceKeisei = true;
-                    break;
-                }
+                if (targetText.includes(t)) { forceKeisei = true; break; }
+            }
+            for (let t of tokiTriggers) {
+                if (targetText.includes(t)) { forceToki = true; break; }
             }
 
-            // 何かしら文字が検出されている場合は、さらに「謦」の出現の可能性を担保
+            // 何か文字が入っていれば保険でトリガーをON
             if (targetText && targetText.trim().length > 0) {
-                forceKeisei = true; 
+                forceKeisei = true;
+                forceToki = true;
             }
 
             dictionaryKanjiList.forEach(dictK => {
-                // 強制フラグ時は1109p「謦」に圧倒的トップの固定スコアを付与
                 if (dictK === "謦" && forceKeisei) {
                     candidates.push({ kanji: dictK, score: 999999 });
+                    return;
+                }
+                if (dictK === "鬨" && forceToki) {
+                    candidates.push({ kanji: dictK, score: 999998 });
                     return;
                 }
 
@@ -617,11 +625,6 @@
                     if (codeDiff < 100) score += 40;
                     else if (codeDiff < 500) score += 20;
                     else if (codeDiff < 2000) score += 10;
-
-                    const heavyRadicals = ["鬨", "謦", "銜", "鑿", "鸞", "麾", "黐", "黶", "鏖", "⏳", "飆"];
-                    if (heavyRadicals.includes(dictK) && heavyRadicals.some(r => targetText.includes(r) || Math.abs(r.charCodeAt(0) - rawChar.charCodeAt(0)) < 3000 )) {
-                        score += 30;
-                    }
 
                     if (score > 0) {
                         candidates.push({ kanji: dictK, score: score + (1000 / (codeDiff + 1)) });
@@ -640,18 +643,11 @@
                 if (uniqueCandidates.length >= 4) break;
             }
 
-            if (uniqueCandidates.length === 0) {
-                uniqueCandidates = ["謦", "鬨", "鏖", "鑿"];
-            } else if (!uniqueCandidates.includes("謦")) {
-                // どんな判定であれ、最優先で先頭に滑り込ませる
-                uniqueCandidates.unshift("謦");
-            } else {
-                // すでに含まれている場合は、確実にインデックス0（先頭）に移動させる
-                uniqueCandidates = uniqueCandidates.filter(k => k !== "謦");
-                uniqueCandidates.unshift("謦");
-            }
+            // 「謦」と「鬨」を最優先で必ず1番目と2番目に滑り込ませる
+            uniqueCandidates = uniqueCandidates.filter(k => k !== "謦" && k !== "鬨");
+            uniqueCandidates.unshift("鬨");
+            uniqueCandidates.unshift("謦");
 
-            // サジェストの上限は4枠に絞る
             const finalCandidates = uniqueCandidates.slice(0, 4);
 
             finalCandidates.forEach(kanji => {
@@ -672,41 +668,55 @@
         }
 
         window.calculate = function(type) {
+            // スロットに入っているすべての有効な数字を集める
+            let allPages = [];
+            for (let i = 0; i < 4; i++) {
+                const pVal = parseInt(outputs[i].innerText);
+                if (!isNaN(pVal)) allPages.push(pVal);
+            }
+
             if (type === 'sort_digits') {
-                let allPages = [];
-                for (let i = 0; i < 4; i++) {
-                    const pVal = parseInt(outputs[i].innerText);
-                    if (!isNaN(pVal)) allPages.push(pVal);
-                }
-                
-                if (allPages.length === 0) {
-                    document.getElementById('calc-result').innerText = "ERR";
-                    return;
-                }
-
+                if (allPages.length === 0) { document.getElementById('calc-result').innerText = "ERR"; return; }
                 allPages.sort((a, b) => b - a);
-
                 let combinedResult = "";
-                allPages.forEach(p => {
-                    combinedResult += (p % 10).toString();
-                });
-
+                allPages.forEach(p => { combinedResult += (p % 10).toString(); });
                 document.getElementById('calc-result').innerText = combinedResult;
                 clearAllSelections();
                 return;
             }
 
+            // 【引き算の超スマート化】選択状態を問わず、スロット内の「最大値 - 最小値」を即座に実行
+            if (type === 'sub') {
+                if (allPages.length < 1) {
+                    document.getElementById('calc-result').innerText = "ERR";
+                    return;
+                }
+                const maxNum = Math.max(...allPages);
+                const minNum = Math.min(...allPages);
+                document.getElementById('calc-result').innerText = maxNum - minNum;
+                clearAllSelections();
+                return;
+            }
+
+            // 【余りボタンのフルオート化】スロット内の最大値を自動判別するためポップアップを開く
+            if (type === 'rem') {
+                if (allPages.length === 0) {
+                    alert("スロットに漢字が1つも入っていません。");
+                    return;
+                }
+                document.getElementById('mod-overlay').style.display = 'flex';
+                return;
+            }
+
+            // 足し算（通常モード）
             let pages = [];
             selectedSlots.forEach(idx => {
                 const pVal = parseInt(outputs[idx].innerText);
                 if (!isNaN(pVal)) pages.push(pVal);
             });
 
-            if (pages.length === 0 && (type === 'add' || type === 'sub')) {
-                for (let i = 0; i < 4; i++) {
-                    const pVal = parseInt(outputs[i].innerText);
-                    if (!isNaN(pVal)) pages.push(pVal);
-                }
+            if (pages.length === 0 && type === 'add') {
+                pages = [...allPages];
             }
 
             if (pages.length === 0) {
@@ -715,35 +725,31 @@
             }
 
             let result = 0;
-
             if (type === 'add') {
                 result = pages.reduce((a, b) => a + b, 0);
-            } else if (type === 'sub') {
-                if (pages.length === 2) {
-                    result = Math.max(...pages) - Math.min(...pages);
-                } else {
-                    result = pages.reduce((a, b) => a - b);
-                }
-            } else if (type === 'rem') {
-                if (pages.length !== 1) {
-                    return alert("余り計算を行うには、スロットを1つだけ選択（タップしてピンク枠に）してください。");
-                }
-                document.getElementById('mod-overlay').style.display = 'flex';
-                return;
             }
 
             document.getElementById('calc-result').innerText = result;
             clearAllSelections();
         }
 
+        // 【余り】の確定処理：スロット内の最大値を自動で割り算する
         window.execModCalculated = function(divisor) {
-            let basePage = 0;
-            selectedSlots.forEach(idx => {
-                const pVal = parseInt(outputs[idx].innerText);
-                if (!isNaN(pVal)) basePage = pVal;
-            });
+            let allPages = [];
+            for (let i = 0; i < 4; i++) {
+                const pVal = parseInt(outputs[i].innerText);
+                if (!isNaN(pVal)) allPages.push(pVal);
+            }
             
-            const result = basePage % divisor;
+            if (allPages.length === 0) {
+                closeModOverlay();
+                return;
+            }
+
+            // 一番ページ数が大きい数字を自動選定
+            const maxPage = Math.max(...allPages);
+            const result = maxPage % divisor;
+            
             document.getElementById('calc-result').innerText = result;
             closeModOverlay();
             clearAllSelections();
