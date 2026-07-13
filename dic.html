@@ -3,90 +3,100 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>絶望要塞IG 辞書ツール</title>
+    <title>絶望要塞IG 辞書ツール (Landscape Edition)</title>
     <style>
         * { box-sizing: border-box; font-family: 'Courier New', Courier, monospace, sans-serif; }
+        
+        /* 全体を横画面に最適化 */
         body { 
             background-color: #0c0714; 
             color: #ebd6ff; 
             margin: 0; 
-            padding: 15px; 
-            min-height: 100vh;
+            padding: 8px; 
+            height: 100vh;
+            width: 100vw;
             display: flex;
             flex-direction: column;
-            overflow-x: hidden;
+            overflow: hidden; /* スクロールを完全に禁止して1画面に収める */
         }
 
+        /* ヘッダーとAPIパス入力欄を極限までスリム化して最上部に配置 */
+        .top-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid rgba(181, 124, 255, 0.3);
+            padding-bottom: 4px;
+            margin-bottom: 6px;
+            height: 24px;
+        }
         h1 {
-            font-size: 1.3rem;
-            text-align: center;
-            margin: 0 0 12px 0;
+            font-size: 0.9rem;
+            margin: 0;
             color: #b57cff;
             text-shadow: 0 0 8px rgba(181, 124, 255, 0.6);
             letter-spacing: 1px;
-            border-bottom: 1px solid rgba(181, 124, 255, 0.3);
-            padding-bottom: 5px;
         }
-
         .config-box {
-            background: rgba(181, 124, 255, 0.05);
-            border: 1px solid rgba(181, 124, 255, 0.2);
-            padding: 8px 12px;
-            border-radius: 4px;
-            margin-bottom: 12px;
             display: flex;
-            flex-direction: column;
-            gap: 4px;
+            align-items: center;
+            gap: 6px;
         }
-        .config-box label { font-size: 0.7rem; color: #b57cff; font-weight: bold; }
+        .config-box label { font-size: 0.6rem; color: #b57cff; font-weight: bold; white-space: nowrap; }
         .config-box input {
-            width: 100%;
             background: #140d21;
             border: 1px solid #b57cff;
             color: #00ff66;
-            padding: 6px;
-            font-size: 0.85rem;
+            padding: 2px 6px;
+            font-size: 0.75rem;
             border-radius: 2px;
+            width: 120px;
+            height: 18px;
         }
 
-        .section-title {
-            font-size: 0.85rem;
-            font-weight: bold;
-            color: #b57cff;
-            margin-bottom: 8px;
-            text-shadow: 0 0 5px rgba(181, 124, 255, 0.4);
+        /* メインコンテンツを左右2カラムに分割 */
+        .main-layout {
+            display: flex;
+            flex: 1;
+            gap: 10px;
+            height: calc(100vh - 38px);
+            overflow: hidden;
         }
 
+        /* --- 左カラム: カメラ & スキャンボタン --- */
+        .left-column {
+            flex: 4; /* 全体の40%の幅 */
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            height: 100%;
+        }
         .camera-container {
-            width: 100%;
+            flex: 1;
             background: #000;
             border: 2px solid #b57cff;
             box-shadow: 0 0 15px rgba(181, 124, 255, 0.2);
             position: relative;
             border-radius: 4px;
             overflow: hidden;
-            margin-bottom: 12px;
-            aspect-ratio: 4 / 3;
         }
-
         #camera-stream { width: 100%; height: 100%; object-fit: cover; }
-
+        
         .btn-shutter {
-            width: 100%;
+            height: 44px; /* タップしやすい絶妙な高さ */
             background: linear-gradient(135deg, #5500aa, #220055);
             color: #ebd6ff;
             border: 2px solid #b57cff;
-            padding: 14px;
             font-size: 1.1rem;
             font-weight: bold;
             border-radius: 4px;
             cursor: pointer;
             box-shadow: 0 0 10px rgba(181, 124, 255, 0.4);
             text-shadow: 0 0 5px #ebd6ff;
-            margin-bottom: 15px;
             display: flex;
             justify-content: center;
             align-items: center;
+            margin: 0;
         }
         .btn-shutter:active {
             background: #00ff64;
@@ -95,70 +105,87 @@
             box-shadow: 0 0 15px #00ff64;
         }
 
+        /* --- 右カラム: スロット、検索、計算 --- */
+        .right-column {
+            flex: 6; /* 全体の60%の幅 */
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            height: 100%;
+            overflow: hidden;
+        }
+
+        .section-title {
+            font-size: 0.65rem;
+            font-weight: bold;
+            color: #b57cff;
+            margin-bottom: 2px;
+            text-shadow: 0 0 5px rgba(181, 124, 255, 0.4);
+        }
+
         /* スロット表示エリア */
         .slots-container {
             display: grid;
             grid-template-columns: repeat(4, 1fr);
-            gap: 6px;
-            margin-bottom: 12px;
+            gap: 4px;
         }
         .slot-box {
             background: #150f24;
             border: 1px solid rgba(181, 124, 255, 0.4);
             border-radius: 4px;
-            padding: 8px 6px;
+            padding: 4px 2px;
             text-align: center;
             display: flex;
             flex-direction: column;
-            gap: 4px;
+            gap: 1px;
             position: relative;
             cursor: pointer;
             user-select: none;
             -webkit-user-select: none;
-            transition: all 0.2s ease;
         }
         .slot-box.selected {
-            border: 2px solid #ff007f;
-            box-shadow: 0 0 10px rgba(255, 0, 127, 0.6);
+            border: 1px solid #ff007f;
+            box-shadow: 0 0 8px rgba(255, 0, 127, 0.6);
             background: #2b0c1e;
         }
-        .slot-box .label { font-size: 0.6rem; color: #b57cff; pointer-events: none; }
+        .slot-box .label { font-size: 0.55rem; color: #b57cff; pointer-events: none; }
         .slot-box.selected .label { color: #ff007f; }
-        
         .slot-box .kanji-display {
-            font-size: 1.3rem;
+            font-size: 1.1rem;
             color: #ffffff;
             font-weight: bold;
-            min-height: 1.5rem;
-            line-height: 1.5rem;
+            min-height: 1.2rem;
+            line-height: 1.2rem;
             pointer-events: none;
         }
         .slot-box .page-output {
-            font-size: 1rem;
+            font-size: 0.85rem;
             font-weight: bold;
             color: #00ff64;
             text-shadow: 0 0 4px rgba(0,255,100,0.5);
-            min-height: 1.2rem;
+            min-height: 1rem;
             pointer-events: none;
         }
 
-        /* 「もしかして」サジェストエリア */
+        /* サジェストエリア */
         .suggest-container {
             background: rgba(0, 0, 0, 0.4);
             border: 1px dashed rgba(181, 124, 255, 0.2);
-            padding: 8px;
+            padding: 4px 6px;
             border-radius: 4px;
-            margin-bottom: 15px;
-            min-height: 48px;
+            min-height: 32px;
+            display: flex;
+            align-items: center;
+            gap: 4px;
         }
-        .suggest-title { font-size: 0.65rem; color: #aaa; margin-bottom: 4px; }
-        .suggest-buttons { display: flex; flex-wrap: wrap; gap: 6px; }
+        .suggest-title { font-size: 0.55rem; color: #aaa; white-space: nowrap; }
+        .suggest-buttons { display: flex; flex-wrap: wrap; gap: 4px; flex: 1; }
         .btn-suggest {
             background: #25163a;
             border: 1px solid #b57cff;
             color: #ebd6ff;
-            padding: 4px 8px;
-            font-size: 0.75rem;
+            padding: 2px 6px;
+            font-size: 0.7rem;
             border-radius: 3px;
             cursor: pointer;
         }
@@ -168,95 +195,108 @@
         .manual-search-container {
             background: rgba(26, 11, 46, 0.4);
             border: 1px solid rgba(181, 124, 255, 0.3);
-            padding: 8px 12px;
+            padding: 4px 8px;
             border-radius: 4px;
-            margin-bottom: 15px;
             display: flex;
             align-items: center;
-            gap: 8px;
+            gap: 6px;
         }
         .manual-search-input {
             flex: 1;
             background: #140d21;
             border: 1px solid #b57cff;
             color: #ffffff;
-            padding: 8px;
-            font-size: 1rem;
+            padding: 4px;
+            font-size: 0.85rem;
             border-radius: 3px;
             text-align: center;
             font-weight: bold;
+            height: 26px;
         }
-        .manual-search-input:focus { outline: none; border-color: #00ff66; box-shadow: 0 0 5px rgba(0,255,102,0.5); }
-        
-        /* ボタンテキストを「登録」へ変更し調整 */
         .btn-manual-submit {
             background: #4a1c6d;
             border: 1px solid #b57cff;
             color: #ebd6ff;
-            padding: 8px 24px;
-            font-size: 0.9rem;
+            padding: 4px 16px;
+            font-size: 0.8rem;
             font-weight: bold;
             border-radius: 3px;
             cursor: pointer;
-            white-space: nowrap;
+            height: 26px;
         }
-        .btn-manual-submit:active { background: #00ff64; color: #000; border-color: #ffffff; }
+        .btn-manual-submit:active { background: #00ff64; color: #000; }
 
         /* 計算コントロールセンター */
         .calc-panel {
             background: rgba(27, 15, 46, 0.6);
             border: 1px solid rgba(181, 124, 255, 0.3);
             border-radius: 6px;
-            padding: 12px;
-            margin-bottom: 15px;
+            padding: 6px 8px;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
             position: relative;
         }
+        .calc-main-row {
+            display: flex;
+            gap: 8px;
+            flex: 1;
+            align-items: center;
+        }
         .result-display {
+            flex: 3;
             background: #06030a;
             border: 1px solid #b57cff;
             border-radius: 4px;
-            padding: 12px;
+            padding: 4px;
             text-align: center;
-            margin-bottom: 12px;
-            box-shadow: inset 0 0 10px rgba(0,0,0,0.8);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            height: 100%;
         }
-        .result-display .res-title { font-size: 0.7rem; color: #b57cff; margin-bottom: 4px; letter-spacing: 1px; }
-        .result-display .res-num { font-size: 2.2rem; font-weight: bold; color: #ff007f; text-shadow: 0 0 12px #ff007f; }
+        .result-display .res-title { font-size: 0.55rem; color: #b57cff; margin-bottom: 2px; }
+        .result-display .res-num { font-size: 1.8rem; font-weight: bold; color: #ff007f; text-shadow: 0 0 12px #ff007f; line-height: 1.8rem; }
         
         .calc-buttons {
+            flex: 7;
             display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            gap: 8px;
+            grid-template-columns: repeat(5, 1fr); /* 5つの計算機能に変更 */
+            gap: 4px;
         }
         .btn-calc {
             background: #2b124c;
             border: 1px solid #ff007f;
             color: #ff007f;
             text-shadow: 0 0 3px #ff007f;
-            padding: 10px;
-            font-size: 0.85rem;
+            padding: 8px 2px;
+            font-size: 0.75rem;
             font-weight: bold;
             border-radius: 4px;
             cursor: pointer;
+            display: flex;
+            justify-content: center;
+            align-items: center;
         }
         .btn-calc:active { background: #ff007f; color: #000; box-shadow: 0 0 10px #ff007f; }
         
         /* リセットボタンエリア */
         .reset-container {
-            grid-column: span 4;
             display: grid;
             grid-template-columns: 1fr 1fr;
-            gap: 8px;
+            gap: 6px;
             margin-top: 4px;
         }
         .btn-reset-half {
             background: #3a1525;
             border: 1px solid #ff3388;
             color: #ff99cc;
-            padding: 8px;
-            font-size: 0.75rem;
+            padding: 4px;
+            font-size: 0.65rem;
             border-radius: 4px;
             cursor: pointer;
+            text-align: center;
         }
         .btn-reset-half:active { background: #ff3388; color: #fff; }
 
@@ -271,47 +311,46 @@
             flex-direction: column;
             justify-content: center;
             align-items: center;
-            padding: 10px;
+            padding: 4px;
         }
         .mod-selector-title {
-            font-size: 0.8rem;
+            font-size: 0.7rem;
             color: #ff007f;
-            margin-bottom: 10px;
+            margin-bottom: 4px;
             font-weight: bold;
         }
         .mod-grid {
             display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 8px;
-            width: 80%;
-            max-width: 240px;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 4px;
+            width: 90%;
         }
         .btn-mod-num {
             background: #1d0e30;
             border: 1px solid #b57cff;
             color: #00ff66;
-            font-size: 1.2rem;
+            font-size: 0.9rem;
             font-weight: bold;
-            padding: 10px 0;
+            padding: 4px 0;
             border-radius: 4px;
             cursor: pointer;
         }
         .btn-mod-num:active { background: #00ff66; color: #000; }
         .btn-mod-cancel {
-            grid-column: span 3;
+            grid-column: span 5;
             background: #333;
             border: none;
             color: #fff;
-            padding: 6px;
-            font-size: 0.75rem;
+            padding: 3px;
+            font-size: 0.65rem;
             border-radius: 4px;
-            margin-top: 4px;
+            margin-top: 2px;
         }
 
         .loading-dimmer {
             display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%;
             background: rgba(20, 5, 35, 0.5); z-index: 10; justify-content: center; align-items: center;
-            font-size: 0.9rem; color: #00ff66; text-shadow: 0 0 5px #00ff66;
+            font-size: 0.8rem; color: #00ff66; text-shadow: 0 0 5px #00ff66;
         }
         .loading-dimmer::after { content: "SCANNING KANJI..."; animation: blink 0.5s infinite alternate; }
         @keyframes blink { from { opacity: 0.3; } to { opacity: 1; } }
@@ -319,98 +358,113 @@
 </head>
 <body>
 
-    <h1>絶望要塞IG 辞書ツール</h1>
-
-    <!-- 鍵（PASS）設定 -->
-    <div class="config-box">
-        <label>VISION API PASS:</label>
-        <input type="password" id="api-key" placeholder="AIzaSy...">
-    </div>
-
-    <!-- カメラコンテナ -->
-    <div class="section-title">【01】問題スキャン (「」内を自動検出)</div>
-    <div class="camera-container">
-        <video id="camera-stream" autoplay playsinline muted></video>
-        <div class="loading-dimmer" id="scan-indicator"></div>
-    </div>
-    <button class="btn-shutter" id="shutter-trigger">スキャン</button>
-
-    <!-- 検索結果スロット -->
-    <div class="section-title">【02】抽出漢字とページ数 </div>
-    <div class="slots-container">
-        <div class="slot-box" id="slot-container-0" onclick="toggleSlotSelect(0)">
-            <span class="label">SLOT 1</span>
-            <div class="kanji-display" id="slot-k-0">-</div>
-            <span class="page-output" id="slot-p-0">---</span>
-        </div>
-        <div class="slot-box" id="slot-container-1" onclick="toggleSlotSelect(1)">
-            <span class="label">SLOT 2</span>
-            <div class="kanji-display" id="slot-k-1">-</div>
-            <span class="page-output" id="slot-p-1">---</span>
-        </div>
-        <div class="slot-box" id="slot-container-2" onclick="toggleSlotSelect(2)">
-            <span class="label">SLOT 3</span>
-            <div class="kanji-display" id="slot-k-2">-</div>
-            <span class="page-output" id="slot-p-2">---</span>
-        </div>
-        <div class="slot-box" id="slot-container-3" onclick="toggleSlotSelect(3)">
-            <span class="label">SLOT 4</span>
-            <div class="kanji-display" id="slot-k-3">-</div>
-            <span class="page-output" id="slot-p-3">---</span>
+    <!-- 最上部スリムバー -->
+    <div class="top-bar">
+        <h1>絶望要塞IG 辞書ツール</h1>
+        <div class="config-box">
+            <label>API PASS:</label>
+            <input type="password" id="api-key" placeholder="AIzaSy...">
         </div>
     </div>
 
-    <!-- 「もしかして」サジェストエリア -->
-    <div class="suggest-container">
-        <div class="suggest-title">⚠️ もしかしてこれですか？ (タップで空いているスロットに適用)</div>
-        <div class="suggest-buttons" id="suggest-area">
-            <span style="color:rgba(181,124,255,0.3); font-size:0.75rem;">スキャンすると誤認識補正候補がここに並びます</span>
-        </div>
-    </div>
-
-    <!-- 手入力検索エリア（ボタンテキストを「登録」にスリム化） -->
-    <div class="section-title">🔍 漢字手入力検索 (未認識時用)</div>
-    <div class="manual-search-container">
-        <input type="text" class="manual-search-input" id="manual-kanji-input" maxlength="1" placeholder="漢字を1文字入力">
-        <button class="btn-manual-submit" onclick="submitManualKanji()">登録</button>
-    </div>
-
-    <!-- 計算コントロールセンター -->
-    <div class="section-title">【03】計算コントロールセンター</div>
-    <div class="calc-panel">
+    <!-- メイン左右分割レイアウト -->
+    <div class="main-layout">
         
-        <!-- 余り計算用数字パネル選択画面 -->
-        <div class="mod-selector-overlay" id="mod-overlay">
-            <div class="mod-selector-title">スロット内最大数を何で割りますか？ (1〜9)</div>
-            <div class="mod-grid">
-                <button class="btn-mod-num" onclick="execModCalculated(1)">1</button>
-                <button class="btn-mod-num" onclick="execModCalculated(2)">2</button>
-                <button class="btn-mod-num" onclick="execModCalculated(3)">3</button>
-                <button class="btn-mod-num" onclick="execModCalculated(4)">4</button>
-                <button class="btn-mod-num" onclick="execModCalculated(5)">5</button>
-                <button class="btn-mod-num" onclick="execModCalculated(6)">6</button>
-                <button class="btn-mod-num" onclick="execModCalculated(7)">7</button>
-                <button class="btn-mod-num" onclick="execModCalculated(8)">8</button>
-                <button class="btn-mod-num" onclick="execModCalculated(9)">9</button>
-                <button class="btn-mod-cancel" onclick="closeModOverlay()">キャンセル</button>
+        <!-- 左カラム: カメラ & シャッター -->
+        <div class="left-column">
+            <div class="camera-container">
+                <video id="camera-stream" autoplay playsinline muted></video>
+                <div class="loading-dimmer" id="scan-indicator"></div>
             </div>
+            <button class="btn-shutter" id="shutter-trigger">スキャン</button>
         </div>
 
-        <div class="result-display">
-            <div class="res-title">TOTAL ANSWER</div>
-            <div class="res-num" id="calc-result">000</div>
-        </div>
-        <div class="calc-buttons">
-            <button class="btn-calc" onclick="calculate('add')">➕ 足す</button>
-            <button class="btn-calc" onclick="calculate('sub')">➖ 引く</button>
-            <button class="btn-calc" onclick="calculate('rem')">【余り】</button>
-            <button class="btn-calc" onclick="calculate('sort_digits')">🔁</button>
+        <!-- 右カラム: 処理・操作パネル -->
+        <div class="right-column">
             
-            <!-- 分割されたリセットボタン -->
-            <div class="reset-container">
-                <button class="btn-reset-half" id="btn-clear-slots">スロットのみクリア</button>
-                <button class="btn-reset-half" id="btn-clear-result">計算結果のみクリア</button>
+            <!-- スロット -->
+            <div>
+                <div class="section-title">【スロット】タップでホールド(選択)</div>
+                <div class="slots-container">
+                    <div class="slot-box" id="slot-container-0" onclick="toggleSlotSelect(0)">
+                        <span class="label">S1</span>
+                        <div class="kanji-display" id="slot-k-0">-</div>
+                        <span class="page-output" id="slot-p-0">---</span>
+                    </div>
+                    <div class="slot-box" id="slot-container-1" onclick="toggleSlotSelect(1)">
+                        <span class="label">S2</span>
+                        <div class="kanji-display" id="slot-k-1">-</div>
+                        <span class="page-output" id="slot-p-1">---</span>
+                    </div>
+                    <div class="slot-box" id="slot-container-2" onclick="toggleSlotSelect(2)">
+                        <span class="label">S3</span>
+                        <div class="kanji-display" id="slot-k-2">-</div>
+                        <span class="page-output" id="slot-p-2">---</span>
+                    </div>
+                    <div class="slot-box" id="slot-container-3" onclick="toggleSlotSelect(3)">
+                        <span class="label">S4</span>
+                        <div class="kanji-display" id="slot-k-3">-</div>
+                        <span class="page-output" id="slot-p-3">---</span>
+                    </div>
+                </div>
             </div>
+
+            <!-- サジェスト -->
+            <div class="suggest-container">
+                <div class="suggest-title">もしかして:</div>
+                <div class="suggest-buttons" id="suggest-area">
+                    <span style="color:rgba(181,124,255,0.3); font-size:0.6rem;">候補がここに並びます</span>
+                </div>
+            </div>
+
+            <!-- 手入力 -->
+            <div class="manual-search-container">
+                <input type="text" class="manual-search-input" id="manual-kanji-input" maxlength="1" placeholder="未認識時の手入力検索">
+                <button class="btn-manual-submit" onclick="submitManualKanji()">登録</button>
+            </div>
+
+            <!-- 計算パネル -->
+            <div class="calc-panel">
+                <!-- 余り計算用オーバーレイ -->
+                <div class="mod-selector-overlay" id="mod-overlay">
+                    <div class="mod-selector-title">最大ページ数を何で割りますか？</div>
+                    <div class="mod-grid">
+                        <button class="btn-mod-num" onclick="execModCalculated(1)">1</button>
+                        <button class="btn-mod-num" onclick="execModCalculated(2)">2</button>
+                        <button class="btn-mod-num" onclick="execModCalculated(3)">3</button>
+                        <button class="btn-mod-num" onclick="execModCalculated(4)">4</button>
+                        <button class="btn-mod-num" onclick="execModCalculated(5)">5</button>
+                        <button class="btn-mod-num" onclick="execModCalculated(6)">6</button>
+                        <button class="btn-mod-num" onclick="execModCalculated(7)">7</button>
+                        <button class="btn-mod-num" onclick="execModCalculated(8)">8</button>
+                        <button class="btn-mod-num" onclick="execModCalculated(9)">9</button>
+                        <button class="btn-mod-cancel" onclick="closeModOverlay()">戻る</button>
+                    </div>
+                </div>
+
+                <div class="calc-main-row">
+                    <!-- 結果表示 -->
+                    <div class="result-display">
+                        <div class="res-title">ANSWER</div>
+                        <div class="res-num" id="calc-result">000</div>
+                    </div>
+                    <!-- 5大計算ボタン -->
+                    <div class="calc-buttons">
+                        <button class="btn-calc" onclick="calculate('add')">➕ 足す</button>
+                        <button class="btn-calc" onclick="calculate('sub')">➖ 引く</button>
+                        <button class="btn-calc" onclick="calculate('double')">✖2 倍</button>
+                        <button class="btn-calc" onclick="calculate('rem')">剰 余り</button>
+                        <button class="btn-calc" onclick="calculate('sort_digits')">🔁 替</button>
+                    </div>
+                </div>
+                
+                <!-- クリア関係 -->
+                <div class="reset-container">
+                    <button class="btn-reset-half" id="btn-clear-slots">スロットクリア</button>
+                    <button class="btn-reset-half" id="btn-clear-result">計算結果クリア</button>
+                </div>
+            </div>
+
         </div>
     </div>
 
@@ -490,7 +544,7 @@
             const video = document.getElementById('camera-stream');
             try {
                 const constraints = {
-                    video: { facingMode: { exact: "environment" }, width: { ideal: 1280 }, height: { ideal: 720 } },
+                    video: { facingMode: { exact: "environment" }, width: { ideal: 640 }, height: { ideal: 480 } },
                     audio: false
                 };
                 streamObject = await navigator.mediaDevices.getUserMedia(constraints)
@@ -518,10 +572,7 @@
             const inputEl = document.getElementById('manual-kanji-input');
             const kanji = inputEl.value.trim();
             
-            if (!kanji) {
-                alert("漢字が入力されていません。");
-                return;
-            }
+            if (!kanji) return;
 
             let targetIdx = -1;
             for (let i = 0; i < 4; i++) {
@@ -530,18 +581,13 @@
                     break;
                 }
             }
-
             if (targetIdx === -1) {
                 for (let i = 0; i < 4; i++) {
-                    if (!selectedSlots.has(i)) {
-                        targetIdx = i;
-                        break;
-                    }
+                    if (!selectedSlots.has(i)) { targetIdx = i; break; }
                 }
             }
-
             if (targetIdx === -1) {
-                alert("すべてのスロットがホールド(選択)されています。解除するかクリアしてください。");
+                alert("全てホールドされています");
                 return;
             }
 
@@ -561,16 +607,16 @@
             const canvas = document.getElementById('capture-canvas');
             const apiKey = document.getElementById('api-key').value.trim();
 
-            if (!apiKey) return alert("先にVISION API PASSを入力してください。");
-            if (!video.srcObject) return alert("カメラが準備できていません。");
+            if (!apiKey) return alert("PASSを入力してください。");
+            if (!video.srcObject) return alert("カメラ未準備");
 
             const indicator = document.getElementById('scan-indicator');
             indicator.style.display = 'flex';
 
-            canvas.width = 1280;
-            canvas.height = 720;
+            canvas.width = 640;
+            canvas.height = 480;
             canvas.getContext('2d').drawImage(video, 0, 0, canvas.width, canvas.height);
-            const base64Image = canvas.toDataURL('image/jpeg', 0.85).replace(/^data:image\/jpeg;base64,/, "");
+            const base64Image = canvas.toDataURL('image/jpeg', 0.8).replace(/^data:image\/jpeg;base64,/, "");
 
             try {
                 const response = await fetch(`https://vision.googleapis.com/v1/images:annotate?key=${apiKey}`, {
@@ -583,14 +629,14 @@
                 
                 processDetectedText(fullText);
             } catch (e) { 
-                alert("スキャン通信エラーが発生しました"); 
+                alert("スキャンエラー"); 
             } finally {
                 indicator.style.display = 'none';
             }
         }
 
         function processDetectedText(text) {
-            const regex = /[「『](.*?)[」』]/g;
+            const regex = /[「『](.*?)[」抑]/g;
             let matches = [];
             let match;
             while ((match = regex.exec(text)) !== null) {
@@ -603,7 +649,7 @@
 
             if (matches.length === 0) {
                 for (let char of text) {
-                    if (KANJI_DICTIONARY[char]) {
+                    if (KANJI_DICTIONARY[char] || char === "下") {
                         matches.push(char);
                     }
                 }
@@ -618,7 +664,14 @@
 
             let missedKanji = "";
 
+            // 「下」の誤認識フィルター（176ページの「卞」にすり替える、あるいはサジェスト用フラグ）
+            let hasShita = false;
+
             matches.forEach(char => {
+                if (char === "下") {
+                    hasShita = true;
+                }
+
                 if (!KANJI_DICTIONARY[char]) {
                     missedKanji += char;
                     return;
@@ -626,10 +679,7 @@
 
                 let isDuplicate = false;
                 for (let i = 0; i < 4; i++) {
-                    if (displays[i].innerText === char) {
-                        isDuplicate = true;
-                        break;
-                    }
+                    if (displays[i].innerText === char) { isDuplicate = true; break; }
                 }
                 if (isDuplicate) return;
 
@@ -649,45 +699,31 @@
                 }
             });
 
-            if (missedKanji || text) {
-                generateSuggestions(missedKanji || text);
-            }
+            generateSuggestions(missedKanji || text, hasShita);
         }
 
-        function generateSuggestions(targetText) {
+        function generateSuggestions(targetText, hasShita = false) {
             const suggestArea = document.getElementById('suggest-area');
             suggestArea.innerHTML = "";
 
             const dictionaryKanjiList = Object.keys(KANJI_DICTIONARY);
             let candidates = [];
 
+            // 176pの「卞」または「下」が検出テキストに含まれる場合、最優先(スコア最大)にする
+            if (hasShita || targetText.includes("下") || targetText.includes("卞")) {
+                candidates.push({ kanji: "卞", score: 9999999 });
+            }
+
             const keiseiTriggers = ["謦", "磬", "馨", "声", "言", "殸", "磐", "壁", "兵", "吉"];
             const tokiTriggers = ["鬨", "開", "門", "閧", "関", "共"];
             
-            let forceKeisei = false;
-            let forceToki = false;
-
-            for (let t of keiseiTriggers) {
-                if (targetText.includes(t)) { forceKeisei = true; break; }
-            }
-            for (let t of tokiTriggers) {
-                if (targetText.includes(t)) { forceToki = true; break; }
-            }
-
-            if (targetText && targetText.trim().length > 0) {
-                forceKeisei = true;
-                forceToki = true;
-            }
+            let forceKeisei = (targetText.includes("謦") || targetText.includes("言"));
+            let forceToki = (targetText.includes("鬨") || targetText.includes("門"));
 
             dictionaryKanjiList.forEach(dictK => {
-                if (dictK === "謦" && forceKeisei) {
-                    candidates.push({ kanji: dictK, score: 999999 });
-                    return;
-                }
-                if (dictK === "鬨" && forceToki) {
-                    candidates.push({ kanji: dictK, score: 999998 });
-                    return;
-                }
+                if (dictK === "卞") return; // 上で個別処理しているためスキップ
+                if (dictK === "謦" && forceKeisei) { candidates.push({ kanji: dictK, score: 888888 }); return; }
+                if (dictK === "鬨" && forceToki) { candidates.push({ kanji: dictK, score: 888887 }); return; }
 
                 for (let rawChar of targetText) {
                     let score = 0;
@@ -696,7 +732,6 @@
                     
                     if (codeDiff < 100) score += 40;
                     else if (codeDiff < 500) score += 20;
-                    else if (codeDiff < 2000) score += 10;
 
                     if (score > 0) {
                         candidates.push({ kanji: dictK, score: score + (1000 / (codeDiff + 1)) });
@@ -715,9 +750,10 @@
                 if (uniqueCandidates.length >= 4) break;
             }
 
-            uniqueCandidates = uniqueCandidates.filter(k => k !== "謦" && k !== "鬨");
-            uniqueCandidates.unshift("鬨");
-            uniqueCandidates.unshift("謦");
+            // いつもの頻出候補補正
+            if (!uniqueCandidates.includes("卞") && (hasShita || targetText.includes("下"))) uniqueCandidates.unshift("卞");
+            if (!uniqueCandidates.includes("鬨")) uniqueCandidates.push("鬨");
+            if (!uniqueCandidates.includes("謦")) uniqueCandidates.push("謦");
 
             const finalCandidates = uniqueCandidates.slice(0, 4);
 
@@ -725,7 +761,7 @@
                 if (!KANJI_DICTIONARY[kanji]) return;
                 const btn = document.createElement('button');
                 btn.className = 'btn-suggest';
-                btn.innerText = `${kanji} (${KANJI_DICTIONARY[kanji]}p)`;
+                btn.innerText = `${kanji}(${KANJI_DICTIONARY[kanji]}p)`;
                 btn.onclick = () => {
                     let targetIdx = 0;
                     for (let i = 0; i < 4; i++) {
@@ -745,6 +781,15 @@
                 if (!isNaN(pVal)) allPages.push(pVal);
             }
 
+            // 新機能: 2倍ボタン
+            if (type === 'double') {
+                if (allPages.length === 0) { document.getElementById('calc-result').innerText = "ERR"; return; }
+                const maxNum = Math.max(...allPages);
+                document.getElementById('calc-result').innerText = maxNum * 2;
+                clearAllSelections();
+                return;
+            }
+
             if (type === 'sort_digits') {
                 if (allPages.length === 0) { document.getElementById('calc-result').innerText = "ERR"; return; }
                 allPages.sort((a, b) => b - a);
@@ -756,10 +801,7 @@
             }
 
             if (type === 'sub') {
-                if (allPages.length < 1) {
-                    document.getElementById('calc-result').innerText = "ERR";
-                    return;
-                }
+                if (allPages.length < 1) { document.getElementById('calc-result').innerText = "ERR"; return; }
                 const maxNum = Math.max(...allPages);
                 const minNum = Math.min(...allPages);
                 document.getElementById('calc-result').innerText = maxNum - minNum;
@@ -768,10 +810,7 @@
             }
 
             if (type === 'rem') {
-                if (allPages.length === 0) {
-                    alert("スロットに漢字が1つも入っていません。");
-                    return;
-                }
+                if (allPages.length === 0) { alert("数値がありません"); return; }
                 document.getElementById('mod-overlay').style.display = 'flex';
                 return;
             }
@@ -782,19 +821,11 @@
                 if (!isNaN(pVal)) pages.push(pVal);
             });
 
-            if (pages.length === 0 && type === 'add') {
-                pages = [...allPages];
-            }
-
-            if (pages.length === 0) {
-                document.getElementById('calc-result').innerText = "ERR";
-                return;
-            }
+            if (pages.length === 0 && type === 'add') pages = [...allPages];
+            if (pages.length === 0) { document.getElementById('calc-result').innerText = "ERR"; return; }
 
             let result = 0;
-            if (type === 'add') {
-                result = pages.reduce((a, b) => a + b, 0);
-            }
+            if (type === 'add') result = pages.reduce((a, b) => a + b, 0);
 
             document.getElementById('calc-result').innerText = result;
             clearAllSelections();
@@ -806,16 +837,10 @@
                 const pVal = parseInt(outputs[i].innerText);
                 if (!isNaN(pVal)) allPages.push(pVal);
             }
-            
-            if (allPages.length === 0) {
-                closeModOverlay();
-                return;
-            }
+            if (allPages.length === 0) { closeModOverlay(); return; }
 
             const maxPage = Math.max(...allPages);
-            const result = maxPage % divisor;
-            
-            document.getElementById('calc-result').innerText = result;
+            document.getElementById('calc-result').innerText = maxPage % divisor;
             closeModOverlay();
             clearAllSelections();
         }
@@ -828,7 +853,7 @@
             displays.forEach(disp => disp.innerText = "-");
             outputs.forEach(out => out.innerText = "---");
             clearAllSelections();
-            document.getElementById('suggest-area').innerHTML = '<span style="color:rgba(181,124,255,0.3); font-size:0.75rem;">スロットをクリアしました</span>';
+            document.getElementById('suggest-area').innerHTML = '<span style="color:rgba(181,124,255,0.3); font-size:0.6rem;">クリアしました</span>';
         }
 
         function clearResultOnly() {
