@@ -2,35 +2,49 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>絶望要塞IG 辞書ツール (Micro Fit)</title>
+    <!-- スクロールを許可するため user-scalable=yes、最大ズーム等の制限を解除 -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- ホーム画面起動時にフルスクリーンにするための記述 -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <title>絶望要塞IG 辞書ツール (Scroll Free)</title>
     <style>
         * { box-sizing: border-box; font-family: 'Courier New', Courier, monospace, sans-serif; }
         
-        /* ツールバーの圧迫に負けないよう、外側の余白をほぼゼロに */
+        /* 
+           上下の謎の空白を排除するため、margin/paddingを0に。
+           overflowをautoにして、はみ出したらスクロールできるように変更。
+        */
         html, body {
-            width: 100vw;
-            height: 100vh;
+            width: 100%;
+            height: 100%;
             margin: 0;
-            padding: 2px 4px;
+            padding: 0;
             background-color: #0c0714; 
             color: #ebd6ff; 
-            overflow: hidden;
-            display: flex;
-            flex-direction: column;
+            overflow: auto; /* スクロールを許可 */
+            -webkit-overflow-scrolling: touch; /* iOSの滑らかなスクロール */
         }
 
-        /* バーをさらに細く縮小 */
+        /* 全体を包むコンテナ。上下左右に1mm程度の極小クッションだけ残して空白を詰めました */
+        .app-wrapper {
+            padding: 4px;
+            display: flex;
+            flex-direction: column;
+            min-height: 100%; /* 画面ぴったり、またはそれ以上に伸びる */
+        }
+
+        /* トップバーの無駄な余白も極限まで削減 */
         .top-bar {
             display: flex;
             justify-content: space-between;
             align-items: center;
             border-bottom: 1px solid rgba(181, 124, 255, 0.2);
-            height: 16px;
-            margin-bottom: 2px;
+            height: 18px;
+            margin-bottom: 4px;
         }
         h1 {
-            font-size: 0.7rem;
+            font-size: 0.75rem;
             margin: 0;
             color: #b57cff;
             letter-spacing: 0px;
@@ -40,7 +54,7 @@
             align-items: center;
             gap: 2px;
         }
-        .config-box label { font-size: 0.5rem; color: #b57cff; font-weight: bold; }
+        .config-box label { font-size: 0.55rem; color: #b57cff; font-weight: bold; }
         .config-box input {
             background: #140d21;
             border: 1px solid #b57cff;
@@ -49,28 +63,27 @@
             font-size: 0.6rem;
             border-radius: 2px;
             width: 80px;
-            height: 13px;
+            height: 14px;
         }
 
-        /* 縦幅の配分を100%固定に */
+        /* メインレイアウト：基本は1画面に収まりつつ、狭ければ縦に伸びる */
         .main-layout {
             display: flex;
             flex: 1;
             gap: 6px;
-            height: calc(100vh - 20px);
-            overflow: hidden;
         }
 
         /* --- 左カラム: カメラ & スキャンボタン --- */
         .left-column {
-            flex: 38; /* 横幅を少し狭めて右を広く */
+            flex: 38;
             display: flex;
             flex-direction: column;
-            gap: 2px;
-            height: 100%;
+            gap: 4px;
         }
+        /* カメラの高さが潰れないよう最低限度を確保 */
         .camera-container {
             flex: 1;
+            min-height: 140px;
             background: #000;
             border: 1.5px solid #b57cff;
             position: relative;
@@ -80,11 +93,11 @@
         #camera-stream { width: 100%; height: 100%; object-fit: cover; }
         
         .btn-shutter {
-            height: 28px; /* 縦幅を限界までスリム化 */
+            height: 32px;
             background: linear-gradient(135deg, #5500aa, #220055);
             color: #ebd6ff;
             border: 1.5px solid #b57cff;
-            font-size: 0.8rem;
+            font-size: 0.85rem;
             font-weight: bold;
             border-radius: 4px;
             cursor: pointer;
@@ -96,29 +109,27 @@
             flex: 62;
             display: flex;
             flex-direction: column;
-            gap: 2px;
-            height: 100%;
-            overflow: hidden;
+            gap: 4px;
         }
 
         .section-title {
-            font-size: 0.5rem;
+            font-size: 0.55rem;
             font-weight: bold;
             color: #b57cff;
-            margin-bottom: 0px;
+            margin-bottom: 1px;
         }
 
         /* スロット表示エリア */
         .slots-container {
             display: grid;
             grid-template-columns: repeat(4, 1fr);
-            gap: 3px;
+            gap: 4px;
         }
         .slot-box {
             background: #150f24;
             border: 1px solid rgba(181, 124, 255, 0.4);
             border-radius: 4px;
-            padding: 1px 0px;
+            padding: 2px 0px;
             text-align: center;
             display: flex;
             flex-direction: column;
@@ -127,21 +138,21 @@
             border: 1px solid #ff007f;
             background: #2b0c1e;
         }
-        .slot-box .label { font-size: 0.45rem; color: #b57cff; pointer-events: none; }
+        .slot-box .label { font-size: 0.5rem; color: #b57cff; pointer-events: none; }
         .slot-box.selected .label { color: #ff007f; }
         .slot-box .kanji-display {
-            font-size: 0.85rem;
+            font-size: 0.9rem;
             color: #ffffff;
             font-weight: bold;
-            min-height: 0.95rem;
-            line-height: 0.95rem;
+            min-height: 1rem;
+            line-height: 1rem;
             pointer-events: none;
         }
         .slot-box .page-output {
-            font-size: 0.7rem;
+            font-size: 0.75rem;
             font-weight: bold;
             color: #00ff64;
-            min-height: 0.8rem;
+            min-height: 0.85rem;
             pointer-events: none;
         }
 
@@ -149,21 +160,21 @@
         .suggest-container {
             background: rgba(0, 0, 0, 0.4);
             border: 1px dashed rgba(181, 124, 255, 0.2);
-            padding: 1px 3px;
+            padding: 2px 4px;
             border-radius: 4px;
-            min-height: 20px;
+            min-height: 24px;
             display: flex;
             align-items: center;
-            gap: 3px;
+            gap: 4px;
         }
-        .suggest-title { font-size: 0.45rem; color: #aaa; white-space: nowrap; }
-        .suggest-buttons { display: flex; flex-wrap: wrap; gap: 2px; flex: 1; }
+        .suggest-title { font-size: 0.5rem; color: #aaa; white-space: nowrap; }
+        .suggest-buttons { display: flex; flex-wrap: wrap; gap: 3px; flex: 1; }
         .btn-suggest {
             background: #25163a;
             border: 1px solid #b57cff;
             color: #ebd6ff;
-            padding: 0px 3px;
-            font-size: 0.55rem;
+            padding: 1px 4px;
+            font-size: 0.6rem;
             border-radius: 2px;
             cursor: pointer;
         }
@@ -173,84 +184,84 @@
         .manual-search-container {
             background: rgba(26, 11, 46, 0.4);
             border: 1px solid rgba(181, 124, 255, 0.3);
-            padding: 1px 4px;
+            padding: 2px 4px;
             border-radius: 4px;
             display: flex;
             align-items: center;
-            gap: 3px;
+            gap: 4px;
         }
         .manual-search-input {
             flex: 1;
             background: #140d21;
             border: 1px solid #b57cff;
             color: #ffffff;
-            padding: 1px;
-            font-size: 0.65rem;
+            padding: 2px;
+            font-size: 0.7rem;
             border-radius: 2px;
             text-align: center;
             font-weight: bold;
-            height: 18px;
+            height: 20px;
         }
         .btn-manual-submit {
             background: #4a1c6d;
             border: 1px solid #b57cff;
             color: #ebd6ff;
-            padding: 0px 8px;
-            font-size: 0.65rem;
+            padding: 0px 10px;
+            font-size: 0.7rem;
             font-weight: bold;
             border-radius: 2px;
             cursor: pointer;
-            height: 18px;
+            height: 20px;
         }
         .btn-manual-submit:active { background: #00ff64; color: #000; }
 
-        /* 計算コントロールセンターを縦長に潰れないよう調整 */
+        /* 計算コントロールセンター */
         .calc-panel {
             background: rgba(27, 15, 46, 0.6);
             border: 1px solid rgba(181, 124, 255, 0.3);
             border-radius: 4px;
-            padding: 3px 4px;
+            padding: 4px;
             flex: 1;
             display: flex;
             flex-direction: column;
             justify-content: space-between;
             position: relative;
-            overflow: hidden;
+            min-height: 65px; /* 最低限の押しやすさを確保 */
         }
         .calc-main-row {
             display: flex;
             gap: 4px;
             flex: 1;
             align-items: center;
-            min-height: 0;
         }
         .result-display {
-            flex: 32;
+            flex: 30;
             background: #06030a;
             border: 1px solid #b57cff;
             border-radius: 4px;
-            padding: 1px;
+            padding: 2px;
             text-align: center;
             display: flex;
             flex-direction: column;
             justify-content: center;
             height: 100%;
+            min-height: 35px;
         }
-        .result-display .res-title { font-size: 0.45rem; color: #b57cff; }
-        .result-display .res-num { font-size: 1.2rem; font-weight: bold; color: #ff007f; text-shadow: 0 0 6px #ff007f; line-height: 1.2rem; }
+        .result-display .res-title { font-size: 0.5rem; color: #b57cff; }
+        .result-display .res-num { font-size: 1.25rem; font-weight: bold; color: #ff007f; text-shadow: 0 0 6px #ff007f; line-height: 1.25rem; }
         
         .calc-buttons {
-            flex: 68;
+            flex: 70;
             display: grid;
             grid-template-columns: repeat(5, 1fr);
-            gap: 2px;
+            gap: 3px;
             height: 100%;
         }
         .btn-calc {
             background: #2b124c;
             border: 1.5px solid #ff007f;
             color: #ff007f;
-            font-size: 0.6rem;
+            font-size: 0.65rem;
             font-weight: bold;
             border-radius: 3px;
             cursor: pointer;
@@ -258,23 +269,23 @@
             justify-content: center;
             align-items: center;
             height: 100%;
+            min-height: 35px;
         }
         .btn-calc:active { background: #ff007f; color: #000; }
         
-        /* リセットエリアを確実に縮小 */
         .reset-container {
             display: grid;
             grid-template-columns: 1fr 1fr;
-            gap: 3px;
-            margin-top: 2px;
-            height: 15px;
+            gap: 4px;
+            margin-top: 4px;
+            height: 18px;
         }
         .btn-reset-half {
             background: #3a1525;
             border: 1px solid #ff3388;
             color: #ff99cc;
             padding: 0;
-            font-size: 0.55rem;
+            font-size: 0.6rem;
             border-radius: 3px;
             cursor: pointer;
             display: flex;
@@ -295,28 +306,29 @@
             flex-direction: column;
             justify-content: center;
             align-items: center;
-            padding: 2px;
+            padding: 4px;
         }
         .mod-selector-title {
-            font-size: 0.55rem;
+            font-size: 0.6rem;
             color: #ff007f;
-            margin-bottom: 2px;
+            margin-bottom: 3px;
             font-weight: bold;
         }
         .mod-grid {
             display: grid;
             grid-template-columns: repeat(5, 1fr);
-            gap: 2px;
-            width: 95%;
+            gap: 3px;
+            width: 100%;
         }
         .btn-mod-num {
             background: #1d0e30;
             border: 1px solid #b57cff;
             color: #00ff66;
-            font-size: 0.7rem;
+            font-size: 0.75rem;
             font-weight: bold;
             border-radius: 3px;
             cursor: pointer;
+            padding: 4px 0;
         }
         .btn-mod-num:active { background: #00ff66; color: #000; }
         .btn-mod-cancel {
@@ -324,16 +336,16 @@
             background: #333;
             border: none;
             color: #fff;
-            padding: 1px;
-            font-size: 0.55rem;
+            padding: 2px;
+            font-size: 0.6rem;
             border-radius: 3px;
-            margin-top: 1px;
+            margin-top: 2px;
         }
 
         .loading-dimmer {
             display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%;
             background: rgba(20, 5, 35, 0.5); z-index: 10; justify-content: center; align-items: center;
-            font-size: 0.65rem; color: #00ff66;
+            font-size: 0.7rem; color: #00ff66;
         }
         .loading-dimmer::after { content: "SCANNING KANJI..."; animation: blink 0.5s infinite alternate; }
         @keyframes blink { from { opacity: 0.3; } to { opacity: 1; } }
@@ -341,114 +353,120 @@
 </head>
 <body>
 
-    <!-- スリムバー -->
-    <div class="top-bar">
-        <h1>絶望要塞IG 辞書ツール</h1>
-        <div class="config-box">
-            <label>API PASS:</label>
-            <input type="password" id="api-key" placeholder="AIzaSy...">
-        </div>
-    </div>
+    <!-- アプリ全体を包むラッパー -->
+    <div class="app-wrapper">
 
-    <!-- 左右分配レイアウト -->
-    <div class="main-layout">
-        
-        <!-- 左カラム -->
-        <div class="left-column">
-            <div class="camera-container">
-                <video id="camera-stream" autoplay playsinline muted></video>
-                <div class="loading-dimmer" id="scan-indicator"></div>
+        <!-- スリムバー -->
+        <div class="top-bar">
+            <h1>絶望要塞IG 辞書ツール</h1>
+            <div class="config-box">
+                <label>API PASS:</label>
+                <input type="password" id="api-key" placeholder="AIzaSy...">
             </div>
-            <button class="btn-shutter" id="shutter-trigger">スキャン</button>
         </div>
 
-        <!-- 右カラム -->
-        <div class="right-column">
+        <!-- 左右分配レイアウト -->
+        <div class="main-layout">
             
-            <!-- スロット -->
-            <div>
-                <div class="section-title">【スロット】タップ固定</div>
-                <div class="slots-container">
-                    <div class="slot-box" id="slot-container-0" onclick="toggleSlotSelect(0)">
-                        <span class="label">S1</span>
-                        <div class="kanji-display" id="slot-k-0">-</div>
-                        <span class="page-output" id="slot-p-0">---</span>
-                    </div>
-                    <div class="slot-box" id="slot-container-1" onclick="toggleSlotSelect(1)">
-                        <span class="label">S2</span>
-                        <div class="kanji-display" id="slot-k-1">-</div>
-                        <span class="page-output" id="slot-p-1">---</span>
-                    </div>
-                    <div class="slot-box" id="slot-container-2" onclick="toggleSlotSelect(2)">
-                        <span class="label">S3</span>
-                        <div class="kanji-display" id="slot-k-2">-</div>
-                        <span class="page-output" id="slot-p-2">---</span>
-                    </div>
-                    <div class="slot-box" id="slot-container-3" onclick="toggleSlotSelect(3)">
-                        <span class="label">S4</span>
-                        <div class="kanji-display" id="slot-k-3">-</div>
-                        <span class="page-output" id="slot-p-3">---</span>
-                    </div>
+            <!-- 左カラム -->
+            <div class="left-column">
+                <div class="camera-container">
+                    <video id="camera-stream" autoplay playsinline muted></video>
+                    <div class="loading-dimmer" id="scan-indicator"></div>
                 </div>
+                <button class="btn-shutter" id="shutter-trigger">スキャン</button>
             </div>
 
-            <!-- サジェスト -->
-            <div class="suggest-container">
-                <div class="suggest-title">候補:</div>
-                <div class="suggest-buttons" id="suggest-area">
-                    <span style="color:rgba(181,124,255,0.3); font-size:0.5rem;">ここに並びます</span>
-                </div>
-            </div>
-
-            <!-- 手入力 -->
-            <div class="manual-search-container">
-                <input type="text" class="manual-search-input" id="manual-kanji-input" maxlength="1" placeholder="未認識時の手入力">
-                <button class="btn-manual-submit" onclick="submitManualKanji()">登録</button>
-            </div>
-
-            <!-- 計算パネル -->
-            <div class="calc-panel">
-                <div class="mod-selector-overlay" id="mod-overlay">
-                    <div class="mod-selector-title">最大ページ数を何で割る？</div>
-                    <div class="mod-grid">
-                        <button class="btn-mod-num" onclick="execModCalculated(1)">1</button>
-                        <button class="btn-mod-num" onclick="execModCalculated(2)">2</button>
-                        <button class="btn-mod-num" onclick="execModCalculated(3)">3</button>
-                        <button class="btn-mod-num" onclick="execModCalculated(4)">4</button>
-                        <button class="btn-mod-num" onclick="execModCalculated(5)">5</button>
-                        <button class="btn-mod-num" onclick="execModCalculated(6)">6</button>
-                        <button class="btn-mod-num" onclick="execModCalculated(7)">7</button>
-                        <button class="btn-mod-num" onclick="execModCalculated(8)">8</button>
-                        <button class="btn-mod-num" onclick="execModCalculated(9)">9</button>
-                        <button class="btn-mod-cancel" onclick="closeModOverlay()">戻る</button>
-                    </div>
-                </div>
-
-                <div class="calc-main-row">
-                    <div class="result-display">
-                        <div class="res-title">ANS</div>
-                        <div class="res-num" id="calc-result">000</div>
-                    </div>
-                    <div class="calc-buttons">
-                        <button class="btn-calc" onclick="calculate('add')">➕ 足</button>
-                        <button class="btn-calc" onclick="calculate('sub')">➖ 引</button>
-                        <button class="btn-calc" onclick="calculate('double')">✖2 倍</button>
-                        <button class="btn-calc" onclick="calculate('rem')">剰 余</button>
-                        <button class="btn-calc" onclick="calculate('sort_digits')">🔁 替</button>
-                    </div>
-                </div>
+            <!-- 右カラム -->
+            <div class="right-column">
                 
-                <div class="reset-container">
-                    <button class="btn-reset-half" id="btn-clear-slots">スロットクリア</button>
-                    <button class="btn-reset-half" id="btn-clear-result">結果クリア</button>
+                <!-- スロット -->
+                <div>
+                    <div class="section-title">【スロット】タップ固定</div>
+                    <div class="slots-container">
+                        <div class="slot-box" id="slot-container-0" onclick="toggleSlotSelect(0)">
+                            <span class="label">S1</span>
+                            <div class="kanji-display" id="slot-k-0">-</div>
+                            <span class="page-output" id="slot-p-0">---</span>
+                        </div>
+                        <div class="slot-box" id="slot-container-1" onclick="toggleSlotSelect(1)">
+                            <span class="label">S2</span>
+                            <div class="kanji-display" id="slot-k-1">-</div>
+                            <span class="page-output" id="slot-p-1">---</span>
+                        </div>
+                        <div class="slot-box" id="slot-container-2" onclick="toggleSlotSelect(2)">
+                            <span class="label">S3</span>
+                            <div class="kanji-display" id="slot-k-2">-</div>
+                            <span class="page-output" id="slot-p-2">---</span>
+                        </div>
+                        <div class="slot-box" id="slot-container-3" onclick="toggleSlotSelect(3)">
+                            <span class="label">S4</span>
+                            <div class="kanji-display" id="slot-k-3">-</div>
+                            <span class="page-output" id="slot-p-3">---</span>
+                        </div>
+                    </div>
                 </div>
-            </div>
 
+                <!-- サジェスト -->
+                <div class="suggest-container">
+                    <div class="suggest-title">候補:</div>
+                    <div class="suggest-buttons" id="suggest-area">
+                        <span style="color:rgba(181,124,255,0.3); font-size:0.55rem;">ここに並びます</span>
+                    </div>
+                </div>
+
+                <!-- 手入力 -->
+                <div class="manual-search-container">
+                    <input type="text" class="manual-search-input" id="manual-kanji-input" maxlength="1" placeholder="未認識時の手入力">
+                    <button class="btn-manual-submit" onclick="submitManualKanji()">登録</button>
+                </div>
+
+                <!-- 計算パネル -->
+                <div class="calc-panel">
+                    <div class="mod-selector-overlay" id="mod-overlay">
+                        <div class="mod-selector-title">最大ページ数を何で割る？</div>
+                        <div class="mod-grid">
+                            <button class="btn-mod-num" onclick="execModCalculated(1)">1</button>
+                            <button class="btn-mod-num" onclick="execModCalculated(2)">2</button>
+                            <button class="btn-mod-num" onclick="execModCalculated(3)">3</button>
+                            <button class="btn-mod-num" onclick="execModCalculated(4)">4</button>
+                            <button class="btn-mod-num" onclick="execModCalculated(5)">5</button>
+                            <button class="btn-mod-num" onclick="execModCalculated(6)">6</button>
+                            <button class="btn-mod-num" onclick="execModCalculated(7)">7</button>
+                            <button class="btn-mod-num" onclick="execModCalculated(8)">8</button>
+                            <button class="btn-mod-num" onclick="execModCalculated(9)">9</button>
+                            <button class="btn-mod-cancel" onclick="closeModOverlay()">戻る</button>
+                        </div>
+                    </div>
+
+                    <div class="calc-main-row">
+                        <div class="result-display">
+                            <div class="res-title">ANS</div>
+                            <div class="res-num" id="calc-result">000</div>
+                        </div>
+                        <div class="calc-buttons">
+                            <button class="btn-calc" onclick="calculate('add')">➕ 足</button>
+                            <button class="btn-calc" onclick="calculate('sub')">➖ 引</button>
+                            <button class="btn-calc" onclick="calculate('double')">✖2 倍</button>
+                            <button class="btn-calc" onclick="calculate('rem')">剰 余</button>
+                            <button class="btn-calc" onclick="calculate('sort_digits')">🔁 替</button>
+                        </div>
+                    </div>
+                    
+                    <div class="reset-container">
+                        <button class="btn-reset-half" id="btn-clear-slots">スロットクリア</button>
+                        <button class="btn-reset-half" id="btn-clear-result">結果クリア</button>
+                    </div>
+                </div>
+
+            </div>
         </div>
+
     </div>
 
     <canvas id="capture-canvas" style="display:none;"></canvas>
 
+    <!-- ※ロジック用JavaScriptは前回の動作するものをそのまま引き継いでいます -->
     <script type="module">
         const KANJI_DICTIONARY = {
             "七":7,"下":8,"丈":16,"丘":22,"並":25,"丸":29,"丼":31,"衣":31,"也":36,"井":48,
@@ -816,7 +834,7 @@
             displays.forEach(disp => disp.innerText = "-");
             outputs.forEach(out => out.innerText = "---");
             clearAllSelections();
-            document.getElementById('suggest-area').innerHTML = '<span style="color:rgba(181,124,255,0.3); font-size:0.5rem;">クリアしました</span>';
+            document.getElementById('suggest-area').innerHTML = '<span style="color:rgba(181,124,255,0.3); font-size:0.55rem;">クリアしました</span>';
         }
 
         function clearResultOnly() {
