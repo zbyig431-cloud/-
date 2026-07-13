@@ -578,7 +578,7 @@
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ requests: [{ image: { content: base64Image }, features: [{ type: "TEXT_DETECTION" }] }] })
                 });
-                const data = await response.json(); FullText
+                const data = await response.json();
                 const fullText = data.responses[0]?.textAnnotations?.[0]?.description || "";
                 
                 processDetectedText(fullText);
