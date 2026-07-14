@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>絶望要塞IG スカウターツール（左右完全分離版）</title>
+    <title>絶望要塞IG スカウターツール（比率維持・分離版）</title>
     <!-- Firebase SDK (v10) -->
     <script type="importmap">
       {
@@ -144,63 +144,84 @@
         }
 
         /* ==========================================================================
-           PHASE 2: 横画面HUD（左右完全2分割化）
+           PHASE 2: 横画面HUD（カメラ比率維持＋左下ボタン集約版）
            ========================================================================== */
         #scan-phase {
             position: fixed;
             top: 0; left: 0; width: 100vw; height: 100vh;
-            background: #000;
+            background: var(--bg-dark);
             display: none;
             z-index: 1000;
-            /* 画面を左右にパキッと分割 */
-            grid-template-columns: 1fr 300px; 
+            grid-template-columns: 1fr 300px; /* 左右の完全分離構造 */
         }
 
-        /* 左側：カメラ専用ファインダーエリア（一切重ね物なし） */
-        .finder-container {
+        /* 左側：カメラと操作系を縦に並べるエリア */
+        .hud-left {
             grid-column: 1;
-            position: relative;
-            width: 100%;
+            display: flex;
+            flex-direction: column;
             height: 100%;
+            background: #05080c;
+        }
+
+        /* 左上：カメラをスマホ本来の比率（16:9）でピッタリ収めるコンテナ */
+        .finder-container {
+            width: 100%;
+            flex: 1; /* 空きスペースを埋める */
+            position: relative;
             background: #000;
             overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
 
         #camera-stream {
             width: 100%;
             height: 100%;
-            object-fit: cover;
+            /* containにすることで、引き伸ばされずスマホ本来の正しいアスペクト比を維持 */
+            object-fit: contain; 
         }
 
-        /* 左上のフローティング操作ボタン群 */
-        .hud-left-controls {
-            position: absolute;
-            top: 15px;
-            left: 15px;
-            z-index: 10;
+        /* 左下：余白部分に設置するコントロールパネル */
+        .hud-left-bottom-controls {
+            height: 60px; /* ボタンを押しやすくする十分な高さ */
+            background: rgba(10, 14, 20, 0.95);
+            border-top: 1px solid rgba(0, 229, 255, 0.3);
             display: flex;
-            gap: 10px;
-            pointer-events: auto;
+            align-items: center;
+            padding: 0 15px;
+            gap: 15px;
         }
+
         .btn-exit-icon, .btn-zoom-toggle {
-            height: 38px;
+            height: 42px;
+            padding: 0 20px;
             border-radius: 6px;
-            background: rgba(10, 14, 20, 0.8);
-            border: 1px solid rgba(0, 229, 255, 0.4);
-            color: #fff;
             font-size: 14px;
             font-weight: bold;
             display: flex;
             align-items: center;
             justify-content: center;
-            padding: 0 12px;
             box-shadow: 0 0 10px rgba(0,0,0,0.5);
         }
-        .btn-zoom-toggle {
-            color: var(--cyber-blue);
-            border-color: var(--cyber-blue);
+
+        .btn-exit-icon {
+            background: rgba(255, 51, 51, 0.1);
+            border: 1px solid var(--cyber-red);
+            color: var(--cyber-red);
         }
-        .btn-zoom-toggle:active, .btn-exit-icon:active {
+        .btn-exit-icon:active {
+            background: var(--cyber-red);
+            color: #fff;
+        }
+
+        .btn-zoom-toggle {
+            background: rgba(0, 229, 255, 0.1);
+            border: 1px solid var(--cyber-blue);
+            color: var(--cyber-blue);
+        }
+        .btn-zoom-toggle:active {
             background: var(--cyber-blue);
             color: #000;
         }
@@ -215,7 +236,6 @@
             padding: 8px;
             gap: 8px;
             height: 100%;
-            pointer-events: auto;
             overflow-y: auto;
         }
 
@@ -296,7 +316,6 @@
         }
         .stocks-counter { font-size: 10px; color: #8cc8ff; font-weight: bold; text-align: center; }
 
-        /* 2つのスキャンボタンを横並びにするコンテナ */
         .shutter-grid {
             display: grid;
             grid-template-columns: 1fr 1fr;
@@ -335,7 +354,7 @@
         .scan-dimmer.active { opacity: 1; }
 
         .toast-log {
-            position: absolute; left: 20px; bottom: 20px; background: rgba(0,0,0,0.85);
+            position: absolute; left: 20px; bottom: 80px; background: rgba(0,0,0,0.85);
             border-left: 3px solid var(--cyber-blue); padding: 8px 14px; font-size: 11px;
             z-index: 20; pointer-events: none; opacity: 0; transition: all 0.2s;
         }
@@ -379,22 +398,25 @@
         </div>
     </div>
 
-    <!-- PHASE 2: 横画面スキャンHUD（左右完全セパレート構成） -->
+    <!-- PHASE 2: 横画面スキャンHUD -->
     <div id="scan-phase">
-        <!-- 左半分：100%遮蔽物のない純粋なカメラ画面 -->
-        <div class="finder-container">
-            <video id="camera-stream" autoplay playsinline muted></video>
-            <div class="camera-crosshair"></div>
-            <div class="scan-dimmer" id="scan-indicator"></div>
+        <!-- 左側セクション：カメラ（上）と各種ボタン（下） -->
+        <div class="hud-left">
+            <!-- 左上：比率を絶対に崩さないカメラファインダー -->
+            <div class="finder-container">
+                <video id="camera-stream" autoplay playsinline muted></video>
+                <div class="camera-crosshair"></div>
+                <div class="scan-dimmer" id="scan-indicator"></div>
+            </div>
 
-            <!-- 左上設置のコントロール（退室＆レンズ切り替え） -->
-            <div class="hud-left-controls">
+            <!-- 左下：カメラの下に生まれた余白スペースを活用した操作エリア -->
+            <div class="hud-left-bottom-controls">
                 <button class="btn-exit-icon" id="btn-exit-scan">🚪 EXIT</button>
                 <button class="btn-zoom-toggle" id="btn-toggle-lens">🔄 1.0x / 0.5x</button>
             </div>
         </div>
 
-        <!-- 右半分：情報・入力・スキャン操作に完全特化した固定パネル -->
+        <!-- 右側セクション：情報・入力・スキャン操作に完全特化した固定パネル -->
         <div class="hud-right">
             <div class="hud-panel-title">SCOUTER INTERFACE</div>
             
@@ -457,7 +479,7 @@
         let allPhotosMap = {}; 
         let unsubscribeRoom = null;
         let presenceInterval = null;
-        let isUltraWideMode = true; // 初回は超広角(0.5倍)をデフォルト狙いにするフラグ
+        let isUltraWideMode = true; 
 
         const setupPhase = document.getElementById('setup-phase');
         const scanPhase = document.getElementById('scan-phase');
@@ -482,10 +504,8 @@
             document.getElementById('btn-exit-scan').addEventListener('click', exitScanMode);
             document.getElementById('btn-reset-all').addEventListener('click', resetSystem);
             
-            // 手動レンズ切り替えボタンのイベント登録
             document.getElementById('btn-toggle-lens').addEventListener('click', toggleCameraLens);
 
-            // 並列スキャンボタンのダイレクトイベント
             document.getElementById('shutter-target').addEventListener('click', () => processCaptureOCR("target"));
             document.getElementById('shutter-quest').addEventListener('click', () => processCaptureOCR("question"));
 
@@ -501,15 +521,13 @@
             });
         }
 
-        // カメラ起動コアエンジン
         async function startCameraEngine() {
             setupPhase.style.display = 'none';
-            scanPhase.style.display = 'grid'; // 横分割用にgrid指定
+            scanPhase.style.display = 'grid'; 
 
             if(localStream) { localStream.getTracks().forEach(track => track.stop()); }
 
             try {
-                // 仮起動して権限を開放
                 const tempStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" }, audio: false });
                 const devices = await navigator.mediaDevices.enumerateDevices();
                 const videoDevices = devices.filter(device => device.kind === 'videoinput');
@@ -523,7 +541,6 @@
 
                 if (backCameras.length > 0) {
                     if (isUltraWideMode) {
-                        // 0.5倍(超広角)レンズを探す
                         const ultraWide = backCameras.find(d => 
                             d.label.toLowerCase().includes('ultra') || d.label.toLowerCase().includes('0.5') ||
                             d.label.toLowerCase().includes('super') || d.label.toLowerCase().includes('ウルトラ') ||
@@ -531,7 +548,6 @@
                         );
                         targetDeviceId = ultraWide ? ultraWide.deviceId : (backCameras[1] ? backCameras[1].deviceId : backCameras[0].deviceId);
                     } else {
-                        // 1.0倍(標準)レンズを指定（背面リストの先頭になるケースが大半）
                         const standardLens = backCameras.find(d => d.label.toLowerCase().includes('main') || d.label.toLowerCase().includes('wide') || d.label.toLowerCase().includes('広角')) || backCameras[0];
                         targetDeviceId = standardLens ? standardLens.deviceId : backCameras[0].deviceId;
                     }
@@ -550,7 +566,6 @@
 
                 localStream = await navigator.mediaDevices.getUserMedia(constraints);
                 
-                // ズーム命令の上書き強制（コンボ処理）
                 const videoTrack = localStream.getVideoTracks()[0];
                 const capabilities = videoTrack.getCapabilities ? videoTrack.getCapabilities() : {};
                 if (capabilities.zoom) {
@@ -570,7 +585,6 @@
             }
         }
 
-        // 📷 ボタンを押すたびにレンズを強制交互切り替えする関数
         function toggleCameraLens() {
             isUltraWideMode = !isUltraWideMode;
             showToast(isUltraWideMode ? "SWITCHING TO 0.5x..." : "SWITCHING TO 1.0x...");
@@ -630,7 +644,6 @@
             try { await updateDoc(doc(db, "rooms", roomId), { currentQueries: queries }); } catch(e) {}
         }
 
-        // 2つのスキャンボタンから連動するOCRコア
         async function processCaptureOCR(mode) {
             const videoEl = document.getElementById('camera-stream');
             const canvas = document.getElementById('capture-canvas');
