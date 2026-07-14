@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>絶望要塞IG 横画面対応スカウターツール（肉眼アシスト版）</title>
+    <title>絶望要塞IG スカウターツール（左右完全分離版）</title>
     <!-- Firebase SDK (v10) -->
     <script type="importmap">
       {
@@ -20,7 +20,7 @@
             --cyber-green: #39ff14;
             --cyber-purple: #b57cff;
             --cyber-red: #ff3333;
-            --panel-bg: rgba(16, 23, 33, 0.85);
+            --panel-bg: rgba(16, 23, 33, 0.95);
             --panel-border: rgba(0, 229, 255, 0.2);
         }
 
@@ -144,75 +144,130 @@
         }
 
         /* ==========================================================================
-           PHASE 2: 横画面HUD
+           PHASE 2: 横画面HUD（左右完全2分割化）
            ========================================================================== */
         #scan-phase {
             position: fixed;
             top: 0; left: 0; width: 100vw; height: 100vh;
-            background: #000; display: none; z-index: 1000;
+            background: #000;
+            display: none;
+            z-index: 1000;
+            /* 画面を左右にパキッと分割 */
+            grid-template-columns: 1fr 300px; 
+        }
+
+        /* 左側：カメラ専用ファインダーエリア（一切重ね物なし） */
+        .finder-container {
+            grid-column: 1;
+            position: relative;
+            width: 100%;
+            height: 100%;
+            background: #000;
+            overflow: hidden;
         }
 
         #camera-stream {
-            width: 100%; height: 100%; object-fit: cover;
-            position: absolute; top: 0; left: 0; z-index: 1;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
         }
 
-        .hud-overlay {
-            position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 2;
-            display: grid;
-            grid-template-columns: 1fr 280px;
-            padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
-            pointer-events: none;
+        /* 左上のフローティング操作ボタン群 */
+        .hud-left-controls {
+            position: absolute;
+            top: 15px;
+            left: 15px;
+            z-index: 10;
+            display: flex;
+            gap: 10px;
+            pointer-events: auto;
+        }
+        .btn-exit-icon, .btn-zoom-toggle {
+            height: 38px;
+            border-radius: 6px;
+            background: rgba(10, 14, 20, 0.8);
+            border: 1px solid rgba(0, 229, 255, 0.4);
+            color: #fff;
+            font-size: 14px;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0 12px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.5);
+        }
+        .btn-zoom-toggle {
+            color: var(--cyber-blue);
+            border-color: var(--cyber-blue);
+        }
+        .btn-zoom-toggle:active, .btn-exit-icon:active {
+            background: var(--cyber-blue);
+            color: #000;
         }
 
-        .hud-left-floating, .hud-right { pointer-events: auto; }
-
-        .hud-left-floating { position: absolute; top: 15px; left: 15px; z-index: 10; }
-        .btn-exit-icon {
-            width: 38px; height: 38px; border-radius: 6px;
-            background: rgba(10, 14, 20, 0.6); border: 1px solid rgba(255,255,255,0.3);
-            color: #fff; font-size: 16px; display: flex; align-items: center; justify-content: center;
-        }
-
+        /* 右側：完全情報・操作パネルエリア */
         .hud-right {
             grid-column: 2;
-            background: rgba(10, 14, 20, 0.75);
-            backdrop-filter: blur(4px);
-            border-left: 1px solid rgba(0, 229, 255, 0.2);
-            display: flex; flex-direction: column; padding: 6px; gap: 6px; height: 100%;
+            background: #0a0e14;
+            border-left: 2px solid rgba(0, 229, 255, 0.3);
+            display: flex;
+            flex-direction: column;
+            padding: 8px;
+            gap: 8px;
+            height: 100%;
+            pointer-events: auto;
+            overflow-y: auto;
         }
 
-        .hud-mode-container { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; }
-        .hud-tab {
-            font-size: 10px; padding: 6px 2px; text-align: center;
-            border: 1px solid rgba(255,255,255,0.15); background: rgba(0,0,0,0.5); color: #778899; border-radius: 3px;
+        .hud-panel-title {
+            font-size: 11px;
+            color: #8cc8ff;
+            text-align: center;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+            padding-bottom: 4px;
+            font-weight: bold;
+            letter-spacing: 1px;
         }
-        .hud-tab.active.mode-target { border-color: var(--cyber-blue); color: var(--cyber-blue); background: rgba(0, 229, 255, 0.1); }
-        .hud-tab.active.mode-question { border-color: var(--cyber-purple); color: var(--cyber-purple); background: rgba(181, 124, 255, 0.1); }
 
-        .hud-slot-list { display: flex; flex-direction: column; gap: 4px; }
+        /* スロット一覧 */
+        .hud-slot-list {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
         .hud-slot-row {
-            display: flex; align-items: center;
-            background: rgba(0, 0, 0, 0.6); border: 1px solid rgba(140, 200, 255, 0.2);
-            border-radius: 4px; padding: 3px; gap: 4px; height: 52px;
+            display: flex;
+            align-items: center;
+            background: rgba(20, 30, 45, 0.6);
+            border: 1px solid rgba(140, 200, 255, 0.2);
+            border-radius: 4px;
+            padding: 4px;
+            gap: 6px;
+            height: 56px;
         }
-        .hud-slot-row.has-error { border-color: rgba(255, 51, 51, 0.3); }
+        .hud-slot-row.has-error { border-color: rgba(255, 51, 51, 0.4); background: rgba(255,0,0,0.05); }
         .hud-slot-row input {
-            width: 44px; height: 32px; padding: 2px; font-size: 14px; text-align: center;
-            background: rgba(20,30,45,0.9); border-color: rgba(0,229,255,0.3);
+            width: 48px;
+            height: 36px;
+            padding: 2px;
+            font-size: 16px;
+            font-weight: bold;
+            text-align: center;
+            background: #000;
+            border-color: rgba(0,229,255,0.4);
+            color: var(--cyber-blue);
         }
         
         .hud-slot-ans-zone {
             flex: 1;
             height: 100%;
-            background: rgba(0,0,0,0.4);
-            border-radius: 2px;
+            background: rgba(0,0,0,0.5);
+            border-radius: 3px;
             overflow: hidden;
             display: flex;
             align-items: center;
             justify-content: center;
-            border: 1px solid rgba(255,255,255,0.05);
-            position: relative;
+            border: 1px solid rgba(255,255,255,0.08);
         }
         .hud-slot-ans-zone img {
             width: 100%;
@@ -220,7 +275,7 @@
             object-fit: contain;
         }
         .hud-slot-ans-zone .no-img-text {
-            font-size: 10px;
+            font-size: 11px;
             color: #445566;
             font-weight: bold;
         }
@@ -230,23 +285,51 @@
             font-weight: bold;
         }
 
+        /* 下部コントロール：2連並列シャッターボタン */
         .hud-control-bottom {
-            margin-top: auto; display: flex; flex-direction: column; align-items: center; gap: 2px;
-            padding-top: 4px; border-top: 1px solid rgba(255,255,255,0.08);
+            margin-top: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            padding-top: 6px;
+            border-top: 1px solid rgba(255,255,255,0.1);
         }
-        .stocks-counter { font-size: 9px; color: #8cc8ff; font-weight: bold; }
+        .stocks-counter { font-size: 10px; color: #8cc8ff; font-weight: bold; text-align: center; }
 
-        .btn-shutter {
-            width: 100%; padding: 10px 0; border-radius: 6px;
-            background: linear-gradient(180deg, #ffffff 0%, #b5e9ff 100%);
-            border: 2px solid var(--cyber-blue); box-shadow: 0 0 10px rgba(0,229,255,0.3);
-            color: #050b14; font-size: 14px; font-weight: 900; letter-spacing: 2px;
+        /* 2つのスキャンボタンを横並びにするコンテナ */
+        .shutter-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 6px;
         }
-        .btn-shutter:active { transform: scale(0.96); background: var(--cyber-blue); color: #fff; }
+
+        .btn-shutter-target {
+            padding: 12px 0;
+            border-radius: 6px;
+            background: linear-gradient(180deg, #ffffff 0%, #b5e9ff 100%);
+            border: 2px solid var(--cyber-blue);
+            color: #050b14;
+            font-size: 13px;
+            font-weight: 900;
+            box-shadow: 0 0 10px rgba(0,229,255,0.2);
+        }
+        .btn-shutter-target:active { background: var(--cyber-blue); color: #fff; transform: scale(0.95); }
+
+        .btn-shutter-quest {
+            padding: 12px 0;
+            border-radius: 6px;
+            background: linear-gradient(180deg, #ffffff 0%, #e2c6ff 100%);
+            border: 2px solid var(--cyber-purple);
+            color: #050b14;
+            font-size: 13px;
+            font-weight: 900;
+            box-shadow: 0 0 10px rgba(181,124,255,0.2);
+        }
+        .btn-shutter-quest:active { background: var(--cyber-purple); color: #fff; transform: scale(0.95); }
         
         .scan-dimmer {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0, 229, 255, 0.15); opacity: 0; pointer-events: none; z-index: 5;
+            background: rgba(0, 229, 255, 0.2); opacity: 0; pointer-events: none; z-index: 5;
             transition: opacity 0.1s;
         }
         .scan-dimmer.active { opacity: 1; }
@@ -254,13 +337,13 @@
         .toast-log {
             position: absolute; left: 20px; bottom: 20px; background: rgba(0,0,0,0.85);
             border-left: 3px solid var(--cyber-blue); padding: 8px 14px; font-size: 11px;
-            z-index: 10; pointer-events: none; opacity: 0; transition: all 0.2s;
+            z-index: 20; pointer-events: none; opacity: 0; transition: all 0.2s;
         }
         .toast-log.show { opacity: 1; }
 
         .camera-crosshair {
-            position: absolute; top: 50%; left: 38%; transform: translate(-50%, -50%);
-            width: 30px; height: 30px; pointer-events: none; opacity: 0.25;
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            width: 30px; height: 30px; pointer-events: none; opacity: 0.3;
         }
         .camera-crosshair::before, .camera-crosshair::after { content: ''; position: absolute; background: white; }
         .camera-crosshair::before { top: 14px; left: 0; width: 30px; height: 2px; }
@@ -296,53 +379,55 @@
         </div>
     </div>
 
-    <!-- PHASE 2: 横画面スキャンHUD -->
+    <!-- PHASE 2: 横画面スキャンHUD（左右完全セパレート構成） -->
     <div id="scan-phase">
-        <video id="camera-stream" autoplay playsinline muted></video>
-        <div class="camera-crosshair"></div>
-        <div class="scan-dimmer" id="scan-indicator"></div>
+        <!-- 左半分：100%遮蔽物のない純粋なカメラ画面 -->
+        <div class="finder-container">
+            <video id="camera-stream" autoplay playsinline muted></video>
+            <div class="camera-crosshair"></div>
+            <div class="scan-dimmer" id="scan-indicator"></div>
 
-        <div class="hud-left-floating">
-            <button class="btn-exit-icon" id="btn-exit-scan">🚪</button>
+            <!-- 左上設置のコントロール（退室＆レンズ切り替え） -->
+            <div class="hud-left-controls">
+                <button class="btn-exit-icon" id="btn-exit-scan">🚪 EXIT</button>
+                <button class="btn-zoom-toggle" id="btn-toggle-lens">🔄 1.0x / 0.5x</button>
+            </div>
         </div>
 
-        <div class="hud-overlay">
-            <div></div> <!-- 左側透過ファインダー -->
-
-            <!-- 右側：肉眼確認型集中パネル -->
-            <div class="hud-right">
-                <div class="hud-mode-container">
-                    <div class="hud-tab active mode-target" id="tab-target">🎯 TARGET</div>
-                    <div class="hud-tab" id="tab-question">📋 QUEST</div>
+        <!-- 右半分：情報・入力・スキャン操作に完全特化した固定パネル -->
+        <div class="hud-right">
+            <div class="hud-panel-title">SCOUTER INTERFACE</div>
+            
+            <!-- スロット群 -->
+            <div class="hud-slot-list">
+                <div class="hud-slot-row" id="row-0">
+                    <input type="tel" id="box-0" placeholder="01" maxlength="3">
+                    <div class="hud-slot-ans-zone" id="zone-0"><span class="no-img-text">VOID</span></div>
                 </div>
-                
-                <!-- スロット群 -->
-                <div class="hud-slot-list">
-                    <div class="hud-slot-row" id="row-0">
-                        <input type="tel" id="box-0" placeholder="01" maxlength="3">
-                        <div class="hud-slot-ans-zone" id="zone-0"><span class="no-img-text">VOID</span></div>
-                    </div>
-                    <div class="hud-slot-row" id="row-1">
-                        <input type="tel" id="box-1" placeholder="02" maxlength="3">
-                        <div class="hud-slot-ans-zone" id="zone-1"><span class="no-img-text">VOID</span></div>
-                    </div>
-                    <div class="hud-slot-row" id="row-2">
-                        <input type="tel" id="box-2" placeholder="03" maxlength="3">
-                        <div class="hud-slot-ans-zone" id="zone-2"><span class="no-img-text">VOID</span></div>
-                    </div>
-                    <div class="hud-slot-row" id="row-3">
-                        <input type="tel" id="box-3" placeholder="04" maxlength="3">
-                        <div class="hud-slot-ans-zone" id="zone-3"><span class="no-img-text">VOID</span></div>
-                    </div>
-                    <div class="hud-slot-row" id="row-4">
-                        <input type="tel" id="box-4" placeholder="05" maxlength="3">
-                        <div class="hud-slot-ans-zone" id="zone-4"><span class="no-img-text">VOID</span></div>
-                    </div>
+                <div class="hud-slot-row" id="row-1">
+                    <input type="tel" id="box-1" placeholder="02" maxlength="3">
+                    <div class="hud-slot-ans-zone" id="zone-1"><span class="no-img-text">VOID</span></div>
                 </div>
+                <div class="hud-slot-row" id="row-2">
+                    <input type="tel" id="box-2" placeholder="03" maxlength="3">
+                    <div class="hud-slot-ans-zone" id="zone-2"><span class="no-img-text">VOID</span></div>
+                </div>
+                <div class="hud-slot-row" id="row-3">
+                    <input type="tel" id="box-3" placeholder="04" maxlength="3">
+                    <div class="hud-slot-ans-zone" id="zone-3"><span class="no-img-text">VOID</span></div>
+                </div>
+                <div class="hud-slot-row" id="row-4">
+                    <input type="tel" id="box-4" placeholder="05" maxlength="3">
+                    <div class="hud-slot-ans-zone" id="zone-4"><span class="no-img-text">VOID</span></div>
+                </div>
+            </div>
 
-                <div class="hud-control-bottom">
-                    <div class="stocks-counter" id="db-counter">STOCKS: 0</div>
-                    <button class="btn-shutter" id="shutter-trigger">SCAN</button>
+            <!-- 下部：データ数と「2連並列ボタン」 -->
+            <div class="hud-control-bottom">
+                <div class="stocks-counter" id="db-counter">STOCKS: 0</div>
+                <div class="shutter-grid">
+                    <button class="btn-shutter-target" id="shutter-target">🎯 TARGET</button>
+                    <button class="btn-shutter-quest" id="shutter-quest">📋 QUEST</button>
                 </div>
             </div>
         </div>
@@ -356,7 +441,6 @@
         import { initializeApp } from "firebase/app";
         import { getFirestore, doc, setDoc, onSnapshot, updateDoc, deleteDoc } from "firebase/firestore";
 
-        // Firebase構成オブジェクト（各自で書き換えてください）
         const firebaseConfig = {
             apiKey: "YOUR_FIREBASE_API_KEY",
             authDomain: "YOUR_PROJECT.firebaseapp.com",
@@ -369,11 +453,11 @@
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
 
-        let currentMode = "target"; 
         let localStream = null;
-        let allPhotosMap = {}; // 1MB制限対策：重複数字は最新画像で上書きするMAP構造
+        let allPhotosMap = {}; 
         let unsubscribeRoom = null;
         let presenceInterval = null;
+        let isUltraWideMode = true; // 初回は超広角(0.5倍)をデフォルト狙いにするフラグ
 
         const setupPhase = document.getElementById('setup-phase');
         const scanPhase = document.getElementById('scan-phase');
@@ -394,12 +478,16 @@
         });
 
         function initEventListeners() {
-            document.getElementById('btn-enter-scan').addEventListener('click', enterScanMode);
+            document.getElementById('btn-enter-scan').addEventListener('click', () => { isUltraWideMode = true; startCameraEngine(); });
             document.getElementById('btn-exit-scan').addEventListener('click', exitScanMode);
             document.getElementById('btn-reset-all').addEventListener('click', resetSystem);
-            document.getElementById('tab-target').addEventListener('click', () => switchScanMode('target'));
-            document.getElementById('tab-question').addEventListener('click', () => switchScanMode('question'));
-            document.getElementById('shutter-trigger').addEventListener('click', processCaptureOCR);
+            
+            // 手動レンズ切り替えボタンのイベント登録
+            document.getElementById('btn-toggle-lens').addEventListener('click', toggleCameraLens);
+
+            // 並列スキャンボタンのダイレクトイベント
+            document.getElementById('shutter-target').addEventListener('click', () => processCaptureOCR("target"));
+            document.getElementById('shutter-quest').addEventListener('click', () => processCaptureOCR("question"));
 
             ['room-id', 'user-name', 'api-key'].forEach(id => {
                 document.getElementById(id).addEventListener('input', saveConfig);
@@ -413,85 +501,80 @@
             });
         }
 
-        async function enterScanMode() {
-            const apiKey = document.getElementById('api-key').value.trim();
-            const roomId = document.getElementById('room-id').value.trim() || 'team1';
-            const userName = document.getElementById('user-name').value.trim();
-
-            if(!apiKey) { alert("Vision API PASSを入力してください"); return; }
-            if(!userName) { alert("YOUR NAMEを入力してください"); return; }
-
+        // カメラ起動コアエンジン
+        async function startCameraEngine() {
             setupPhase.style.display = 'none';
-            scanPhase.style.display = 'block';
+            scanPhase.style.display = 'grid'; // 横分割用にgrid指定
+
+            if(localStream) { localStream.getTracks().forEach(track => track.stop()); }
 
             try {
-                // --- STEP 1: 「二度聞き作戦」開始。まずは仮起動してSafariのアクセス権限を確定させる ---
+                // 仮起動して権限を開放
                 const tempStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" }, audio: false });
-                
-                // --- STEP 2: 権限を完全に取得した状態で、デバイスの名前（label）情報を引き出す ---
                 const devices = await navigator.mediaDevices.enumerateDevices();
                 const videoDevices = devices.filter(device => device.kind === 'videoinput');
-                
-                // 仮で開いたストリームはすぐに閉じて一度カメラを解放する
                 tempStream.getTracks().forEach(track => track.stop());
 
                 let targetDeviceId = null;
-
-                // 背面のメインカメラ系を抽出
                 const backCameras = videoDevices.filter(d => 
-                    d.label.toLowerCase().includes('back') || 
-                    d.label.toLowerCase().includes('rear') || 
-                    d.label.toLowerCase().includes('背面') ||
-                    d.label.toLowerCase().includes('カメラ')
+                    d.label.toLowerCase().includes('back') || d.label.toLowerCase().includes('rear') || 
+                    d.label.toLowerCase().includes('背面') || d.label.toLowerCase().includes('カメラ')
                 );
 
                 if (backCameras.length > 0) {
-                    // 超広角を示すラベル（ultra、0.5、ウルトラ、超広角など）が含まれているカメラを最優先で割り振る
-                    const ultraWide = backCameras.find(d => 
-                        d.label.toLowerCase().includes('ultra') || 
-                        d.label.toLowerCase().includes('0.5') ||
-                        d.label.toLowerCase().includes('super') ||
-                        d.label.toLowerCase().includes('ウルトラ') ||
-                        d.label.toLowerCase().includes('超広角')
-                    );
-                    
-                    if (ultraWide) {
-                        targetDeviceId = ultraWide.deviceId;
-                        console.log("超広角カメラ特定成功:", ultraWide.label);
+                    if (isUltraWideMode) {
+                        // 0.5倍(超広角)レンズを探す
+                        const ultraWide = backCameras.find(d => 
+                            d.label.toLowerCase().includes('ultra') || d.label.toLowerCase().includes('0.5') ||
+                            d.label.toLowerCase().includes('super') || d.label.toLowerCase().includes('ウルトラ') ||
+                            d.label.toLowerCase().includes('超広角') || d.label.toLowerCase().includes('3')
+                        );
+                        targetDeviceId = ultraWide ? ultraWide.deviceId : (backCameras[1] ? backCameras[1].deviceId : backCameras[0].deviceId);
                     } else {
-                        // 万が一ブラウザの仕様でラベル検出に引っかからなかった場合のフォールバック。
-                        // 超広角を搭載しているiPhoneでは、背面カメラリストの「2番目（インデックス1）」が0.5xに割り当てられている確率が極めて高い
-                        targetDeviceId = backCameras[1] ? backCameras[1].deviceId : backCameras[0].deviceId;
-                        console.log("ラベルでの自動判別が不可だったため、代替カメラを起動します");
+                        // 1.0倍(標準)レンズを指定（背面リストの先頭になるケースが大半）
+                        const standardLens = backCameras.find(d => d.label.toLowerCase().includes('main') || d.label.toLowerCase().includes('wide') || d.label.toLowerCase().includes('広角')) || backCameras[0];
+                        targetDeviceId = standardLens ? standardLens.deviceId : backCameras[0].deviceId;
                     }
                 }
 
-                // --- STEP 3: 本物の0.5倍超広角カメラを使ってリスタート！ ---
                 const constraints = {
                     video: {
                         deviceId: targetDeviceId ? { exact: targetDeviceId } : undefined,
                         facingMode: targetDeviceId ? undefined : { ideal: "environment" },
                         width: { ideal: 1920 },
-                        height: { ideal: 1080 }
+                        height: { ideal: 1080 },
+                        zoom: isUltraWideMode ? { ideal: 0.5 } : { ideal: 1.0 }
                     },
                     audio: false
                 };
 
                 localStream = await navigator.mediaDevices.getUserMedia(constraints);
+                
+                // ズーム命令の上書き強制（コンボ処理）
+                const videoTrack = localStream.getVideoTracks()[0];
+                const capabilities = videoTrack.getCapabilities ? videoTrack.getCapabilities() : {};
+                if (capabilities.zoom) {
+                    const targetZoom = isUltraWideMode ? capabilities.zoom.min : 1.0;
+                    try { await videoTrack.applyConstraints({ advanced: [{ zoom: targetZoom }] }); } catch(e){}
+                }
+
                 document.getElementById('camera-stream').srcObject = localStream;
                 if (scanPhase.requestFullscreen) { scanPhase.requestFullscreen().catch(() => {}); }
                 
                 startFirebaseRoomSync();
-
-                // 現在起動しているカメラ名をトースト（HUD通知）で分かりやすくフィードバック
-                const activeTrack = localStream.getVideoTracks()[0];
-                showToast(`ACTIVE: ${activeTrack.label || '0.5x CAMERA'}`);
+                showToast(`LENS: ${isUltraWideMode ? '0.5x ULTRA WIDE' : '1.0x STANDARD'}`);
 
             } catch (err) {
-                console.error("Camera Init Error: ", err);
-                alert("カメラの起動に失敗しました。カメラ権限を許可し、Safari等のブラウザで再度お試しください。");
-                exitScanMode();
+                console.error(err);
+                showToast("CAMERA INITIALIZE FAILED");
             }
+        }
+
+        // 📷 ボタンを押すたびにレンズを強制交互切り替えする関数
+        function toggleCameraLens() {
+            isUltraWideMode = !isUltraWideMode;
+            showToast(isUltraWideMode ? "SWITCHING TO 0.5x..." : "SWITCHING TO 1.0x...");
+            startCameraEngine();
         }
 
         function exitScanMode() {
@@ -503,13 +586,6 @@
             setupPhase.style.display = 'flex';
         }
 
-        function switchScanMode(mode) {
-            currentMode = mode;
-            document.getElementById('tab-target').className = "hud-tab" + (mode === 'target' ? ' active mode-target' : '');
-            document.getElementById('tab-question').className = "hud-tab" + (mode === 'question' ? ' active mode-question' : '');
-            showToast(`MODE: ${mode.toUpperCase()}`);
-        }
-
         function startFirebaseRoomSync() {
             const roomId = document.getElementById('room-id').value.trim() || 'default_room';
             const user = document.getElementById('user-name').value.trim() || 'Unknown';
@@ -518,19 +594,14 @@
             const reportPresence = async () => {
                 const rId = document.getElementById('room-id').value.trim() || 'default_room';
                 const uName = document.getElementById('user-name').value.trim() || 'Unknown';
-                try {
-                    await setDoc(doc(db, "rooms", rId), { members: { [uName]: Date.now() } }, { merge: true });
-                } catch(e){}
+                try { await setDoc(doc(db, "rooms", rId), { members: { [uName]: Date.now() } }, { merge: true }); } catch(e){}
             };
             reportPresence();
             presenceInterval = setInterval(reportPresence, 4000);
 
             unsubscribeRoom = onSnapshot(doc(db, "rooms", roomId), (snapshot) => {
                 if (!snapshot.exists()) {
-                    allPhotosMap = {};
-                    document.getElementById('db-counter').innerText = "STOCKS: 0";
-                    executeSearch();
-                    return;
+                    allPhotosMap = {}; document.getElementById('db-counter').innerText = "STOCKS: 0"; executeSearch(); return;
                 }
                 const data = snapshot.data();
                 if (data.members) {
@@ -543,14 +614,11 @@
                         if (document.activeElement !== searchBoxes[idx]) { searchBoxes[idx].value = q || ""; }
                     });
                 }
-                
-                // Firestoreから取得した写真データマップ（1MB制限を回避した新データ構造）
                 if (data.photoMap) {
                     allPhotosMap = data.photoMap;
                     document.getElementById('db-counter').innerText = `STOCKS: ${Object.keys(allPhotosMap).length}`;
                 } else {
-                    allPhotosMap = {};
-                    document.getElementById('db-counter').innerText = "STOCKS: 0";
+                    allPhotosMap = {}; document.getElementById('db-counter').innerText = "STOCKS: 0";
                 }
                 executeSearch();
             });
@@ -562,8 +630,8 @@
             try { await updateDoc(doc(db, "rooms", roomId), { currentQueries: queries }); } catch(e) {}
         }
 
-        // --- OCR・画角切り抜きロジック（肉眼アシスト版） ---
-        async function processCaptureOCR() {
+        // 2つのスキャンボタンから連動するOCRコア
+        async function processCaptureOCR(mode) {
             const videoEl = document.getElementById('camera-stream');
             const canvas = document.getElementById('capture-canvas');
             const apiKey = document.getElementById('api-key').value.trim();
@@ -572,7 +640,7 @@
             const indicator = document.getElementById('scan-indicator');
             indicator.classList.add('active');
             setTimeout(() => indicator.classList.remove('active'), 120);
-            showToast("PROCESSING SCAN...");
+            showToast(`SCANNING FOR ${mode.toUpperCase()}...`);
 
             canvas.width = videoEl.videoWidth;
             canvas.height = videoEl.videoHeight;
@@ -594,7 +662,7 @@
                 if (!resData.responses || !resData.responses[0].textAnnotations) { showToast("TEXT NOT FOUND"); return; }
 
                 const annotations = resData.responses[0].textAnnotations;
-                if (currentMode === "target") {
+                if (mode === "target") {
                     await analyzeTargetModeAlternative(annotations, canvas);
                 } else {
                     await analyzeQuestionMode(annotations);
@@ -612,15 +680,12 @@
                 const box = item.boundingPoly.vertices;
                 if (!box || box.length < 4) return;
 
-                // 3桁の数字だけを徹底捜索
                 if (/^\d{3}$/.test(text)) {
-                    // Safari対策：オプショナルチェイニング `?.` とヌル合体 `??` を採用し、undefinedによる座標エラーを防止
                     const xMin = Math.min(box[0]?.x ?? 0, box[1]?.x ?? 0, box[2]?.x ?? 0, box[3]?.x ?? 0);
                     const yMin = Math.min(box[0]?.y ?? 0, box[1]?.y ?? 0, box[2]?.y ?? 0, box[3]?.y ?? 0);
                     const w = Math.max(box[0]?.x ?? 0, box[1]?.x ?? 0, box[2]?.x ?? 0, box[3]?.x ?? 0) - xMin;
                     const h = Math.max(box[0]?.y ?? 0, box[1]?.y ?? 0, box[2]?.y ?? 0, box[3]?.y ?? 0) - yMin;
 
-                    // クロップ領域の計算（数字の左右に少し余裕、下側に正方形が入るようh*4.2倍を確保）
                     const padX = w * 0.4;
                     const cropX = Math.max(0, xMin - padX);
                     const cropW = w + (padX * 2);
@@ -630,15 +695,10 @@
                     const cropH = h * 4.2;
 
                     const cropCanvas = document.createElement('canvas');
-                    cropCanvas.width = 140;
-                    cropCanvas.height = 120;
+                    cropCanvas.width = 140; cropCanvas.height = 120;
                     const cCtx = cropCanvas.getContext('2d');
 
-                    cCtx.drawImage(
-                        srcCanvas,
-                        cropX, cropY, cropW, cropH,
-                        0, 0, 140, 120
-                    );
+                    cCtx.drawImage(srcCanvas, cropX, cropY, cropW, cropH, 0, 0, 140, 120);
 
                     updates[text] = {
                         croppedImg: cropCanvas.toDataURL('image/jpeg', 0.7),
@@ -650,22 +710,13 @@
 
             if (count > 0) {
                 const roomId = document.getElementById('room-id').value.trim() || 'default_room';
-                
-                // 新しいスキャンデータでマップをマージ
                 const mergedMap = { ...allPhotosMap };
-                Object.keys(updates).forEach(num => {
-                    mergedMap[num] = updates[num];
-                });
-
+                Object.keys(updates).forEach(num => { mergedMap[num] = updates[num]; });
                 try {
                     await updateDoc(doc(db, "rooms", roomId), { photoMap: mergedMap });
                     showToast(`STOCKED: ${count} NUMBERS`);
-                } catch (e) {
-                    showToast("SYNC ERROR (MAP LIMIT?)");
-                }
-            } else {
-                showToast("NO 3-DIGIT TARGETS");
-            }
+                } catch (e) { showToast("SYNC ERROR"); }
+            } else { showToast("NO 3-DIGIT TARGETS"); }
         }
 
         async function analyzeQuestionMode(annotations) {
@@ -687,12 +738,9 @@
                 showToast(`QUEST AUTOFILL: ${limit} SLOTS`);
                 syncInputsToFirebase();
                 executeSearch();
-            } else {
-                showToast("NO NUMBER FOUND");
-            }
+            } else { showToast("NO NUMBER FOUND"); }
         }
 
-        // --- 検索結果のHUDへの反映ロジック（画像メイン） ---
         function executeSearch() {
             searchBoxes.forEach((box, index) => {
                 const query = box.value.trim();
@@ -705,9 +753,7 @@
                     return;
                 }
 
-                // photoMapからキー検索をかけるため、一瞬で画像を取得可能
                 const foundMatch = allPhotosMap[query];
-
                 if (foundMatch && foundMatch.croppedImg) {
                     zone.innerHTML = `<img src="${foundMatch.croppedImg}">`;
                     rowDiv.classList.remove('has-error');
@@ -723,9 +769,7 @@
             const roomId = document.getElementById('room-id').value.trim() || 'default_room';
             try {
                 await deleteDoc(doc(db, "rooms", roomId));
-                allPhotosMap = {};
-                searchBoxes.forEach(box => box.value = "");
-                executeSearch();
+                allPhotosMap = {}; searchBoxes.forEach(box => box.value = ""); executeSearch();
                 showToast("ROOM DATA RESET SUCCESS");
             } catch(e) {}
         }
