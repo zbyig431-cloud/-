@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>絶望要塞IG スカウターツール（タップ切り替え復活＆完全共有版）</title>
+    <title>絶望要塞IG スカウターツール（同期完全復旧版）</title>
     <!-- Firebase SDK (v10) -->
     <script type="importmap">
       {
@@ -77,7 +77,6 @@
             display: flex;
             flex-direction: column;
             gap: 20px;
-            justify-content: center;
         }
 
         h1 {
@@ -87,6 +86,24 @@
             text-shadow: 0 0 10px rgba(0,229,255,0.5);
             padding: 10px 0;
             border-bottom: 2px dashed var(--panel-border);
+        }
+
+        .member-status-bar {
+            background: rgba(0, 229, 255, 0.05);
+            border: 1px solid var(--panel-border);
+            padding: 10px;
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 12px;
+        }
+        .online-dot {
+            width: 8px;
+            height: 8px;
+            background-color: var(--cyber-green);
+            border-radius: 50%;
+            box-shadow: 0 0 8px var(--cyber-green);
         }
 
         .config-box {
@@ -136,7 +153,7 @@
             background: var(--bg-dark);
             display: none;
             z-index: 1000;
-            grid-template-columns: 1fr 320px; /* タップ切替用に少しスリム化 */
+            grid-template-columns: 1fr 300px;
         }
 
         .hud-left {
@@ -164,6 +181,7 @@
             object-fit: contain; 
         }
 
+        /* 左下コントロールパネル */
         .hud-left-bottom-controls {
             height: 60px;
             background: rgba(10, 14, 20, 0.95);
@@ -174,46 +192,11 @@
             gap: 10px;
         }
 
-        .hud-online-users-box {
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            background: rgba(0, 229, 255, 0.05);
-            border: 1px solid rgba(0, 229, 255, 0.2);
-            padding: 4px 10px;
-            border-radius: 4px;
-            height: 42px;
-            max-width: 200px;
-            min-width: 120px;
-            overflow: hidden;
-        }
-        .hud-online-title {
-            font-size: 8px;
-            color: var(--cyber-green);
-            font-weight: bold;
-            letter-spacing: 0.5px;
-            display: flex;
-            align-items: center;
-            gap: 4px;
-        }
-        .hud-online-title::before {
-            content: ''; display: inline-block; width: 5px; height: 5px; 
-            background: var(--cyber-green); border-radius: 50%; box-shadow: 0 0 4px var(--cyber-green);
-        }
-        .hud-online-list {
-            font-size: 10px;
-            color: #ffffff;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            margin-top: 2px;
-        }
-
         .btn-exit-icon, .btn-zoom-toggle, .btn-clear-slots {
             height: 42px;
-            padding: 0 12px;
+            padding: 0 15px;
             border-radius: 6px;
-            font-size: 12px;
+            font-size: 13px;
             font-weight: bold;
             display: flex;
             align-items: center;
@@ -221,15 +204,29 @@
             box-shadow: 0 0 10px rgba(0,0,0,0.5);
         }
 
-        .btn-exit-icon { background: rgba(255, 51, 51, 0.1); border: 1px solid var(--cyber-red); color: var(--cyber-red); }
+        .btn-exit-icon {
+            background: rgba(255, 51, 51, 0.1);
+            border: 1px solid var(--cyber-red);
+            color: var(--cyber-red);
+        }
         .btn-exit-icon:active { background: var(--cyber-red); color: #fff; }
 
-        .btn-zoom-toggle { background: rgba(0, 229, 255, 0.1); border: 1px solid var(--cyber-blue); color: var(--cyber-blue); }
+        .btn-zoom-toggle {
+            background: rgba(0, 229, 255, 0.1);
+            border: 1px solid var(--cyber-blue);
+            color: var(--cyber-blue);
+        }
         .btn-zoom-toggle:active { background: var(--cyber-blue); color: #000; }
 
-        .btn-clear-slots { background: rgba(255, 145, 0, 0.1); border: 1px solid var(--cyber-orange); color: var(--cyber-orange); margin-left: auto; }
+        .btn-clear-slots {
+            background: rgba(255, 145, 0, 0.1);
+            border: 1px solid var(--cyber-orange);
+            color: var(--cyber-orange);
+            margin-left: auto;
+        }
         .btn-clear-slots:active { background: var(--cyber-orange); color: #000; }
 
+        /* 右側：完全情報・操作パネルエリア */
         .hud-right {
             grid-column: 2;
             background: #0a0e14;
@@ -281,16 +278,16 @@
             color: var(--cyber-blue);
         }
         
-        /* 1枚表示（タップ切替用）のスタイルに復元 */
         .hud-slot-ans-zone {
             flex: 1;
             height: 100%;
-            background: rgba(0,0,0,0.4);
+            background: rgba(0,0,0,0.5);
             border-radius: 3px;
+            overflow: hidden;
             display: flex;
             align-items: center;
             justify-content: center;
-            overflow: hidden;
+            border: 1px solid rgba(255,255,255,0.08);
             position: relative;
             cursor: pointer;
         }
@@ -299,14 +296,20 @@
             height: 100%;
             object-fit: contain;
         }
-        .pane-label-badge {
-            position: absolute; top: 2px; left: 4px; font-size: 8px;
-            color: #fff; background: rgba(0, 229, 255, 0.7); 
-            padding: 1px 4px; border-radius: 2px; font-weight: bold; pointer-events: none;
-        }
+        .hud-slot-ans-zone .no-img-text { font-size: 10px; color: #445566; font-weight: bold; }
+        .hud-slot-ans-zone .err-text { font-size: 10px; color: var(--cyber-red); font-weight: bold; }
         
-        .void-text { font-size: 11px; color: #3a4b5c; font-weight: bold; pointer-events: none; }
-        .err-text { font-size: 11px; color: var(--cyber-red); font-weight: bold; pointer-events: none; }
+        .pattern-badge {
+            position: absolute;
+            top: 2px; right: 4px;
+            font-size: 8px;
+            background: rgba(0, 229, 255, 0.7);
+            color: #000;
+            padding: 0px 3px;
+            border-radius: 3px;
+            font-weight: bold;
+            pointer-events: none;
+        }
 
         .hud-control-bottom {
             margin-top: auto;
@@ -325,17 +328,25 @@
         }
 
         .btn-shutter-target {
-            padding: 10px 0; border-radius: 6px;
+            padding: 10px 0;
+            border-radius: 6px;
             background: linear-gradient(180deg, #ffffff 0%, #b5e9ff 100%);
-            border: 2px solid var(--cyber-blue); color: #050b14; font-size: 12px; font-weight: 900;
+            border: 2px solid var(--cyber-blue);
+            color: #050b14;
+            font-size: 12px;
+            font-weight: 900;
             box-shadow: 0 0 10px rgba(0,229,255,0.2);
         }
         .btn-shutter-target:active { background: var(--cyber-blue); color: #fff; transform: scale(0.95); }
 
         .btn-shutter-quest {
-            padding: 10px 0; border-radius: 6px;
+            padding: 10px 0;
+            border-radius: 6px;
             background: linear-gradient(180deg, #ffffff 0%, #e2c6ff 100%);
-            border: 2px solid var(--cyber-purple); color: #050b14; font-size: 12px; font-weight: 900;
+            border: 2px solid var(--cyber-purple);
+            color: #050b14;
+            font-size: 12px;
+            font-weight: 900;
             box-shadow: 0 0 10px rgba(181,124,255,0.2);
         }
         .btn-shutter-quest:active { background: var(--cyber-purple); color: #fff; transform: scale(0.95); }
@@ -368,6 +379,10 @@
     <!-- PHASE 1: 設定画面 -->
     <div id="setup-phase">
         <h1>DESPAIR FORTRESS SCOUTER</h1>
+        <div class="member-status-bar">
+            <span class="online-dot"></span>
+            <span id="member-list-text">ONLINE: 待機中...</span>
+        </div>
         <div class="config-box">
             <div>
                 <label>ROOM ID:</label>
@@ -400,16 +415,12 @@
             <!-- 左下：操作パネル -->
             <div class="hud-left-bottom-controls">
                 <button class="btn-exit-icon" id="btn-exit-scan">🚪 EXIT</button>
-                <div class="hud-online-users-box">
-                    <div class="hud-online-title">ONLINE USERS</div>
-                    <div class="hud-online-list" id="hud-online-list-text">待機中...</div>
-                </div>
                 <button class="btn-zoom-toggle" id="btn-toggle-lens">🔄 1.0x / 0.5x</button>
                 <button class="btn-clear-slots" id="btn-clear-slots">🧹 CLEAR</button>
             </div>
         </div>
 
-        <!-- 右側セクション（タップ切り替え式に戻す） -->
+        <!-- 右側セクション -->
         <div class="hud-right">
             <div class="hud-panel-title">SCOUTER INTERFACE</div>
             
@@ -417,23 +428,23 @@
             <div class="hud-slot-list">
                 <div class="hud-slot-row" id="row-0">
                     <input type="tel" id="box-0" placeholder="01" maxlength="3">
-                    <div class="hud-slot-ans-zone" id="zone-0" data-slot-index="0"></div>
+                    <div class="hud-slot-ans-zone" id="zone-0" data-index="0"><span class="no-img-text">VOID</span></div>
                 </div>
                 <div class="hud-slot-row" id="row-1">
                     <input type="tel" id="box-1" placeholder="02" maxlength="3">
-                    <div class="hud-slot-ans-zone" id="zone-1" data-slot-index="1"></div>
+                    <div class="hud-slot-ans-zone" id="zone-1" data-index="1"><span class="no-img-text">VOID</span></div>
                 </div>
                 <div class="hud-slot-row" id="row-2">
                     <input type="tel" id="box-2" placeholder="03" maxlength="3">
-                    <div class="hud-slot-ans-zone" id="zone-2" data-slot-index="2"></div>
+                    <div class="hud-slot-ans-zone" id="zone-2" data-index="2"><span class="no-img-text">VOID</span></div>
                 </div>
                 <div class="hud-slot-row" id="row-3">
                     <input type="tel" id="box-3" placeholder="04" maxlength="3">
-                    <div class="hud-slot-ans-zone" id="zone-3" data-slot-index="3"></div>
+                    <div class="hud-slot-ans-zone" id="zone-3" data-index="3"><span class="no-img-text">VOID</span></div>
                 </div>
                 <div class="hud-slot-row" id="row-4">
                     <input type="tel" id="box-4" placeholder="05" maxlength="3">
-                    <div class="hud-slot-ans-zone" id="zone-4" data-slot-index="4"></div>
+                    <div class="hud-slot-ans-zone" id="zone-4" data-index="4"><span class="no-img-text">VOID</span></div>
                 </div>
             </div>
 
@@ -470,13 +481,12 @@
         const db = getFirestore(app);
 
         let localStream = null;
-        let globalPhotoMap = {}; 
+        let allPhotosMap = {}; 
         let unsubscribeRoom = null;
         let presenceInterval = null;
         let isUltraWideMode = true; 
 
-        // 各スロットが現在P1, P2, P3のどれを表示しているかを管理する配列 (0=P1, 1=P2, 2=P3)
-        let slotViewModes = [0, 0, 0, 0, 0];
+        let slotPatternIndexes = [0, 0, 0, 0, 0];
 
         const setupPhase = document.getElementById('setup-phase');
         const scanPhase = document.getElementById('scan-phase');
@@ -517,19 +527,23 @@
                 });
             });
 
-            // 各スロットの表示領域をタップしたときの切り替えイベントを追加
-            ansZones.forEach((zone) => {
-                zone.addEventListener('click', (e) => {
-                    const idx = parseInt(zone.getAttribute('data-slot-index'));
-                    // 0 -> 1 -> 2 -> 0 のループ切り替え
-                    slotViewModes[idx] = (slotViewModes[idx] + 1) % 3;
-                    executeSearch(); // 画面再描画
+            ansZones.forEach((zone, idx) => {
+                zone.addEventListener('click', () => {
+                    const query = searchBoxes[idx].value.trim();
+                    if (!query || !allPhotosMap[query]) return;
+                    
+                    const imgList = allPhotosMap[query].croppedImgs || [];
+                    if (imgList.length <= 1) return;
+
+                    slotPatternIndexes[idx] = (slotPatternIndexes[idx] + 1) % imgList.length;
+                    executeSearch();
                 });
             });
         }
 
         function clearAllSlots() {
             searchBoxes.forEach(box => box.value = "");
+            slotPatternIndexes = [0, 0, 0, 0, 0];
             syncInputsToFirebase();
             executeSearch();
             showToast("SLOTS CLEARED");
@@ -604,6 +618,7 @@
             setupPhase.style.display = 'flex';
         }
 
+        /* 📡 【修正】同期リスナー：ルーム情報が存在しない場合のフォールバックを安全に変更 */
         function startFirebaseRoomSync() {
             const roomId = document.getElementById('room-id').value.trim() || 'default_room';
             const user = document.getElementById('user-name').value.trim() || 'Unknown';
@@ -612,30 +627,28 @@
             const reportPresence = async () => {
                 const rId = document.getElementById('room-id').value.trim() || 'default_room';
                 const uName = document.getElementById('user-name').value.trim() || 'Unknown';
-                try {
-                    await setDoc(doc(db, "rooms", rId), { members: { [uName]: Date.now() } }, { merge: true });
-                } catch(e){}
+                try { await setDoc(doc(db, "rooms", rId), { members: { [uName]: Date.now() } }, { merge: true }); } catch(e){}
             };
             reportPresence();
             presenceInterval = setInterval(reportPresence, 4000);
 
             unsubscribeRoom = onSnapshot(doc(db, "rooms", roomId), (snapshot) => {
                 if (!snapshot.exists()) {
-                    globalPhotoMap = {}; 
+                    allPhotosMap = {}; 
                     document.getElementById('db-counter').innerText = "STOCKS: 0"; 
                     executeSearch(); 
                     return;
                 }
                 const data = snapshot.data();
                 
-                // 1. オンラインユーザー更新
+                // メンバーリスト同期
                 if (data.members) {
                     const now = Date.now();
                     const activeMembers = Object.keys(data.members).filter(name => (now - data.members[name]) < 10000);
-                    document.getElementById('hud-online-list-text').innerText = activeMembers.join(', ') || 'なし';
+                    document.getElementById('member-list-text').innerText = `ONLINE: ${activeMembers.join(', ')}`;
                 }
                 
-                // 2. 検索スロット同期 (自分が入力中でなければ上書き)
+                // 検索スロットの数字同期（フォーカスが当たっていない入力欄だけ連動して更新）
                 if (data.currentQueries) {
                     data.currentQueries.forEach((q, idx) => {
                         if (document.activeElement !== searchBoxes[idx]) { 
@@ -644,31 +657,19 @@
                     });
                 }
                 
-                // 3. フラット化された画像マップをパース
-                globalPhotoMap = {};
-                let uniqueNumbers = new Set();
-                
-                Object.keys(data).forEach(key => {
-                    if (key.startsWith("photoMap_")) {
-                        const parts = key.split("_"); 
-                        if (parts.length === 3) {
-                            const num = parts[1];
-                            const idx = parseInt(parts[2]);
-                            uniqueNumbers.add(num);
-                            
-                            if (!globalPhotoMap[num]) {
-                                globalPhotoMap[num] = [];
-                            }
-                            globalPhotoMap[num][idx] = data[key];
-                        }
-                    }
-                });
-                
-                document.getElementById('db-counter').innerText = `STOCKS: ${uniqueNumbers.size}`;
+                // 保存されている画像データマップの同期
+                if (data.photoMap) {
+                    allPhotosMap = data.photoMap;
+                    document.getElementById('db-counter').innerText = `STOCKS: ${Object.keys(allPhotosMap).length}`;
+                } else {
+                    allPhotosMap = {}; 
+                    document.getElementById('db-counter').innerText = "STOCKS: 0";
+                }
                 executeSearch();
             });
         }
 
+        /* 📡 【修正】安全な一元データ同期(setDoc merge版) */
         async function syncInputsToFirebase() {
             const roomId = document.getElementById('room-id').value.trim() || 'default_room';
             const queries = searchBoxes.map(b => b.value.trim());
@@ -762,10 +763,10 @@
 
             if (numbersList.length === 0) { showToast("NO 3-DIGIT TARGETS"); return; }
 
-            const roomId = document.getElementById('room-id').value.trim() || 'default_room';
+            const updates = {};
             let matchCount = 0;
 
-            for (const numObj of numbersList) {
+            numbersList.forEach(numObj => {
                 const verticalCandidates = genericBlocks.filter(b => {
                     const xDiff = Math.abs(numObj.cx - b.cx);
                     const yDiff = b.cy - numObj.cy;
@@ -791,44 +792,47 @@
                 cropCanvas.width = 120; cropCanvas.height = 160;
                 const cCtx = cropCanvas.getContext('2d');
 
-                // P1: 通常倍率
+                // 📸 パターン1: 以前のP3（1.35倍を標準ベース化）
                 const cropX1 = Math.max(0, centerCx - (standardCropW / 2));
                 const cropY1 = Math.max(0, centerCy - (standardCropH / 2));
                 cCtx.clearRect(0,0,120,160);
                 cCtx.drawImage(originalCanvas, cropX1, cropY1, standardCropW, standardCropH, 0, 0, 120, 160);
-                const img1 = cropCanvas.toDataURL('image/jpeg', 0.50);
+                const img1 = cropCanvas.toDataURL('image/jpeg', 0.65);
 
-                // P2: 広域
-                const wideCropW = standardCropW * 1.3;
-                const wideCropH = standardCropH * 1.3;
+                // 📸 パターン2: さらに広め
+                const wideCropW = standardCropW * 1.25;
+                const wideCropH = standardCropH * 1.25;
                 const cropX2 = Math.max(0, centerCx - (wideCropW / 2));
                 const cropY2 = Math.max(0, centerCy - (wideCropH / 2));
                 cCtx.clearRect(0,0,120,160);
                 cCtx.drawImage(originalCanvas, cropX2, cropY2, wideCropW, wideCropH, 0, 0, 120, 160);
-                const img2 = cropCanvas.toDataURL('image/jpeg', 0.50);
+                const img2 = cropCanvas.toDataURL('image/jpeg', 0.65);
 
-                // P3: ズーム
+                // 📸 パターン3: ジャストズーム
                 const zoomCropW = standardCropW * 0.75;
                 const zoomCropH = standardCropH * 0.75;
                 const cropX3 = Math.max(0, centerCx - (zoomCropW / 2));
                 const cropY3 = Math.max(0, centerCy - (zoomCropH / 2));
                 cCtx.clearRect(0,0,120,160);
                 cCtx.drawImage(originalCanvas, cropX3, cropY3, zoomCropW, zoomCropH, 0, 0, 120, 160);
-                const img3 = cropCanvas.toDataURL('image/jpeg', 0.50);
+                const img3 = cropCanvas.toDataURL('image/jpeg', 0.65);
 
-                try {
-                    const updatePayload = {};
-                    updatePayload[`photoMap_${numObj.text}_0`] = img1;
-                    updatePayload[`photoMap_${numObj.text}_1`] = img2;
-                    updatePayload[`photoMap_${numObj.text}_2`] = img3;
-                    
-                    await setDoc(doc(db, "rooms", roomId), updatePayload, { merge: true });
-                    matchCount++;
-                } catch (e) { console.error("Firebase送信エラー:", e); }
-            }
+                updates[numObj.text] = {
+                    croppedImgs: [img1, img2, img3],
+                    timestamp: Date.now()
+                };
+                matchCount++;
+            });
 
             if (matchCount > 0) {
-                showToast(`STOCKED: ${matchCount} UNITS`);
+                const roomId = document.getElementById('room-id').value.trim() || 'default_room';
+                const mergedMap = { ...allPhotosMap };
+                Object.keys(updates).forEach(num => { mergedMap[num] = updates[num]; });
+                try {
+                    // setDocのマージ機能で相手のスキャン結果と合成。確実な同期経路
+                    await setDoc(doc(db, "rooms", roomId), { photoMap: mergedMap }, { merge: true });
+                    showToast(`STOCKED: ${matchCount} UNITS`);
+                } catch (e) { showToast("SYNC ERROR"); }
             } else { showToast("MATCHING CRITERIA FAILED"); }
         }
 
@@ -858,7 +862,6 @@
             } else { showToast("NO NUMBERS DETECTED"); }
         }
 
-        /* 📸 画像レンダリング（タップ切り替え復活版） */
         function executeSearch() {
             searchBoxes.forEach((box, index) => {
                 const query = box.value.trim();
@@ -866,23 +869,31 @@
                 const rowDiv = document.getElementById('row-' + index);
 
                 if (!query) {
-                    zone.innerHTML = '<span class="void-text">VOID</span>';
+                    zone.innerHTML = '<span class="no-img-text">VOID</span>';
                     rowDiv.classList.remove('has-error');
                     return;
                 }
 
-                const imgs = globalPhotoMap[query];
+                const foundMatch = allPhotosMap[query];
                 
-                if (imgs && imgs[0] && imgs[1] && imgs[2]) {
-                    // 現在このスロットが選択しているモード(0=P1, 1=P2, 2=P3)を取得
-                    const currentMode = slotViewModes[index];
-                    const labels = ["P1 (標準)", "P2 (広域)", "P3 (ズーム)"];
+                if (foundMatch) {
+                    const imgList = foundMatch.croppedImgs || (foundMatch.croppedImg ? [foundMatch.croppedImg] : []);
                     
-                    zone.innerHTML = `
-                        <span class="pane-label-badge">${labels[currentMode]}</span>
-                        <img src="${imgs[currentMode]}">
-                    `;
-                    rowDiv.classList.remove('has-error');
+                    if (imgList.length > 0) {
+                        let pIdx = slotPatternIndexes[index] || 0;
+                        if (pIdx >= imgList.length) { pIdx = 0; slotPatternIndexes[index] = 0; }
+
+                        const currentImgData = imgList[pIdx];
+                        
+                        zone.innerHTML = `
+                            <img src="${currentImgData}">
+                            <div class="pattern-badge">P${pIdx + 1}/${imgList.length}</div>
+                        `;
+                        rowDiv.classList.remove('has-error');
+                    } else {
+                        zone.innerHTML = '<span class="err-text">NONE</span>';
+                        rowDiv.classList.add('has-error');
+                    }
                 } else {
                     zone.innerHTML = '<span class="err-text">NONE</span>';
                     rowDiv.classList.add('has-error');
@@ -890,24 +901,23 @@
             });
         }
 
-        /* 🛠️ 他のメンバーを残して、画像データだけをドキュメント上書きで綺麗にするリセット */
+        /* 📡 【大修正】物理削除(deleteDoc)ではなく、空値での初期化書き込みに変更 */
         async function resetSystem() {
-            if (!confirm("ルーム全体のスクショデータと全メンバーのスロット数値をリセットしますか？")) return;
+            if (!confirm("ルーム全体のデータとスロット内の数字を完全にリセットしますか？")) return;
             const roomId = document.getElementById('room-id').value.trim() || 'default_room';
             try {
+                // ローカル側の表示を先んじて空にする
                 searchBoxes.forEach(box => box.value = "");
-                slotViewModes = [0, 0, 0, 0, 0]; // 見た目の切替状態も初期化
-                
-                const now = Date.now();
-                const uName = document.getElementById('user-name').value.trim() || 'Unknown';
-                
-                // ドキュメントを新規オブジェクトで完全上書きして過去のphotoMap_XXXを消し去る
+                slotPatternIndexes = [0, 0, 0, 0, 0];
+                allPhotosMap = {};
+
+                // ルーム全体を削除するのではなく「初期値」で上書きすることで
+                // 他の人のonSnapshotリスナーが切断されるのを防ぎつつ、全員の画面を綺麗に初期化
                 await setDoc(doc(db, "rooms", roomId), {
                     currentQueries: ["", "", "", "", ""],
-                    members: { [uName]: now }
-                }, { merge: false });
+                    photoMap: {}
+                }, { merge: true });
 
-                globalPhotoMap = {};
                 executeSearch();
                 showToast("ROOM & SLOTS RESET COMPLETE");
             } catch(e) {
