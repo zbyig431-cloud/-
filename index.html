@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>絶望要塞IG スカウターツール（超高精度・3パターン版）</title>
+    <title>絶望要塞IG スカウターツール（正方形ボックス特化版）</title>
     <!-- Firebase SDK (v10) -->
     <script type="importmap">
       {
@@ -181,7 +181,7 @@
             object-fit: contain; 
         }
 
-        /* 左下コントロールパネル（クリアボタン追加） */
+        /* 左下コントロールパネル */
         .hud-left-bottom-controls {
             height: 60px;
             background: rgba(10, 14, 20, 0.95);
@@ -218,12 +218,11 @@
         }
         .btn-zoom-toggle:active { background: var(--cyber-blue); color: #000; }
 
-        /* 新設：一括クリアボタン */
         .btn-clear-slots {
             background: rgba(255, 145, 0, 0.1);
             border: 1px solid var(--cyber-orange);
             color: var(--cyber-orange);
-            margin-left: auto; /* 右端に寄せる */
+            margin-left: auto;
         }
         .btn-clear-slots:active { background: var(--cyber-orange); color: #000; }
 
@@ -279,7 +278,6 @@
             color: var(--cyber-blue);
         }
         
-        /* スロット画像ゾーン（タップ可能インジケータ付き） */
         .hud-slot-ans-zone {
             flex: 1;
             height: 100%;
@@ -301,7 +299,6 @@
         .hud-slot-ans-zone .no-img-text { font-size: 10px; color: #445566; font-weight: bold; }
         .hud-slot-ans-zone .err-text { font-size: 10px; color: var(--cyber-red); font-weight: bold; }
         
-        /* パターン数インジケータ（右上にちいさく表示） */
         .pattern-badge {
             position: absolute;
             top: 2px; right: 4px;
@@ -415,7 +412,7 @@
                 <div class="scan-dimmer" id="scan-indicator"></div>
             </div>
 
-            <!-- 左下：操作パネル（クリアボタン追加） -->
+            <!-- 左下：操作パネル -->
             <div class="hud-left-bottom-controls">
                 <button class="btn-exit-icon" id="btn-exit-scan">🚪 EXIT</button>
                 <button class="btn-zoom-toggle" id="btn-toggle-lens">🔄 1.0x / 0.5x</button>
@@ -489,7 +486,6 @@
         let presenceInterval = null;
         let isUltraWideMode = true; 
 
-        // 現在各スロットで何番目のパターン（0~2）を表示しているかのローカル管理用
         let slotPatternIndexes = [0, 0, 0, 0, 0];
 
         const setupPhase = document.getElementById('setup-phase');
@@ -515,8 +511,6 @@
             document.getElementById('btn-exit-scan').addEventListener('click', exitScanMode);
             document.getElementById('btn-reset-all').addEventListener('click', resetSystem);
             document.getElementById('btn-toggle-lens').addEventListener('click', toggleCameraLens);
-            
-            // 新設: クリアボタン
             document.getElementById('btn-clear-slots').addEventListener('click', clearAllSlots);
 
             document.getElementById('shutter-target').addEventListener('click', () => processCaptureOCR("target"));
@@ -533,7 +527,6 @@
                 });
             });
 
-            // 解答ゾーンタップ時のパターンスイッチ登録
             ansZones.forEach((zone, idx) => {
                 zone.addEventListener('click', () => {
                     const query = searchBoxes[idx].value.trim();
@@ -542,16 +535,15 @@
                     const imgList = allPhotosMap[query].croppedImgs || [];
                     if (imgList.length <= 1) return;
 
-                    // 次のパターンへループ切り替え
                     slotPatternIndexes[idx] = (slotPatternIndexes[idx] + 1) % imgList.length;
-                    executeSearch(); // 再描画
+                    executeSearch();
                 });
             });
         }
 
         function clearAllSlots() {
             searchBoxes.forEach(box => box.value = "");
-            slotPatternIndexes = [0, 0, 0, 0, 0]; // インデックスもリセット
+            slotPatternIndexes = [0, 0, 0, 0, 0];
             syncInputsToFirebase();
             executeSearch();
             showToast("SLOTS CLEARED");
@@ -670,7 +662,6 @@
             try { await updateDoc(doc(db, "rooms", roomId), { currentQueries: queries }); } catch(e) {}
         }
 
-        /* 💡 2分割高解像度合成撮影 & 精査OCRエンジン */
         async function processCaptureOCR(mode) {
             const videoEl = document.getElementById('camera-stream');
             const apiKey = document.getElementById('api-key').value.trim();
@@ -681,29 +672,23 @@
             setTimeout(() => indicator.classList.remove('active'), 120);
             showToast("HIGH-RES DUAL SCANNING...");
 
-            // 1. オリジナルの解像度を取得
             const srcW = videoEl.videoWidth;
             const srcH = videoEl.videoHeight;
 
-            // ワーク用一時キャンバスに生画像をキャプチャ
             const workCanvas = document.getElementById('split-work-canvas');
             workCanvas.width = srcW;
             workCanvas.height = srcH;
             const wCtx = workCanvas.getContext('2d');
             wCtx.drawImage(videoEl, 0, 0, srcW, srcH);
 
-            // 2. 「左半分」「右半分」に2分割し、縦にドッキングした高解像度画像を作る
-            // これによりVision API送信数を1回に抑えつつ文字拡大率を2倍にする
             const finalCanvas = document.getElementById('capture-canvas');
             const halfW = Math.floor(srcW / 2);
             
             finalCanvas.width = halfW;
-            finalCanvas.height = srcH * 2; // 縦に2枚並べる
+            finalCanvas.height = srcH * 2; 
             const fCtx = finalCanvas.getContext('2d');
 
-            // 左半分を上段へ
             fCtx.drawImage(workCanvas, 0, 0, halfW, srcH, 0, 0, halfW, srcH);
-            // 右半分を下段へ
             fCtx.drawImage(workCanvas, halfW, 0, halfW, srcH, 0, srcH, halfW, srcH);
 
             const base64Image = finalCanvas.toDataURL('image/jpeg', 0.85).split(',')[1];
@@ -723,7 +708,6 @@
                 const annotations = resData.responses[0].textAnnotations;
                 
                 if (mode === "target") {
-                    // 全データ一括精査ロジックへ（分割座標を元の1枚絵の座標へデコードする情報も渡す）
                     await analyzeTargetModeWithAdvancedMatching(annotations, workCanvas, halfW, srcH);
                 } else {
                     await analyzeQuestionModeAdvanced(annotations, halfW, srcH);
@@ -731,31 +715,27 @@
             } catch (err) { showToast("API DETECT ERROR"); }
         }
 
-        /* 💡 全データ一括精査＆垂直マッチングアルゴリズム */
+        /* 💡 精査・正方形ターゲットのみをクローズアップ切り出しロジック */
         async function analyzeTargetModeWithAdvancedMatching(annotations, originalCanvas, halfW, srcH) {
-            const fullList = annotations.slice(1); // 0番目は全体テキストなので除外
+            const fullList = annotations.slice(1);
             
             const numbersList = [];
             const genericBlocks = [];
 
-            // 1. 分割結合画像上の座標を、元のカメラ1枚絵の座標に「復元(デコード)」しながら分類
             fullList.forEach(item => {
                 const text = item.description.trim();
                 const box = item.boundingPoly.vertices;
                 if (!box || box.length < 4) return;
 
-                // 4角の平均から中心座標を算出
                 let cx = ((box[0]?.x ?? 0) + (box[1]?.x ?? 0) + (box[2]?.x ?? 0) + (box[3]?.x ?? 0)) / 4;
                 let cy = ((box[0]?.y ?? 0) + (box[1]?.y ?? 0) + (box[2]?.y ?? 0) + (box[3]?.y ?? 0)) / 4;
 
-                // 高さ（サイズ）の算出
                 const h = Math.max(box[0]?.y ?? 0, box[1]?.y ?? 0, box[2]?.y ?? 0, box[3]?.y ?? 0) - Math.min(box[0]?.y ?? 0, box[1]?.y ?? 0, box[2]?.y ?? 0, box[3]?.y ?? 0);
                 const w = Math.max(box[0]?.x ?? 0, box[1]?.x ?? 0, box[2]?.x ?? 0, box[3]?.x ?? 0) - Math.min(box[0]?.x ?? 0, box[1]?.x ?? 0, box[2]?.x ?? 0, box[3]?.x ?? 0);
 
-                // 下段（右半分由来）にあれば、元の右側座標に引き戻す
                 if (cy >= srcH) {
-                    cx = cx + halfW; // X座標を右側へシフト
-                    cy = cy - srcH;  // Y座標を上段基準へ
+                    cx = cx + halfW;
+                    cy = cy - srcH; 
                 }
 
                 const info = { text, cx, cy, w, h };
@@ -772,58 +752,54 @@
             const updates = {};
             let matchCount = 0;
 
-            // 2. 抽出した3桁数字ごとに、その「真下」にある最適なブロックを精査してペアリング
             numbersList.forEach(numObj => {
-                // 同じX軸付近にあり、かつ下に位置するブロック群をフィルタ
                 const verticalCandidates = genericBlocks.filter(b => {
                     const xDiff = Math.abs(numObj.cx - b.cx);
                     const yDiff = b.cy - numObj.cy;
-                    // Xのズレが数字の横幅の1.2倍以内、かつ下方向に適度な距離にあるもの
                     return (xDiff < numObj.w * 1.2) && (yDiff > 0) && (yDiff < numObj.h * 8);
                 });
 
-                let targetY = numObj.cy + (numObj.h * 2.5); // デフォルト（真下が見つからない場合の予測値）
-                let targetH = numObj.h * 3.5;
+                // 正方形(ボックス)の座標情報を決定する
+                let boxCx = numObj.cx;
+                let boxCy = numObj.cy + (numObj.h * 3.5); // 予測値
+                let boxSize = numObj.w * 1.3;            // 予測正方形幅
 
                 if (verticalCandidates.length > 0) {
-                    // 最も数字の真下（X座標が一番近い）にあるブロックを正方形（ターゲット）の目印とする
                     verticalCandidates.sort((a, b) => Math.abs(numObj.cx - a.cx) - Math.abs(numObj.cx - b.cx));
                     const bestBlock = verticalCandidates[0];
-                    targetY = bestBlock.cy;
-                    targetH = bestBlock.h * 1.5;
+                    boxCx = bestBlock.cx;
+                    boxCy = bestBlock.cy;
+                    boxSize = Math.max(bestBlock.w, bestBlock.h) * 1.2; // 確実に正方形を収める
                 }
 
-                // 3. 🎯 3パターン（3連）スナップショット自動生成ロジック
+                // 出力画像：140x120のキャンバスを生成
                 const cropCanvas = document.createElement('canvas');
                 cropCanvas.width = 140; cropCanvas.height = 120;
                 const cCtx = cropCanvas.getContext('2d');
 
-                const padX = numObj.w * 0.5;
-                const cropX = Math.max(0, numObj.cx - (numObj.w / 2) - padX);
-                const cropW = numObj.w + (padX * 2);
-
-                // パターン1: ジャスト（精査した中心基準）
-                const cropY1 = Math.max(0, numObj.cy - (numObj.h * 0.5));
-                const cropH1 = (targetY + targetH) - cropY1;
+                // 🎯 パターン1: 正方形ボックスジャスト中心
+                const cropX1 = Math.max(0, boxCx - (boxSize / 2));
+                const cropY1 = Math.max(0, boxCy - (boxSize / 2));
                 cCtx.clearRect(0,0,140,120);
-                cCtx.drawImage(originalCanvas, cropX, cropY1, cropW, cropH1, 0, 0, 140, 120);
+                cCtx.drawImage(originalCanvas, cropX1, cropY1, boxSize, boxSize, 0, 0, 140, 120);
                 const img1 = cropCanvas.toDataURL('image/jpeg', 0.65);
 
-                // パターン2: やや上寄りマージン
-                const cropY2 = Math.max(0, numObj.cy - (numObj.h * 1.0));
-                const cropH2 = cropH1 + (numObj.h * 0.5);
+                // 🎯 パターン2: ズーム気味（少し狭めて四角形を大きく写す）
+                const boxSize2 = boxSize * 0.85;
+                const cropX2 = Math.max(0, boxCx - (boxSize2 / 2));
+                const cropY2 = Math.max(0, boxCy - (boxSize2 / 2));
                 cCtx.clearRect(0,0,140,120);
-                cCtx.drawImage(originalCanvas, cropX, cropY2, cropW, cropH2, 0, 0, 140, 120);
+                cCtx.drawImage(originalCanvas, cropX2, cropY2, boxSize2, boxSize2, 0, 0, 140, 120);
                 const img2 = cropCanvas.toDataURL('image/jpeg', 0.65);
 
-                // パターン3: やや下寄りマージン（あるいは全体を広めにカバー）
-                const cropY3 = cropY1;
-                const cropH3 = cropH1 + (numObj.h * 1.5);
+                // 🎯 パターン3: ルーズ気味（周囲の余白、万が一のズレを考慮し一回り広く写す）
+                const boxSize3 = boxSize * 1.25;
+                const cropX3 = Math.max(0, boxCx - (boxSize3 / 2));
+                const cropY3 = Math.max(0, boxCy - (boxSize3 / 2));
                 cCtx.clearRect(0,0,140,120);
-                cCtx.drawImage(originalCanvas, cropX, cropY3, cropW, cropH3, 0, 0, 140, 120);
+                cCtx.drawImage(originalCanvas, cropX3, cropY3, boxSize3, boxSize3, 0, 0, 140, 120);
                 const img3 = cropCanvas.toDataURL('image/jpeg', 0.65);
 
-                // 配列として3パターンを格納
                 updates[numObj.text] = {
                     croppedImgs: [img1, img2, img3],
                     timestamp: Date.now()
@@ -831,19 +807,17 @@
                 matchCount++;
             });
 
-            // 4. Firebaseルームデータベースへマージして一括同期
             if (matchCount > 0) {
                 const roomId = document.getElementById('room-id').value.trim() || 'default_room';
                 const mergedMap = { ...allPhotosMap };
                 Object.keys(updates).forEach(num => { mergedMap[num] = updates[num]; });
                 try {
                     await updateDoc(doc(db, "rooms", roomId), { photoMap: mergedMap });
-                    showToast(`STOCKED: ${matchCount} TARGETS (3-PATTERNS)`);
+                    showToast(`STOCKED: ${matchCount} BOXES (3-PATTERNS)`);
                 } catch (e) { showToast("SYNC ERROR"); }
             } else { showToast("MATCHING CRITERIA FAILED"); }
         }
 
-        /* 💡 クエストモード用デコードオートフィル */
         async function analyzeQuestionModeAdvanced(annotations, halfW, srcH) {
             const fullList = annotations.slice(1);
             const foundNumbers = [];
@@ -855,7 +829,7 @@
                     let cx = ((box[0]?.x ?? 0) + (box[2]?.x ?? 0)) / 2;
                     let cy = ((box[0]?.y ?? 0) + (box[2]?.y ?? 0)) / 2;
                     
-                    if (cy >= srcH) { cx = cx + halfW; } // 座標復元
+                    if (cy >= srcH) { cx = cx + halfW; }
                     foundNumbers.push({ text, x: cx });
                 }
             });
@@ -870,7 +844,6 @@
             } else { showToast("NO NUMBERS DETECTED"); }
         }
 
-        /* 💡 右側HUDスロット検索＆マルチパターンレンダラー */
         function executeSearch() {
             searchBoxes.forEach((box, index) => {
                 const query = box.value.trim();
@@ -886,17 +859,14 @@
                 const foundMatch = allPhotosMap[query];
                 
                 if (foundMatch) {
-                    // 新形式(croppedImgs配列)または旧形式(croppedImg単体)の互換性ケア
                     const imgList = foundMatch.croppedImgs || (foundMatch.croppedImg ? [foundMatch.croppedImg] : []);
                     
                     if (imgList.length > 0) {
-                        // 現在スロットに割り当てられている切り替え用インデックス
                         let pIdx = slotPatternIndexes[index] || 0;
                         if (pIdx >= imgList.length) { pIdx = 0; slotPatternIndexes[index] = 0; }
 
                         const currentImgData = imgList[pIdx];
                         
-                        // 画像と、タップ切り替えができることがわかるバッジを表示
                         zone.innerHTML = `
                             <img src="${currentImgData}">
                             <div class="pattern-badge">P${pIdx + 1}/${imgList.length}</div>
