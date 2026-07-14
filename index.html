@@ -371,7 +371,7 @@
 
         let currentMode = "target"; 
         let localStream = null;
-        let allPhotosMap = {}; // データ肥大化（1MB制限）を避けるため、{ "3桁の数字": {croppedImg: "...", timestamp: 123} } のMAP構造へ最適化
+        let allPhotosMap = {}; // 1MB制限対策：重複数字は最新画像で上書きするMAP構造
         let unsubscribeRoom = null;
         let presenceInterval = null;
 
@@ -425,36 +425,48 @@
             scanPhase.style.display = 'block';
 
             try {
-                // 1. 利用可能なビデオ入力デバイスを取得
+                // --- STEP 1: 「二度聞き作戦」開始。まずは仮起動してSafariのアクセス権限を確定させる ---
+                const tempStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" }, audio: false });
+                
+                // --- STEP 2: 権限を完全に取得した状態で、デバイスの名前（label）情報を引き出す ---
                 const devices = await navigator.mediaDevices.enumerateDevices();
                 const videoDevices = devices.filter(device => device.kind === 'videoinput');
                 
+                // 仮で開いたストリームはすぐに閉じて一度カメラを解放する
+                tempStream.getTracks().forEach(track => track.stop());
+
                 let targetDeviceId = null;
 
-                // 2. 背面カメラの中から超広角レンズを優先的に抽出
+                // 背面のメインカメラ系を抽出
                 const backCameras = videoDevices.filter(d => 
                     d.label.toLowerCase().includes('back') || 
                     d.label.toLowerCase().includes('rear') || 
-                    d.label.toLowerCase().includes('camera 1')
+                    d.label.toLowerCase().includes('背面') ||
+                    d.label.toLowerCase().includes('カメラ')
                 );
 
                 if (backCameras.length > 0) {
-                    // ラベルに ultra, 0.5x, dual などの広角を示す文字列が含まれるかチェック
+                    // 超広角を示すラベル（ultra、0.5、ウルトラ、超広角など）が含まれているカメラを最優先で割り振る
                     const ultraWide = backCameras.find(d => 
                         d.label.toLowerCase().includes('ultra') || 
-                        d.label.toLowerCase().includes('0.5x') ||
-                        d.label.toLowerCase().includes('dualcamera')
+                        d.label.toLowerCase().includes('0.5') ||
+                        d.label.toLowerCase().includes('super') ||
+                        d.label.toLowerCase().includes('ウルトラ') ||
+                        d.label.toLowerCase().includes('超広角')
                     );
                     
                     if (ultraWide) {
                         targetDeviceId = ultraWide.deviceId;
+                        console.log("超広角カメラ特定成功:", ultraWide.label);
                     } else {
-                        // 見つからない場合はリストの最後のカメラ（iPhoneでは通常、超広角や望遠カメラ）を採用
-                        targetDeviceId = backCameras[backCameras.length - 1].deviceId;
+                        // 万が一ブラウザの仕様でラベル検出に引っかからなかった場合のフォールバック。
+                        // 超広角を搭載しているiPhoneでは、背面カメラリストの「2番目（インデックス1）」が0.5xに割り当てられている確率が極めて高い
+                        targetDeviceId = backCameras[1] ? backCameras[1].deviceId : backCameras[0].deviceId;
+                        console.log("ラベルでの自動判別が不可だったため、代替カメラを起動します");
                     }
                 }
 
-                // 3. 超広角（または背面カメラ）を指定して起動
+                // --- STEP 3: 本物の0.5倍超広角カメラを使ってリスタート！ ---
                 const constraints = {
                     video: {
                         deviceId: targetDeviceId ? { exact: targetDeviceId } : undefined,
@@ -468,15 +480,16 @@
                 localStream = await navigator.mediaDevices.getUserMedia(constraints);
                 document.getElementById('camera-stream').srcObject = localStream;
                 if (scanPhase.requestFullscreen) { scanPhase.requestFullscreen().catch(() => {}); }
+                
                 startFirebaseRoomSync();
 
-                if (targetDeviceId) {
-                    const activeTrack = localStream.getVideoTracks()[0];
-                    showToast(`LAUNCHED: ${activeTrack.label || '0.5x CAMERA'}`);
-                }
+                // 現在起動しているカメラ名をトースト（HUD通知）で分かりやすくフィードバック
+                const activeTrack = localStream.getVideoTracks()[0];
+                showToast(`ACTIVE: ${activeTrack.label || '0.5x CAMERA'}`);
+
             } catch (err) {
-                console.error(err);
-                alert("カメラの起動に失敗しました。カメラ権限を確認してください。");
+                console.error("Camera Init Error: ", err);
+                alert("カメラの起動に失敗しました。カメラ権限を許可し、Safari等のブラウザで再度お試しください。");
                 exitScanMode();
             }
         }
@@ -531,7 +544,7 @@
                     });
                 }
                 
-                // Firestoreから取得した写真データマップを展開
+                // Firestoreから取得した写真データマップ（1MB制限を回避した新データ構造）
                 if (data.photoMap) {
                     allPhotosMap = data.photoMap;
                     document.getElementById('db-counter').innerText = `STOCKS: ${Object.keys(allPhotosMap).length}`;
@@ -601,7 +614,7 @@
 
                 // 3桁の数字だけを徹底捜索
                 if (/^\d{3}$/.test(text)) {
-                    // iOSのundefined回避を施した安全な座標パース
+                    // Safari対策：オプショナルチェイニング `?.` とヌル合体 `??` を採用し、undefinedによる座標エラーを防止
                     const xMin = Math.min(box[0]?.x ?? 0, box[1]?.x ?? 0, box[2]?.x ?? 0, box[3]?.x ?? 0);
                     const yMin = Math.min(box[0]?.y ?? 0, box[1]?.y ?? 0, box[2]?.y ?? 0, box[3]?.y ?? 0);
                     const w = Math.max(box[0]?.x ?? 0, box[1]?.x ?? 0, box[2]?.x ?? 0, box[3]?.x ?? 0) - xMin;
@@ -638,7 +651,7 @@
             if (count > 0) {
                 const roomId = document.getElementById('room-id').value.trim() || 'default_room';
                 
-                // Firestoreの photoMap オブジェクトを最新の検出画像でアップデート（1MB制限対策）
+                // 新しいスキャンデータでマップをマージ
                 const mergedMap = { ...allPhotosMap };
                 Object.keys(updates).forEach(num => {
                     mergedMap[num] = updates[num];
