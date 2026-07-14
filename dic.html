@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <!-- タイトルを「Q 辞書ツール」に変更 -->
     <title>Q 辞書ツール</title>
     <style>
         * { box-sizing: border-box; font-family: 'Courier New', Courier, monospace, sans-serif; }
@@ -76,7 +75,7 @@
         }
         .camera-container {
             flex: 1;
-            min-height: 130px; /* 横画面時の縦幅を少しコンパクトに調整 */
+            min-height: 130px;
             background: #000;
             border: 1.5px solid #b57cff;
             position: relative;
@@ -208,7 +207,7 @@
         }
         .btn-manual-submit:active { background: #00ff64; color: #000; }
 
-        /* --- 計算コントロールセンター（バランス大調整） --- */
+        /* --- 計算コントロールセンター（アスペクト比基準の調整） --- */
         .calc-panel {
             background: rgba(27, 15, 46, 0.6);
             border: 1px solid rgba(181, 124, 255, 0.3);
@@ -222,77 +221,81 @@
         }
         .calc-main-row {
             display: flex;
-            gap: 4px;
+            gap: 6px;
             align-items: center;
             flex: 1;
         }
-        /* ANS枠：無駄な縦広がりを抑え、数字を引き立たせる */
+        
+        /* ANS枠：正方形（スクエア）アスペクト比を固定し、綺麗に配置 */
         .result-display {
-            flex: 25; /* 少しスリム化 */
+            flex: 1;
+            aspect-ratio: 1 / 1; /* 正方形にする */
             background: #06030a;
             border: 1px solid #b57cff;
             border-radius: 4px;
-            padding: 1px;
+            padding: 2px;
             text-align: center;
             display: flex;
             flex-direction: column;
             justify-content: center;
-            align-self: center;
-            height: 28px; /* 縦長化を防ぐ固定高 */
+            align-items: center;
         }
-        .result-display .res-title { font-size: 0.45rem; color: #b57cff; line-height: 0.5rem; }
+        .result-display .res-title { 
+            font-size: 0.45rem; 
+            color: #b57cff; 
+            line-height: 0.6rem; 
+        }
         .result-display .res-num { 
-            font-size: 1.4rem; /* 数字をより大きく見やすく */
+            font-size: 1.25rem; 
             font-weight: bold; 
             color: #ff007f; 
             text-shadow: 0 0 6px #ff007f; 
             line-height: 1.1rem; 
         }
         
-        /* 計算ボタン群：縦に伸びすぎないように制限 */
+        /* 計算ボタン群：1列5個のボタンがすべて正方形に維持されるよう調整 */
         .calc-buttons {
-            flex: 75;
+            flex: 5;
             display: grid;
             grid-template-columns: repeat(5, 1fr);
-            gap: 3px;
+            gap: 4px;
         }
         .btn-calc {
             background: #2b124c;
             border: 1.5px solid #ff007f;
             color: #ff007f;
-            font-size: 0.65rem;
+            font-size: 0.6rem;
             font-weight: bold;
             border-radius: 3px;
             cursor: pointer;
             display: flex;
             justify-content: center;
             align-items: center;
-            height: 28px; /* 縦長化を防止しちょうど良い横長にする */
-            max-height: 28px;
+            aspect-ratio: 1 / 1; /* 正方形にする */
+            width: 100%;
+            height: auto;
         }
         .btn-calc:active { background: #ff007f; color: #000; }
         
-        /* 下部クリアボタン群：押しやすいように大型化 */
+        /* クリアボタン：十分な高さを出した「押しやすい太めの長方形」に修正 */
         .reset-container {
             display: grid;
             grid-template-columns: 1fr 1fr;
-            gap: 4px;
-            margin-top: 4px;
-            height: 22px; /* 18pxから22pxに拡大 */
+            gap: 6px;
+            margin-top: 6px;
         }
         .btn-reset-half {
             background: #3a1525;
             border: 1px solid #ff3388;
             color: #ff99cc;
-            padding: 0;
-            font-size: 0.65rem; /* 文字を少し大きく */
+            font-size: 0.7rem; /* 文字をはっきり大きく */
             font-weight: bold;
-            border-radius: 3px;
+            border-radius: 4px;
             cursor: pointer;
             display: flex;
             justify-content: center;
             align-items: center;
-            height: 100%;
+            height: 28px; /* 高さをしっかりと出す */
         }
         .btn-reset-half:active { background: #ff3388; color: #fff; }
 
@@ -467,7 +470,7 @@
 
     <script type="module">
         const KANJI_DICTIONARY = {
-            "七":7,"下":8,"丈":16,"丘":22,"並":25,"丸":29,"丼":31,"衣":31,"也":36,"井":48,
+            "七":7,"下":8,"丈":16,"丘":22,"並":25,"丸":29,"丼":31,"衣":31,"起":31,"也":36,"井":48,
             "仁":57,"会":64,"全":66,"伝":67,"倹":87,"健":93,"僕":101,"舗":102,"六":116,
             "典":119,"円":120,"写":125,"冶":127,"凍":129,"出":133,"券":139,"列":141,"判":142,
             "劣":153,"勝":159,"匣":167,"十":168,"卅":171,"卍":172,"卞":176,"卵":179,"参":184,
@@ -493,10 +496,9 @@
             "臣":1073,"解":1080,"計":1083,"誠":1093,"誉":1094,"謄":1108,"謦":1109,"象":1115,"財":1119,
             "買":1123,"贋":1130,"踊":1139,"転":1147,"載":1150,"込":1158,"述":1161,"邪":1188,"酒":1192,
             "醸":1197,"重":1199,"針":1205,"釘":1205,"銜":1209,"鍵":1216,"鏖":1219,"鑿":1222,"開":1226,
-            "険":1238,"雇":1247,"難":1251,"需":1256,"霖":1257,"開":1226,"険":1238,"雇":1247,"難":1251,
-            "需":1256,"霖":1257,"靖":1260,"響":1269,"預":1273,"顔":1276,"飆":1282,"飴":1286,
-            "餅":1287,"首":1290,"馮":1293,"駐":1296,"騰":1298,"髪":1305,"髭":1305,"鬨":1306,
-            "鮭":1312,"鳴":1319,"鸞":1326,"麾":1330,"黄":1331,"黐":1332,"黶":1334
+            "険":1238,"雇":1247,"難":1251,"需":1256,"霖":1257,"靖":1260,"響":1269,"預":1273,"顔":1276,
+            "飆":1282,"飴":1286,"餅":1287,"首":1290,"馮":1293,"駐":1296,"騰":1298,"髪":1305,"髭":1305,
+            "鬨":1306,"鮭":1312,"鳴":1319,"鸞":1326,"麾":1330,"黄":1331,"黐":1332,"黶":1334
         };
 
         let streamObject = null;
