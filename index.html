@@ -159,7 +159,7 @@
             width: 100vw;
             height: 100vh;
             background: #000;
-            display: none; /* 初期は非表示 */
+            display: none;
             z-index: 1000;
         }
 
@@ -183,119 +183,89 @@
             height: 100%;
             z-index: 2;
             display: grid;
-            grid-template-columns: 160px 1fr 240px; /* 左操作系 / 中央透過スペース / 右答え表示 */
+            grid-template-columns: 1fr 260px; /* 左側は全域ファインダー / 右側260pxに全コンポーネントを集約 */
             padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
             pointer-events: none;
         }
 
-        /* 全てのUI部品をインタラクティブに戻す */
-        .hud-left, .hud-right, .hud-center-bottom {
+        .hud-left-floating, .hud-right {
             pointer-events: auto;
         }
 
-        /* 左側操作パネル */
-        .hud-left {
-            background: rgba(10, 14, 20, 0.75);
-            backdrop-filter: blur(4px);
-            border-right: 1px solid var(--panel-border);
-            display: flex;
-            flex-direction: column;
-            justify-content: space-between;
-            padding: 10px;
+        /* 左上の小さな浮遊退出口（EXIT）マーク */
+        .hud-left-floating {
+            position: absolute;
+            top: 15px;
+            left: 15px;
+            z-index: 10;
         }
-
-        .btn-back {
-            background: rgba(255,255,255,0.1);
-            border: 1px solid #aaa;
+        .btn-exit-icon {
+            width: 38px;
+            height: 38px;
+            border-radius: 6px;
+            background: rgba(10, 14, 20, 0.6);
+            border: 1px solid rgba(255,255,255,0.3);
             color: #fff;
-            padding: 6px;
-            font-size: 11px;
-            width: 100%;
+            font-size: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 0 10px rgba(0,0,0,0.5);
+        }
+        .btn-exit-icon:active {
+            background: var(--cyber-red);
+            border-color: var(--cyber-red);
         }
 
-        .mode-selectors {
+        /* 右側サイドバー：すべての操作と情報表示を一本化 */
+        .hud-right {
+            grid-column: 2;
+            background: rgba(10, 14, 20, 0.7);
+            backdrop-filter: blur(4px);
+            border-left: 1px solid rgba(0, 229, 255, 0.2);
             display: flex;
             flex-direction: column;
-            gap: 8px;
-            margin-top: 15px;
+            padding: 8px;
+            gap: 6px;
+            height: 100%;
+            overflow-y: auto;
+        }
+
+        /* スロット上の横並びモード切替 */
+        .hud-mode-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 4px;
+            margin-bottom: 2px;
         }
         .hud-tab {
-            font-size: 11px;
-            padding: 10px 6px;
+            font-size: 10px;
+            padding: 8px 2px;
             text-align: center;
-            border: 1px solid rgba(255,255,255,0.1);
-            background: rgba(0,0,0,0.4);
-            color: #888;
+            border: 1px solid rgba(255,255,255,0.15);
+            background: rgba(0,0,0,0.5);
+            color: #778899;
+            border-radius: 3px;
         }
         .hud-tab.active.mode-target {
             border-color: var(--cyber-blue);
             color: var(--cyber-blue);
-            box-shadow: inset 0 0 8px rgba(0,229,255,0.2);
+            background: rgba(0, 229, 255, 0.1);
+            box-shadow: inset 0 0 6px rgba(0,229,255,0.2);
         }
         .hud-tab.active.mode-question {
             border-color: var(--cyber-purple);
             color: var(--cyber-purple);
-            box-shadow: inset 0 0 8px rgba(181,124,255,0.2);
+            background: rgba(181, 124, 255, 0.1);
+            box-shadow: inset 0 0 6px rgba(181,124,255,0.2);
         }
 
-        .stocks-counter {
-            font-size: 10px;
-            color: #8cc8ff;
-            text-align: center;
-            margin-top: 5px;
-        }
-
-        /* 中央下部：シャッターエリア */
-        .hud-center-bottom {
-            grid-column: 2;
-            display: flex;
-            align-items: flex-end;
-            justify-content: center;
-            padding-bottom: 20px;
-        }
-        .btn-shutter {
-            width: 76px;
-            height: 76px;
-            border-radius: 50%;
-            background: radial-gradient(circle, #fff 40%, rgba(255,255,255,0.4) 70%);
-            border: 4px solid var(--cyber-blue);
-            box-shadow: 0 0 20px rgba(0,229,255,0.6);
-            color: #000;
-            font-size: 14px;
-            font-weight: 900;
-        }
-        .btn-shutter:active { transform: scale(0.92); }
-        
-        /* スキャン中インジケーター */
-        .scan-dimmer {
-            position: absolute;
-            top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0, 229, 255, 0.15);
-            opacity: 0; pointer-events: none; z-index: 5;
-            transition: opacity 0.1s;
-        }
-        .scan-dimmer.active { opacity: 1; }
-
-        /* 右側：超コンパクト半透過答え表示パネル（スキャンの邪魔をしない） */
-        .hud-right {
-            background: rgba(10, 14, 20, 0.65);
-            backdrop-filter: blur(2px);
-            border-left: 1px solid rgba(0, 229, 255, 0.15);
+        /* スロット配置 */
+        .hud-slot-list {
             display: flex;
             flex-direction: column;
-            padding: 8px;
-            overflow-y: auto;
-            gap: 6px;
+            gap: 5px;
         }
-
-        .hud-right-title {
-            font-size: 10px;
-            color: #6688aa;
-            text-align: center;
-            border-bottom: 1px solid rgba(255,255,255,0.1);
-            padding-bottom: 4px;
-        }
-
         .hud-slot-row {
             display: flex;
             align-items: center;
@@ -304,15 +274,15 @@
             border-radius: 4px;
             padding: 4px;
             gap: 6px;
-            height: 52px;
+            height: 46px;
         }
         .hud-slot-row.has-error {
-            border-color: rgba(255,51,51,0.4);
-            background: rgba(255,51,51,0.05);
+            border-color: rgba(255, 51, 51, 0.35);
+            background: rgba(255, 51, 51, 0.05);
         }
         .hud-slot-row input {
-            width: 50px;
-            height: 32px;
+            width: 48px;
+            height: 28px;
             padding: 2px;
             font-size: 13px;
             text-align: center;
@@ -320,18 +290,18 @@
         }
         .hud-slot-ans {
             flex: 1;
-            font-size: 16px;
+            font-size: 15px;
             font-weight: bold;
             color: var(--cyber-green);
             text-align: center;
             text-shadow: 0 0 6px var(--cyber-green);
         }
-        .hud-slot-ans.err { color: var(--cyber-red); text-shadow: none; font-size: 12px;}
+        .hud-slot-ans.err { color: var(--cyber-red); text-shadow: none; font-size: 11px;}
         
         .hud-slot-thumb {
-            width: 60px;
-            height: 42px;
-            background: rgba(255,255,255,0.05);
+            width: 55px;
+            height: 36px;
+            background: rgba(255,255,255,0.03);
             border-radius: 2px;
             overflow: hidden;
             display: flex;
@@ -349,14 +319,61 @@
             color: #445566;
         }
 
+        /* スロット5の下：操作インジケータ＆シャッターエリア */
+        .hud-control-bottom {
+            margin-top: auto; /* 下端に吸着 */
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+            padding-top: 5px;
+            border-top: 1px solid rgba(255,255,255,0.08);
+        }
+
+        .stocks-counter {
+            font-size: 10px;
+            color: #8cc8ff;
+            font-weight: bold;
+            letter-spacing: 1px;
+        }
+
+        /* スロット5の下に最適化したスキャンボタン */
+        .btn-shutter {
+            width: 100%;
+            padding: 12px 0;
+            border-radius: 6px;
+            background: linear-gradient(180deg, #ffffff 0%, #b5e9ff 100%);
+            border: 2px solid var(--cyber-blue);
+            box-shadow: 0 0 12px rgba(0,229,255,0.4);
+            color: #050b14;
+            font-size: 15px;
+            font-weight: 900;
+            letter-spacing: 2px;
+        }
+        .btn-shutter:active {
+            transform: scale(0.96);
+            background: var(--cyber-blue);
+            color: #fff;
+        }
+        
+        /* スキャン中インジケーター */
+        .scan-dimmer {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0, 229, 255, 0.15);
+            opacity: 0; pointer-events: none; z-index: 5;
+            transition: opacity 0.1s;
+        }
+        .scan-dimmer.active { opacity: 1; }
+
         /* トースト通知 */
         .toast-log {
             position: absolute;
-            left: 175px;
+            left: 20px;
             bottom: 20px;
-            background: rgba(0,0,0,0.8);
+            background: rgba(0,0,0,0.85);
             border-left: 3px solid var(--cyber-blue);
-            padding: 8px 12px;
+            padding: 8px 14px;
             font-size: 11px;
             border-radius: 2px;
             z-index: 10;
@@ -373,20 +390,20 @@
             100% { opacity: 0.5; }
         }
 
-        /* ガイド表示用のオーバーレイ境界線 */
+        /* センター簡易照準マーク */
         .camera-crosshair {
             position: absolute;
-            top: 50%; left: 50%;
+            top: 50%; left: 40%; /* 右パネルを考慮し、左側ファインダーの中心に照準をシフト */
             transform: translate(-50%, -50%);
-            width: 40px; height: 40px;
+            width: 30px; height: 30px;
             pointer-events: none;
-            opacity: 0.3;
+            opacity: 0.25;
         }
         .camera-crosshair::before, .camera-crosshair::after {
             content: ''; position: absolute; background: white;
         }
-        .camera-crosshair::before { top: 19px; left: 0; width: 40px; height: 2px; }
-        .camera-crosshair::after { left: 19px; top: 0; width: 2px; height: 40px; }
+        .camera-crosshair::before { top: 14px; left: 0; width: 30px; height: 2px; }
+        .camera-crosshair::after { left: 14px; top: 0; width: 2px; height: 30px; }
     </style>
 </head>
 <body>
@@ -430,68 +447,70 @@
         <!-- フルスクリーンカメラストリーム -->
         <video id="camera-stream" autoplay playsinline muted></video>
         
-        <!-- 中央エイムライン -->
+        <!-- 左側ファインダーの中心に照準を設置 -->
         <div class="camera-crosshair"></div>
         
         <!-- スキャン時の画面フラッシュ用 -->
         <div class="scan-dimmer" id="scan-indicator"></div>
 
+        <!-- 左上の小さな独立退出口ボタン -->
+        <div class="hud-left-floating">
+            <button class="btn-exit-icon" id="btn-exit-scan" title="設定に戻る">🚪</button>
+        </div>
+
         <!-- 透過HUDレイアウト -->
         <div class="hud-overlay">
             
-            <!-- 左操作サイドバー -->
-            <div class="hud-left">
-                <div>
-                    <button class="btn-back" id="btn-exit-scan">◀ 設定に戻る</button>
-                    <div class="mode-selectors">
-                        <div class="hud-tab active mode-target" id="tab-target">🎯 TARGET</div>
-                        <div class="hud-tab mode-purple" id="tab-question">📋 QUESTION</div>
+            <!-- 空白の左〜中央エリア (カメラ透過ビュー) -->
+            <div></div>
+
+            <!-- 右側：ワンパネル集中型のUIシステム -->
+            <div class="hud-right">
+                
+                <!-- [NEW] スロット1の上に設置された横並びモード切替 -->
+                <div class="hud-mode-container">
+                    <div class="hud-tab active mode-target" id="tab-target">🎯 TARGET</div>
+                    <div class="hud-tab mode-purple" id="tab-question">📋 QUEST</div>
+                </div>
+                
+                <!-- 同期スロット群 (1〜5) -->
+                <div class="hud-slot-list">
+                    <div class="hud-slot-row" id="row-0">
+                        <input type="tel" class="search-box" id="box-0" placeholder="01" maxlength="3">
+                        <span class="hud-slot-ans" id="res-0">---</span>
+                        <div class="hud-slot-thumb" id="thumb-0"><span>VOID</span></div>
+                    </div>
+                    <div class="hud-slot-row" id="row-1">
+                        <input type="tel" class="search-box" id="box-1" placeholder="02" maxlength="3">
+                        <span class="hud-slot-ans" id="res-1">---</span>
+                        <div class="hud-slot-thumb" id="thumb-1"><span>VOID</span></div>
+                    </div>
+                    <div class="hud-slot-row" id="row-2">
+                        <input type="tel" class="search-box" id="box-2" placeholder="03" maxlength="3">
+                        <span class="hud-slot-ans" id="res-2">---</span>
+                        <div class="hud-slot-thumb" id="thumb-2"><span>VOID</span></div>
+                    </div>
+                    <div class="hud-slot-row" id="row-3">
+                        <input type="tel" class="search-box" id="box-3" placeholder="04" maxlength="3">
+                        <span class="hud-slot-ans" id="res-3">---</span>
+                        <div class="hud-slot-thumb" id="thumb-3"><span>VOID</span></div>
+                    </div>
+                    <div class="hud-slot-row" id="row-4">
+                        <input type="tel" class="search-box" id="box-4" placeholder="05" maxlength="3">
+                        <span class="hud-slot-ans" id="res-4">---</span>
+                        <div class="hud-slot-thumb" id="thumb-4"><span>VOID</span></div>
                     </div>
                 </div>
-                <div>
+
+                <!-- [NEW] スロット5の直下に配置されたカウンターとスキャンボタン -->
+                <div class="hud-control-bottom">
                     <div class="stocks-counter" id="db-counter">STOCKS: 0</div>
-                </div>
-            </div>
-
-            <!-- 中央シャッター空間 -->
-            <div class="hud-center-bottom">
-                <button class="btn-shutter" id="shutter-trigger">SCAN</button>
-            </div>
-
-            <!-- 右透過型リアルタイム結果ディスプレイ -->
-            <div class="hud-right">
-                <div class="hud-right-title">SYNCED SLOTS</div>
-                
-                <!-- スロット 01～05 -->
-                <div class="hud-slot-row" id="row-0">
-                    <input type="tel" class="search-box" id="box-0" placeholder="01" maxlength="3">
-                    <span class="hud-slot-ans" id="res-0">---</span>
-                    <div class="hud-slot-thumb" id="thumb-0"><span>VOID</span></div>
-                </div>
-                <div class="hud-slot-row" id="row-1">
-                    <input type="tel" class="search-box" id="box-1" placeholder="02" maxlength="3">
-                    <span class="hud-slot-ans" id="res-1">---</span>
-                    <div class="hud-slot-thumb" id="thumb-1"><span>VOID</span></div>
-                </div>
-                <div class="hud-slot-row" id="row-2">
-                    <input type="tel" class="search-box" id="box-2" placeholder="03" maxlength="3">
-                    <span class="hud-slot-ans" id="res-2">---</span>
-                    <div class="hud-slot-thumb" id="thumb-2"><span>VOID</span></div>
-                </div>
-                <div class="hud-slot-row" id="row-3">
-                    <input type="tel" class="search-box" id="box-3" placeholder="04" maxlength="3">
-                    <span class="hud-slot-ans" id="res-3">---</span>
-                    <div class="hud-slot-thumb" id="thumb-3"><span>VOID</span></div>
-                </div>
-                <div class="hud-slot-row" id="row-4">
-                    <input type="tel" class="search-box" id="box-4" placeholder="05" maxlength="3">
-                    <span class="hud-slot-ans" id="res-4">---</span>
-                    <div class="hud-slot-thumb" id="thumb-4"><span>VOID</span></div>
+                    <button class="btn-shutter" id="shutter-trigger">SCAN</button>
                 </div>
             </div>
         </div>
 
-        <!-- アラートトースト -->
+        <!-- アラートトースト(左下側にポップ) -->
         <div class="toast-log" id="toast-log">SCANNING...</div>
     </div>
 
@@ -519,7 +538,7 @@
         const db = getFirestore(app);
 
         // システムグローバル変数
-        let currentMode = "target"; // "target" もしくは "question"
+        let currentMode = "target"; 
         let localStream = null;
         let allPhotosData = [];
         let unsubscribeRoom = null;
@@ -573,7 +592,6 @@
             setupPhase.style.display = 'none';
             scanPhase.style.display = 'block';
 
-            // フルスクリーン全画面・広角高解像度要求
             const constraints = {
                 video: {
                     facingMode: { ideal: "environment" },
@@ -588,14 +606,12 @@
                 const videoEl = document.getElementById('camera-stream');
                 videoEl.srcObject = localStream;
                 
-                // フルスクリーン要求（iOS/Androidのブラウザ仕様による）
                 if (scanPhase.requestFullscreen) {
                     scanPhase.requestFullscreen().catch(() => {});
                 } else if (scanPhase.webkitRequestFullscreen) {
                     scanPhase.webkitRequestFullscreen().catch(() => {});
                 }
 
-                // リアルタイムリスナー開始
                 startFirebaseRoomSync();
             } catch (err) {
                 alert("カメラの起動に失敗しました。カメラ権限を確認してください。");
@@ -634,7 +650,6 @@
             const roomId = document.getElementById('room-id').value.trim() || 'default_room';
             const user = document.getElementById('user-name').value.trim() || 'Unknown';
 
-            // 生存信号 (Presence) 処理
             if(presenceInterval) clearInterval(presenceInterval);
             const reportPresence = async () => {
                 const rId = document.getElementById('room-id').value.trim() || 'default_room';
@@ -648,7 +663,6 @@
             reportPresence();
             presenceInterval = setInterval(reportPresence, 4000);
 
-            // リスナー監視開始
             unsubscribeRoom = onSnapshot(doc(db, "rooms", roomId), (snapshot) => {
                 if (!snapshot.exists()) {
                     allPhotosData = [];
@@ -658,14 +672,12 @@
                 }
                 const data = snapshot.data();
 
-                // メンバーリスト更新
                 if (data.members) {
                     const now = Date.now();
                     const activeMembers = Object.keys(data.members).filter(name => (now - data.members[name]) < 10000);
                     document.getElementById('member-list-text').innerText = `ONLINE: ${activeMembers.join(', ')}`;
                 }
 
-                // 検索ボックステキストの同期（他メンバーの変更を入力欄へ反映）
                 if (data.currentQueries) {
                     data.currentQueries.forEach((q, idx) => {
                         if (document.activeElement !== searchBoxes[idx]) {
@@ -674,7 +686,6 @@
                     });
                 }
 
-                // スキャン写真ストックデータの同期
                 if (data.photos) {
                     allPhotosData = data.photos;
                     document.getElementById('db-counter').innerText = `STOCKS: ${allPhotosData.length}`;
@@ -703,13 +714,11 @@
             
             if(!localStream || !apiKey) return;
 
-            // フラッシュアニメーション発火
             const indicator = document.getElementById('scan-indicator');
             indicator.classList.add('active');
             setTimeout(() => indicator.classList.remove('active'), 120);
             showToast("PROCESSING SCAN...");
 
-            // 現在の映像フレームをキャプチャ
             canvas.width = videoEl.videoWidth;
             canvas.height = videoEl.videoHeight;
             const ctx = canvas.getContext('2d');
@@ -718,7 +727,6 @@
             const base64Image = canvas.toDataURL('image/jpeg', 0.85);
             const base64Clean = base64Image.split(',')[1];
 
-            // Google Cloud Vision API リクエスト
             const url = `https://vision.googleapis.com/v1/images:annotate?key=${apiKey}`;
             const requestBody = {
                 requests: [{
@@ -752,7 +760,6 @@
             }
         }
 
-        // 🎯 ターゲットモード: 「3桁数字」とその直下の「アルファベット1文字」のペア関係を抽出
         async function analyzeTargetMode(annotations, srcCanvas) {
             const fullList = annotations.slice(1);
             const numbers = [];
@@ -776,7 +783,6 @@
 
             const blocks = [];
             numbers.forEach(num => {
-                // 数字の直下（X軸が近く、Y軸が少し下）にあるアルファベットを探す
                 let bestMatch = null;
                 let minDistance = 999999;
 
@@ -793,7 +799,6 @@
                 });
 
                 if (bestMatch) {
-                    // 周辺領域をクロップしてエビデンス画像を生成
                     const cropCanvas = document.createElement('canvas');
                     cropCanvas.width = 120;
                     cropCanvas.height = 84;
@@ -837,7 +842,6 @@
             }
         }
 
-        // 📋 問題スキャンモード: 5つの連続した3桁数字を一括抽出してスロットに流し込む
         async function analyzeQuestionMode(annotations) {
             const fullList = annotations.slice(1);
             const foundNumbers = [];
@@ -851,7 +855,6 @@
                 }
             });
 
-            // 左から並んでいる順にソート(横読み配置に対応)
             foundNumbers.sort((a, b) => a.x - b.x);
 
             if (foundNumbers.length >= 1) {
@@ -873,7 +876,7 @@
                 const query = box.value.trim();
                 const resSpan = document.getElementById(`res-${index}`);
                 const thumbDiv = document.getElementById(`thumb-${index}`);
-                const rowDiv = document.getElementById(`row-${index}`);
+                const rowDiv = document.getElementById('row-' + index);
 
                 if (!query) {
                     resSpan.innerText = "---";
@@ -884,7 +887,6 @@
                 }
 
                 let foundMatch = null;
-                // 最新のスキャンストックから逆引き検索
                 for (let i = allPhotosData.length - 1; i >= 0; i--) {
                     const photo = allPhotosData[i];
                     const match = photo.blocks.find(b => b.number === query);
@@ -934,7 +936,6 @@
             document.getElementById('user-name').value = localStorage.getItem('cyber_user_name') || "";
         }
 
-        // HUD用簡易通知トースト
         function showToast(msg) {
             const toast = document.getElementById('toast-log');
             toast.innerText = msg;
