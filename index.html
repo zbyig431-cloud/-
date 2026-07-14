@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>絶望要塞IG スカウターツール（同期＆3連表示 完全修正版）</title>
+    <title>絶望要塞IG スカウターツール（タップ切り替え復活＆完全共有版）</title>
     <!-- Firebase SDK (v10) -->
     <script type="importmap">
       {
@@ -136,7 +136,7 @@
             background: var(--bg-dark);
             display: none;
             z-index: 1000;
-            grid-template-columns: 1fr 380px;
+            grid-template-columns: 1fr 320px; /* タップ切替用に少しスリム化 */
         }
 
         .hud-left {
@@ -281,46 +281,32 @@
             color: var(--cyber-blue);
         }
         
-        .hud-slot-triple-zone {
+        /* 1枚表示（タップ切替用）のスタイルに復元 */
+        .hud-slot-ans-zone {
             flex: 1;
             height: 100%;
-            display: grid;
-            grid-template-columns: 1fr 1fr 1fr;
-            gap: 3px;
-            background: rgba(0,0,0,0.3);
+            background: rgba(0,0,0,0.4);
             border-radius: 3px;
-            position: relative;
-        }
-        
-        .hud-mini-pane {
-            height: 100%;
-            background: rgba(0,0,0,0.6);
-            border: 1px solid rgba(255,255,255,0.05);
-            border-radius: 2px;
             display: flex;
             align-items: center;
             justify-content: center;
             overflow: hidden;
             position: relative;
+            cursor: pointer;
         }
-        .hud-mini-pane img {
+        .hud-slot-ans-zone img {
             width: 100%;
             height: 100%;
             object-fit: contain;
         }
-        .pane-label {
-            position: absolute; top: 1px; left: 2px; font-size: 7px;
-            color: rgba(0, 229, 255, 0.6); font-weight: bold; pointer-events: none;
+        .pane-label-badge {
+            position: absolute; top: 2px; left: 4px; font-size: 8px;
+            color: #fff; background: rgba(0, 229, 255, 0.7); 
+            padding: 1px 4px; border-radius: 2px; font-weight: bold; pointer-events: none;
         }
         
-        .triple-void-text {
-            position: absolute; width: 100%; text-align: center; top: 50%; left: 50%;
-            transform: translate(-50%, -50%); font-size: 10px; color: #3a4b5c; font-weight: bold; pointer-events: none;
-        }
-        .triple-err-text {
-            position: absolute; width: 100%; text-align: center; top: 50%; left: 50%;
-            transform: translate(-50%, -50%); font-size: 10px; color: var(--cyber-red); font-weight: bold; pointer-events: none;
-        }
+        .void-text { font-size: 11px; color: #3a4b5c; font-weight: bold; pointer-events: none; }
+        .err-text { font-size: 11px; color: var(--cyber-red); font-weight: bold; pointer-events: none; }
 
         .hud-control-bottom {
             margin-top: auto;
@@ -423,7 +409,7 @@
             </div>
         </div>
 
-        <!-- 右側セクション（3枚並列用） -->
+        <!-- 右側セクション（タップ切り替え式に戻す） -->
         <div class="hud-right">
             <div class="hud-panel-title">SCOUTER INTERFACE</div>
             
@@ -431,23 +417,23 @@
             <div class="hud-slot-list">
                 <div class="hud-slot-row" id="row-0">
                     <input type="tel" id="box-0" placeholder="01" maxlength="3">
-                    <div class="hud-slot-triple-zone" id="zone-0"></div>
+                    <div class="hud-slot-ans-zone" id="zone-0" data-slot-index="0"></div>
                 </div>
                 <div class="hud-slot-row" id="row-1">
                     <input type="tel" id="box-1" placeholder="02" maxlength="3">
-                    <div class="hud-slot-triple-zone" id="zone-1"></div>
+                    <div class="hud-slot-ans-zone" id="zone-1" data-slot-index="1"></div>
                 </div>
                 <div class="hud-slot-row" id="row-2">
                     <input type="tel" id="box-2" placeholder="03" maxlength="3">
-                    <div class="hud-slot-triple-zone" id="zone-2"></div>
+                    <div class="hud-slot-ans-zone" id="zone-2" data-slot-index="2"></div>
                 </div>
                 <div class="hud-slot-row" id="row-3">
                     <input type="tel" id="box-3" placeholder="04" maxlength="3">
-                    <div class="hud-slot-triple-zone" id="zone-3"></div>
+                    <div class="hud-slot-ans-zone" id="zone-3" data-slot-index="3"></div>
                 </div>
                 <div class="hud-slot-row" id="row-4">
                     <input type="tel" id="box-4" placeholder="05" maxlength="3">
-                    <div class="hud-slot-triple-zone" id="zone-4"></div>
+                    <div class="hud-slot-ans-zone" id="zone-4" data-slot-index="4"></div>
                 </div>
             </div>
 
@@ -489,6 +475,9 @@
         let presenceInterval = null;
         let isUltraWideMode = true; 
 
+        // 各スロットが現在P1, P2, P3のどれを表示しているかを管理する配列 (0=P1, 1=P2, 2=P3)
+        let slotViewModes = [0, 0, 0, 0, 0];
+
         const setupPhase = document.getElementById('setup-phase');
         const scanPhase = document.getElementById('scan-phase');
         const searchBoxes = [
@@ -525,6 +514,16 @@
                 box.addEventListener('input', () => {
                     syncInputsToFirebase();
                     executeSearch();
+                });
+            });
+
+            // 各スロットの表示領域をタップしたときの切り替えイベントを追加
+            ansZones.forEach((zone) => {
+                zone.addEventListener('click', (e) => {
+                    const idx = parseInt(zone.getAttribute('data-slot-index'));
+                    // 0 -> 1 -> 2 -> 0 のループ切り替え
+                    slotViewModes[idx] = (slotViewModes[idx] + 1) % 3;
+                    executeSearch(); // 画面再描画
                 });
             });
         }
@@ -651,7 +650,7 @@
                 
                 Object.keys(data).forEach(key => {
                     if (key.startsWith("photoMap_")) {
-                        const parts = key.split("_"); // photoMap_番号_インデックス
+                        const parts = key.split("_"); 
                         if (parts.length === 3) {
                             const num = parts[1];
                             const idx = parseInt(parts[2]);
@@ -792,14 +791,14 @@
                 cropCanvas.width = 120; cropCanvas.height = 160;
                 const cCtx = cropCanvas.getContext('2d');
 
-                // P1: 通常倍率クロップ
+                // P1: 通常倍率
                 const cropX1 = Math.max(0, centerCx - (standardCropW / 2));
                 const cropY1 = Math.max(0, centerCy - (standardCropH / 2));
                 cCtx.clearRect(0,0,120,160);
                 cCtx.drawImage(originalCanvas, cropX1, cropY1, standardCropW, standardCropH, 0, 0, 120, 160);
                 const img1 = cropCanvas.toDataURL('image/jpeg', 0.50);
 
-                // P2: 広域クロップ
+                // P2: 広域
                 const wideCropW = standardCropW * 1.3;
                 const wideCropH = standardCropH * 1.3;
                 const cropX2 = Math.max(0, centerCx - (wideCropW / 2));
@@ -808,7 +807,7 @@
                 cCtx.drawImage(originalCanvas, cropX2, cropY2, wideCropW, wideCropH, 0, 0, 120, 160);
                 const img2 = cropCanvas.toDataURL('image/jpeg', 0.50);
 
-                // P3: ズームクロップ
+                // P3: ズーム
                 const zoomCropW = standardCropW * 0.75;
                 const zoomCropH = standardCropH * 0.75;
                 const cropX3 = Math.max(0, centerCx - (zoomCropW / 2));
@@ -818,7 +817,6 @@
                 const img3 = cropCanvas.toDataURL('image/jpeg', 0.50);
 
                 try {
-                    // 🚨【競合対策】オブジェクト配列ではなく、完全にフラットな個別フィールドとしてマッピング送信
                     const updatePayload = {};
                     updatePayload[`photoMap_${numObj.text}_0`] = img1;
                     updatePayload[`photoMap_${numObj.text}_1`] = img2;
@@ -860,7 +858,7 @@
             } else { showToast("NO NUMBERS DETECTED"); }
         }
 
-        /* 📸 画像3連レンダリングロジック（確実に3連で表示、無ければ即座にNONE） */
+        /* 📸 画像レンダリング（タップ切り替え復活版） */
         function executeSearch() {
             searchBoxes.forEach((box, index) => {
                 const query = box.value.trim();
@@ -868,52 +866,46 @@
                 const rowDiv = document.getElementById('row-' + index);
 
                 if (!query) {
-                    zone.innerHTML = '<span class="triple-void-text">VOID</span>';
+                    zone.innerHTML = '<span class="void-text">VOID</span>';
                     rowDiv.classList.remove('has-error');
                     return;
                 }
 
-                // 組み立て直したフラットマップから3つの画像があるか確認
                 const imgs = globalPhotoMap[query];
                 
                 if (imgs && imgs[0] && imgs[1] && imgs[2]) {
+                    // 現在このスロットが選択しているモード(0=P1, 1=P2, 2=P3)を取得
+                    const currentMode = slotViewModes[index];
+                    const labels = ["P1 (標準)", "P2 (広域)", "P3 (ズーム)"];
+                    
                     zone.innerHTML = `
-                        <div class="hud-mini-pane"><span class="pane-label">P1</span><img src="${imgs[0]}"></div>
-                        <div class="hud-mini-pane"><span class="pane-label">P2</span><img src="${imgs[1]}"></div>
-                        <div class="hud-mini-pane"><span class="pane-label">P3</span><img src="${imgs[2]}"></div>
+                        <span class="pane-label-badge">${labels[currentMode]}</span>
+                        <img src="${imgs[currentMode]}">
                     `;
                     rowDiv.classList.remove('has-error');
                 } else {
-                    zone.innerHTML = '<span class="triple-err-text">NONE</span>';
+                    zone.innerHTML = '<span class="err-text">NONE</span>';
                     rowDiv.classList.add('has-error');
                 }
             });
         }
 
-        /* 🛠️ 他のメンバーを巻き込まない・かつ全員連動する安全リセット */
+        /* 🛠️ 他のメンバーを残して、画像データだけをドキュメント上書きで綺麗にするリセット */
         async function resetSystem() {
             if (!confirm("ルーム全体のスクショデータと全メンバーのスロット数値をリセットしますか？")) return;
             const roomId = document.getElementById('room-id').value.trim() || 'default_room';
             try {
                 searchBoxes.forEach(box => box.value = "");
+                slotViewModes = [0, 0, 0, 0, 0]; // 見た目の切替状態も初期化
                 
-                // 🚨現在のドキュメントのデータを一度読み込み、photoMap関連のフィールドだけを消去したオブジェクトを作る
-                // members はそのまま残して上書き（merge: falseではなく、必要なデータのみリセット）
-                const resetPayload = {
-                    currentQueries: ["", "", "", "", ""]
-                };
-
-                // Firebaseから現在のドキュメントを真っさらにするのではなく、既存の画像フィールドを消すためにFirestoreのダミーを投げるか、
-                // 今回はシンプルに、新しく空データをセットして画像キーを無効化します。
-                // 確実に画像データを全体から消去するため、一度ドキュメントを空にしてすぐmembersを復元する安全なアプローチをとります。
                 const now = Date.now();
                 const uName = document.getElementById('user-name').value.trim() || 'Unknown';
                 
-                // ドキュメント全体を新オブジェクト（queriesと、自分のメンバー情報だけ）で完全上書きして過去のphotoMap_XXXを消し去る
+                // ドキュメントを新規オブジェクトで完全上書きして過去のphotoMap_XXXを消し去る
                 await setDoc(doc(db, "rooms", roomId), {
                     currentQueries: ["", "", "", "", ""],
                     members: { [uName]: now }
-                }, { merge: false }); // ここで過去の全photoMap_キーを完全消去
+                }, { merge: false });
 
                 globalPhotoMap = {};
                 executeSearch();
