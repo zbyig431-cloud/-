@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>N かくれんぼツール</title>
+    <title>絶望要塞IG 横画面対応スカウターツール（肉眼アシスト版）</title>
     <!-- Firebase SDK (v10) -->
     <script type="importmap">
       {
@@ -165,26 +165,14 @@
             pointer-events: none;
         }
 
-        .hud-left-floating, .hud-left-bottom-floating, .hud-right { pointer-events: auto; }
+        .hud-left-floating, .hud-right { pointer-events: auto; }
 
-        /* 左上：退室ボタン */
         .hud-left-floating { position: absolute; top: 15px; left: 15px; z-index: 10; }
         .btn-exit-icon {
             width: 38px; height: 38px; border-radius: 6px;
             background: rgba(10, 14, 20, 0.6); border: 1px solid rgba(255,255,255,0.3);
             color: #fff; font-size: 16px; display: flex; align-items: center; justify-content: center;
         }
-
-        /* 【新設】左下：スロットクリアボタン（ゴミ箱アイコン） */
-        .hud-left-bottom-floating { position: absolute; bottom: 15px; left: 15px; z-index: 10; }
-        .btn-clear-icon {
-            width: 44px; height: 44px; border-radius: 50%;
-            background: rgba(255, 51, 51, 0.2); border: 1px solid var(--cyber-red);
-            color: var(--cyber-red); font-size: 20px; display: flex; align-items: center; justify-content: center;
-            box-shadow: 0 0 10px rgba(255, 51, 51, 0.3);
-            backdrop-filter: blur(4px);
-        }
-        .btn-clear-icon:active { transform: scale(0.9); background: rgba(255, 51, 51, 0.5); color: #fff; }
 
         .hud-right {
             grid-column: 2;
@@ -264,8 +252,7 @@
         .scan-dimmer.active { opacity: 1; }
 
         .toast-log {
-            position: absolute; left: 20px; bottom: 70px; /* クリアボタンを避けるため少し上に調整 */
-            background: rgba(0,0,0,0.85);
+            position: absolute; left: 20px; bottom: 20px; background: rgba(0,0,0,0.85);
             border-left: 3px solid var(--cyber-blue); padding: 8px 14px; font-size: 11px;
             z-index: 10; pointer-events: none; opacity: 0; transition: all 0.2s;
         }
@@ -304,8 +291,8 @@
             </div>
         </div>
         <div class="action-grid">
-            <button class="btn-start-scan" id="btn-enter-scan">スキャン開始</button>
-            <button class="btn-reset-system" id="btn-reset-all">ROOMリセット</button>
+            <button class="btn-start-scan" id="btn-enter-scan">📷 スキャン画面を開始する</button>
+            <button class="btn-reset-system" id="btn-reset-all">ルーム全体のデータを完全リセット</button>
         </div>
     </div>
 
@@ -315,14 +302,8 @@
         <div class="camera-crosshair"></div>
         <div class="scan-dimmer" id="scan-indicator"></div>
 
-        <!-- 左上浮動ボタン -->
         <div class="hud-left-floating">
             <button class="btn-exit-icon" id="btn-exit-scan">🚪</button>
-        </div>
-
-        <!-- 【新設】左下浮動ボタン（スロットの数字リセット用ゴミ箱ボタン） -->
-        <div class="hud-left-bottom-floating">
-            <button class="btn-clear-icon" id="btn-clear-slots" title="スロットクリア">🗑️</button>
         </div>
 
         <div class="hud-overlay">
@@ -373,7 +354,7 @@
 
     <script type="module">
         import { initializeApp } from "firebase/app";
-        import { getFirestore, doc, setDoc, onSnapshot, updateDoc, deleteDoc, arrayUnion } from "firebase/firestore";
+        import { getFirestore, doc, setDoc, onSnapshot, updateDoc, deleteDoc } from "firebase/firestore";
 
         // Firebase構成オブジェクト（各自で書き換えてください）
         const firebaseConfig = {
@@ -390,7 +371,7 @@
 
         let currentMode = "target"; 
         let localStream = null;
-        let allPhotosData = [];
+        let allPhotosMap = {}; // データ肥大化（1MB制限）を避けるため、{ "3桁の数字": {croppedImg: "...", timestamp: 123} } のMAP構造へ最適化
         let unsubscribeRoom = null;
         let presenceInterval = null;
 
@@ -419,9 +400,6 @@
             document.getElementById('tab-target').addEventListener('click', () => switchScanMode('target'));
             document.getElementById('tab-question').addEventListener('click', () => switchScanMode('question'));
             document.getElementById('shutter-trigger').addEventListener('click', processCaptureOCR);
-            
-            // 【新設】クリアボタンのクリックイベント
-            document.getElementById('btn-clear-slots').addEventListener('click', clearAllSlots);
 
             ['room-id', 'user-name', 'api-key'].forEach(id => {
                 document.getElementById(id).addEventListener('input', saveConfig);
@@ -437,32 +415,68 @@
 
         async function enterScanMode() {
             const apiKey = document.getElementById('api-key').value.trim();
+            const roomId = document.getElementById('room-id').value.trim() || 'team1';
+            const userName = document.getElementById('user-name').value.trim();
+
             if(!apiKey) { alert("Vision API PASSを入力してください"); return; }
+            if(!userName) { alert("YOUR NAMEを入力してください"); return; }
+
             setupPhase.style.display = 'none';
             scanPhase.style.display = 'block';
 
-            // 【倍率変更の最適化】
-            // idealではなく、端末で利用できる最も広角なカメラ（超広角等）を強制指定しやすくするため
-            // videoのfacingModeまわりの指定構造を強化し、ズーム倍率を最小(1)にする詳細指示を追加。
-            const constraints = {
-                video: { 
-                    facingMode: { ideal: "environment" }, 
-                    width: { ideal: 1920 }, 
-                    height: { ideal: 1080 },
-                    advanced: [
-                        { zoom: 1 }, // デジタルズームによる拡大を無効化（等倍）
-                        { focusMode: "continuous" } // ピンボケ防止
-                    ]
-                },
-                audio: false
-            };
             try {
+                // 1. 利用可能なビデオ入力デバイスを取得
+                const devices = await navigator.mediaDevices.enumerateDevices();
+                const videoDevices = devices.filter(device => device.kind === 'videoinput');
+                
+                let targetDeviceId = null;
+
+                // 2. 背面カメラの中から超広角レンズを優先的に抽出
+                const backCameras = videoDevices.filter(d => 
+                    d.label.toLowerCase().includes('back') || 
+                    d.label.toLowerCase().includes('rear') || 
+                    d.label.toLowerCase().includes('camera 1')
+                );
+
+                if (backCameras.length > 0) {
+                    // ラベルに ultra, 0.5x, dual などの広角を示す文字列が含まれるかチェック
+                    const ultraWide = backCameras.find(d => 
+                        d.label.toLowerCase().includes('ultra') || 
+                        d.label.toLowerCase().includes('0.5x') ||
+                        d.label.toLowerCase().includes('dualcamera')
+                    );
+                    
+                    if (ultraWide) {
+                        targetDeviceId = ultraWide.deviceId;
+                    } else {
+                        // 見つからない場合はリストの最後のカメラ（iPhoneでは通常、超広角や望遠カメラ）を採用
+                        targetDeviceId = backCameras[backCameras.length - 1].deviceId;
+                    }
+                }
+
+                // 3. 超広角（または背面カメラ）を指定して起動
+                const constraints = {
+                    video: {
+                        deviceId: targetDeviceId ? { exact: targetDeviceId } : undefined,
+                        facingMode: targetDeviceId ? undefined : { ideal: "environment" },
+                        width: { ideal: 1920 },
+                        height: { ideal: 1080 }
+                    },
+                    audio: false
+                };
+
                 localStream = await navigator.mediaDevices.getUserMedia(constraints);
                 document.getElementById('camera-stream').srcObject = localStream;
                 if (scanPhase.requestFullscreen) { scanPhase.requestFullscreen().catch(() => {}); }
                 startFirebaseRoomSync();
+
+                if (targetDeviceId) {
+                    const activeTrack = localStream.getVideoTracks()[0];
+                    showToast(`LAUNCHED: ${activeTrack.label || '0.5x CAMERA'}`);
+                }
             } catch (err) {
-                alert("カメラの起動に失敗しました。");
+                console.error(err);
+                alert("カメラの起動に失敗しました。カメラ権限を確認してください。");
                 exitScanMode();
             }
         }
@@ -474,14 +488,6 @@
             clearInterval(presenceInterval);
             scanPhase.style.display = 'none';
             setupPhase.style.display = 'flex';
-        }
-
-        // 【新設】すべてのスロットとHUDの表示をリセットする関数
-        function clearAllSlots() {
-            searchBoxes.forEach(box => box.value = "");
-            showToast("SLOTS CLEARED");
-            syncInputsToFirebase();
-            executeSearch();
         }
 
         function switchScanMode(mode) {
@@ -508,7 +514,7 @@
 
             unsubscribeRoom = onSnapshot(doc(db, "rooms", roomId), (snapshot) => {
                 if (!snapshot.exists()) {
-                    allPhotosData = [];
+                    allPhotosMap = {};
                     document.getElementById('db-counter').innerText = "STOCKS: 0";
                     executeSearch();
                     return;
@@ -524,11 +530,13 @@
                         if (document.activeElement !== searchBoxes[idx]) { searchBoxes[idx].value = q || ""; }
                     });
                 }
-                if (data.photos) {
-                    allPhotosData = data.photos;
-                    document.getElementById('db-counter').innerText = `STOCKS: ${allPhotosData.length}`;
+                
+                // Firestoreから取得した写真データマップを展開
+                if (data.photoMap) {
+                    allPhotosMap = data.photoMap;
+                    document.getElementById('db-counter').innerText = `STOCKS: ${Object.keys(allPhotosMap).length}`;
                 } else {
-                    allPhotosData = [];
+                    allPhotosMap = {};
                     document.getElementById('db-counter').innerText = "STOCKS: 0";
                 }
                 executeSearch();
@@ -541,6 +549,7 @@
             try { await updateDoc(doc(db, "rooms", roomId), { currentQueries: queries }); } catch(e) {}
         }
 
+        // --- OCR・画角切り抜きロジック（肉眼アシスト版） ---
         async function processCaptureOCR() {
             const videoEl = document.getElementById('camera-stream');
             const canvas = document.getElementById('capture-canvas');
@@ -582,26 +591,30 @@
 
         async function analyzeTargetModeAlternative(annotations, srcCanvas) {
             const fullList = annotations.slice(1);
-            const blocks = [];
+            const updates = {};
+            let count = 0;
 
             fullList.forEach(item => {
                 const text = item.description.trim();
                 const box = item.boundingPoly.vertices;
                 if (!box || box.length < 4) return;
 
+                // 3桁の数字だけを徹底捜索
                 if (/^\d{3}$/.test(text)) {
-                    const xMin = Math.min(box[0].x, box[1].x, box[2].x, box[3].x);
+                    // iOSのundefined回避を施した安全な座標パース
+                    const xMin = Math.min(box[0]?.x ?? 0, box[1]?.x ?? 0, box[2]?.x ?? 0, box[3]?.x ?? 0);
                     const yMin = Math.min(box[0]?.y ?? 0, box[1]?.y ?? 0, box[2]?.y ?? 0, box[3]?.y ?? 0);
-                    const w = Math.max(box[0].x, box[1].x, box[2].x, box[3].x) - xMin;
+                    const w = Math.max(box[0]?.x ?? 0, box[1]?.x ?? 0, box[2]?.x ?? 0, box[3]?.x ?? 0) - xMin;
                     const h = Math.max(box[0]?.y ?? 0, box[1]?.y ?? 0, box[2]?.y ?? 0, box[3]?.y ?? 0) - yMin;
 
+                    // クロップ領域の計算（数字の左右に少し余裕、下側に正方形が入るようh*4.2倍を確保）
                     const padX = w * 0.4;
                     const cropX = Math.max(0, xMin - padX);
                     const cropW = w + (padX * 2);
 
-                    const padYTop = h * 0.3; 
+                    const padYTop = h * 0.3;
                     const cropY = Math.max(0, yMin - padYTop);
-                    const cropH = h * 4.2;   
+                    const cropH = h * 4.2;
 
                     const cropCanvas = document.createElement('canvas');
                     cropCanvas.width = 140;
@@ -610,30 +623,35 @@
 
                     cCtx.drawImage(
                         srcCanvas,
-                        cropX, cropY, cropW, cropH, 
-                        0, 0, 140, 120             
+                        cropX, cropY, cropW, cropH,
+                        0, 0, 140, 120
                     );
 
-                    blocks.push({
-                        number: text,
-                        croppedImg: cropCanvas.toDataURL('image/jpeg', 0.7) 
-                    });
+                    updates[text] = {
+                        croppedImg: cropCanvas.toDataURL('image/jpeg', 0.7),
+                        timestamp: Date.now()
+                    };
+                    count++;
                 }
             });
 
-            if (blocks.length > 0) {
+            if (count > 0) {
                 const roomId = document.getElementById('room-id').value.trim() || 'default_room';
-                for (const block of blocks) {
-                    await updateDoc(doc(db, "rooms", roomId), {
-                        photos: arrayUnion({
-                            timestamp: Date.now(),
-                            blocks: [block]
-                        })
-                    });
+                
+                // Firestoreの photoMap オブジェクトを最新の検出画像でアップデート（1MB制限対策）
+                const mergedMap = { ...allPhotosMap };
+                Object.keys(updates).forEach(num => {
+                    mergedMap[num] = updates[num];
+                });
+
+                try {
+                    await updateDoc(doc(db, "rooms", roomId), { photoMap: mergedMap });
+                    showToast(`STOCKED: ${count} NUMBERS`);
+                } catch (e) {
+                    showToast("SYNC ERROR (MAP LIMIT?)");
                 }
-                showToast(`STOCKED: ${blocks.length} NUMBERS`);
             } else {
-                document.getElementById('toast-log').innerText = "NO 3-DIGIT TARGETS";
+                showToast("NO 3-DIGIT TARGETS");
             }
         }
 
@@ -644,7 +662,8 @@
                 const text = item.description.trim();
                 if (/^\d{3}$/.test(text)) {
                     const box = item.boundingPoly.vertices;
-                    foundNumbers.push({ text, x: (box[0].x + box[2].x) / 2 });
+                    const centerX = ((box[0]?.x ?? 0) + (box[2]?.x ?? 0)) / 2;
+                    foundNumbers.push({ text, x: centerX });
                 }
             });
             foundNumbers.sort((a, b) => a.x - b.x);
@@ -660,6 +679,7 @@
             }
         }
 
+        // --- 検索結果のHUDへの反映ロジック（画像メイン） ---
         function executeSearch() {
             searchBoxes.forEach((box, index) => {
                 const query = box.value.trim();
@@ -672,12 +692,8 @@
                     return;
                 }
 
-                let foundMatch = null;
-                for (let i = allPhotosData.length - 1; i >= 0; i--) {
-                    const photo = allPhotosData[i];
-                    const match = photo.blocks.find(b => b.number === query);
-                    if (match) { foundMatch = match; break; }
-                }
+                // photoMapからキー検索をかけるため、一瞬で画像を取得可能
+                const foundMatch = allPhotosMap[query];
 
                 if (foundMatch && foundMatch.croppedImg) {
                     zone.innerHTML = `<img src="${foundMatch.croppedImg}">`;
@@ -694,7 +710,7 @@
             const roomId = document.getElementById('room-id').value.trim() || 'default_room';
             try {
                 await deleteDoc(doc(db, "rooms", roomId));
-                allPhotosData = [];
+                allPhotosMap = {};
                 searchBoxes.forEach(box => box.value = "");
                 executeSearch();
                 showToast("ROOM DATA RESET SUCCESS");
