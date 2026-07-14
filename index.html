@@ -160,19 +160,31 @@
         .hud-overlay {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 2;
             display: grid;
-            grid-template-columns: 1fr 280px; /* 切り抜き表示を大きくするため右幅を280pxに微増 */
+            grid-template-columns: 1fr 280px;
             padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
             pointer-events: none;
         }
 
-        .hud-left-floating, .hud-right { pointer-events: auto; }
+        .hud-left-floating, .hud-left-bottom-floating, .hud-right { pointer-events: auto; }
 
+        /* 左上：退室ボタン */
         .hud-left-floating { position: absolute; top: 15px; left: 15px; z-index: 10; }
         .btn-exit-icon {
             width: 38px; height: 38px; border-radius: 6px;
             background: rgba(10, 14, 20, 0.6); border: 1px solid rgba(255,255,255,0.3);
             color: #fff; font-size: 16px; display: flex; align-items: center; justify-content: center;
         }
+
+        /* 【新設】左下：スロットクリアボタン（ゴミ箱アイコン） */
+        .hud-left-bottom-floating { position: absolute; bottom: 15px; left: 15px; z-index: 10; }
+        .btn-clear-icon {
+            width: 44px; height: 44px; border-radius: 50%;
+            background: rgba(255, 51, 51, 0.2); border: 1px solid var(--cyber-red);
+            color: var(--cyber-red); font-size: 20px; display: flex; align-items: center; justify-content: center;
+            box-shadow: 0 0 10px rgba(255, 51, 51, 0.3);
+            backdrop-filter: blur(4px);
+        }
+        .btn-clear-icon:active { transform: scale(0.9); background: rgba(255, 51, 51, 0.5); color: #fff; }
 
         .hud-right {
             grid-column: 2;
@@ -190,12 +202,11 @@
         .hud-tab.active.mode-target { border-color: var(--cyber-blue); color: var(--cyber-blue); background: rgba(0, 229, 255, 0.1); }
         .hud-tab.active.mode-question { border-color: var(--cyber-purple); color: var(--cyber-purple); background: rgba(181, 124, 255, 0.1); }
 
-        /* スロット設計：画像（肉眼確認）を主役に */
         .hud-slot-list { display: flex; flex-direction: column; gap: 4px; }
         .hud-slot-row {
             display: flex; align-items: center;
             background: rgba(0, 0, 0, 0.6); border: 1px solid rgba(140, 200, 255, 0.2);
-            border-radius: 4px; padding: 3px; gap: 4px; height: 52px; /* 高さを少し拡張 */
+            border-radius: 4px; padding: 3px; gap: 4px; height: 52px;
         }
         .hud-slot-row.has-error { border-color: rgba(255, 51, 51, 0.3); }
         .hud-slot-row input {
@@ -203,7 +214,6 @@
             background: rgba(20,30,45,0.9); border-color: rgba(0,229,255,0.3);
         }
         
-        /* [UPDATED] アルファベット文字の代わりに、ここに大きくクロップ画像を展開 */
         .hud-slot-ans-zone {
             flex: 1;
             height: 100%;
@@ -219,7 +229,7 @@
         .hud-slot-ans-zone img {
             width: 100%;
             height: 100%;
-            object-fit: contain; /* 横縦比を崩さず、最大サイズで肉眼確認しやすく */
+            object-fit: contain;
         }
         .hud-slot-ans-zone .no-img-text {
             font-size: 10px;
@@ -254,7 +264,8 @@
         .scan-dimmer.active { opacity: 1; }
 
         .toast-log {
-            position: absolute; left: 20px; bottom: 20px; background: rgba(0,0,0,0.85);
+            position: absolute; left: 20px; bottom: 70px; /* クリアボタンを避けるため少し上に調整 */
+            background: rgba(0,0,0,0.85);
             border-left: 3px solid var(--cyber-blue); padding: 8px 14px; font-size: 11px;
             z-index: 10; pointer-events: none; opacity: 0; transition: all 0.2s;
         }
@@ -304,8 +315,14 @@
         <div class="camera-crosshair"></div>
         <div class="scan-dimmer" id="scan-indicator"></div>
 
+        <!-- 左上浮動ボタン -->
         <div class="hud-left-floating">
             <button class="btn-exit-icon" id="btn-exit-scan">🚪</button>
+        </div>
+
+        <!-- 【新設】左下浮動ボタン（スロットの数字リセット用ゴミ箱ボタン） -->
+        <div class="hud-left-bottom-floating">
+            <button class="btn-clear-icon" id="btn-clear-slots" title="スロットクリア">🗑️</button>
         </div>
 
         <div class="hud-overlay">
@@ -318,7 +335,7 @@
                     <div class="hud-tab" id="tab-question">📋 QUEST</div>
                 </div>
                 
-                <!-- スロット群 (文字ではなく「切り抜き画像」をセンターに配置) -->
+                <!-- スロット群 -->
                 <div class="hud-slot-list">
                     <div class="hud-slot-row" id="row-0">
                         <input type="tel" id="box-0" placeholder="01" maxlength="3">
@@ -402,6 +419,9 @@
             document.getElementById('tab-target').addEventListener('click', () => switchScanMode('target'));
             document.getElementById('tab-question').addEventListener('click', () => switchScanMode('question'));
             document.getElementById('shutter-trigger').addEventListener('click', processCaptureOCR);
+            
+            // 【新設】クリアボタンのクリックイベント
+            document.getElementById('btn-clear-slots').addEventListener('click', clearAllSlots);
 
             ['room-id', 'user-name', 'api-key'].forEach(id => {
                 document.getElementById(id).addEventListener('input', saveConfig);
@@ -421,8 +441,19 @@
             setupPhase.style.display = 'none';
             scanPhase.style.display = 'block';
 
+            // 【倍率変更の最適化】
+            // idealではなく、端末で利用できる最も広角なカメラ（超広角等）を強制指定しやすくするため
+            // videoのfacingModeまわりの指定構造を強化し、ズーム倍率を最小(1)にする詳細指示を追加。
             const constraints = {
-                video: { facingMode: { ideal: "environment" }, width: { ideal: 1920 }, height: { ideal: 1080 } },
+                video: { 
+                    facingMode: { ideal: "environment" }, 
+                    width: { ideal: 1920 }, 
+                    height: { ideal: 1080 },
+                    advanced: [
+                        { zoom: 1 }, // デジタルズームによる拡大を無効化（等倍）
+                        { focusMode: "continuous" } // ピンボケ防止
+                    ]
+                },
                 audio: false
             };
             try {
@@ -443,6 +474,14 @@
             clearInterval(presenceInterval);
             scanPhase.style.display = 'none';
             setupPhase.style.display = 'flex';
+        }
+
+        // 【新設】すべてのスロットとHUDの表示をリセットする関数
+        function clearAllSlots() {
+            searchBoxes.forEach(box => box.value = "");
+            showToast("SLOTS CLEARED");
+            syncInputsToFirebase();
+            executeSearch();
         }
 
         function switchScanMode(mode) {
@@ -499,10 +538,9 @@
         async function syncInputsToFirebase() {
             const roomId = document.getElementById('room-id').value.trim() || 'default_room';
             const queries = searchBoxes.map(b => b.value.trim());
-            try { await updateDoc(doc(doc(db, "rooms", roomId)), { currentQueries: queries }); } catch(e) {}
+            try { await updateDoc(doc(db, "rooms", roomId), { currentQueries: queries }); } catch(e) {}
         }
 
-        // --- OCR・画角切り抜きロジック（肉眼アシスト版） ---
         async function processCaptureOCR() {
             const videoEl = document.getElementById('camera-stream');
             const canvas = document.getElementById('capture-canvas');
@@ -542,7 +580,6 @@
             } catch (err) { showToast("API REQUEST ERROR"); }
         }
 
-        // [UPDATED] アルファベット認識を完全にスキップし、数字単体から真下の正方形エリアを切り抜く新ロジック
         async function analyzeTargetModeAlternative(annotations, srcCanvas) {
             const fullList = annotations.slice(1);
             const blocks = [];
@@ -552,23 +589,19 @@
                 const box = item.boundingPoly.vertices;
                 if (!box || box.length < 4) return;
 
-                // 3桁の数字だけを徹底捜索
                 if (/^\d{3}$/.test(text)) {
                     const xMin = Math.min(box[0].x, box[1].x, box[2].x, box[3].x);
-                    const yMin = Math.min(box[0].x ? box[0].y : 0, box[1].y, box[2].y, box[3].y);
+                    const yMin = Math.min(box[0]?.y ?? 0, box[1]?.y ?? 0, box[2]?.y ?? 0, box[3]?.y ?? 0);
                     const w = Math.max(box[0].x, box[1].x, box[2].x, box[3].x) - xMin;
-                    const h = Math.max(box[0].y, box[1].y, box[2].y, box[3].y) - yMin;
+                    const h = Math.max(box[0]?.y ?? 0, box[1]?.y ?? 0, box[2]?.y ?? 0, box[3]?.y ?? 0) - yMin;
 
-                    // クロップ領域の計算: 数字の真下にある「正方形の解答欄」がすべて綺麗に収まるようにマージンを設定
-                    // 横幅は数字の左右に少し余裕（左右にw * 0.4ずつ拡張）
                     const padX = w * 0.4;
                     const cropX = Math.max(0, xMin - padX);
                     const cropW = w + (padX * 2);
 
-                    // 縦幅は「数字自体」＋「その真下の並行する正方形」を丸ごとカバーするため、数字の高さ(h)の約4.0倍を下方向へ拡張
-                    const padYTop = h * 0.3; // 数字の上の見切れ防止
+                    const padYTop = h * 0.3; 
                     const cropY = Math.max(0, yMin - padYTop);
-                    const cropH = h * 4.2;   // 数字とその真下の正方形をすべて巻き込む高さ
+                    const cropH = h * 4.2;   
 
                     const cropCanvas = document.createElement('canvas');
                     cropCanvas.width = 140;
@@ -577,13 +610,13 @@
 
                     cCtx.drawImage(
                         srcCanvas,
-                        cropX, cropY, cropW, cropH, // 元画像からの切り出し範囲
-                        0, 0, 140, 120             // 出力先サイズ
+                        cropX, cropY, cropW, cropH, 
+                        0, 0, 140, 120             
                     );
 
                     blocks.push({
                         number: text,
-                        croppedImg: cropCanvas.toDataURL('image/jpeg', 0.7) // クラウド同期用に圧縮
+                        croppedImg: cropCanvas.toDataURL('image/jpeg', 0.7) 
                     });
                 }
             });
@@ -600,7 +633,7 @@
                 }
                 showToast(`STOCKED: ${blocks.length} NUMBERS`);
             } else {
-                showToast("NO 3-DIGIT TARGETS");
+                document.getElementById('toast-log').innerText = "NO 3-DIGIT TARGETS";
             }
         }
 
@@ -627,7 +660,6 @@
             }
         }
 
-        // --- [UPDATED] 検索結果のHUDへの反映ロジック（画像メイン） ---
         function executeSearch() {
             searchBoxes.forEach((box, index) => {
                 const query = box.value.trim();
@@ -640,7 +672,6 @@
                     return;
                 }
 
-                // 最新のストックから一致する数字のデータを検索
                 let foundMatch = null;
                 for (let i = allPhotosData.length - 1; i >= 0; i--) {
                     const photo = allPhotosData[i];
@@ -649,11 +680,9 @@
                 }
 
                 if (foundMatch && foundMatch.croppedImg) {
-                    // マッチした場合、切り抜かれたスクショ（数字＋真下の正方形）を表示
                     zone.innerHTML = `<img src="${foundMatch.croppedImg}">`;
                     rowDiv.classList.remove('has-error');
                 } else {
-                    // ストックに数字がまだない場合
                     zone.innerHTML = '<span class="err-text">NONE</span>';
                     rowDiv.classList.add('has-error');
                 }
