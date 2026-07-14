@@ -2,19 +2,14 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <!-- スクロールを許可するため user-scalable=yes、最大ズーム等の制限を解除 -->
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <!-- ホーム画面起動時にフルスクリーンにするための記述 -->
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <title>絶望要塞IG 辞書ツール (Scroll Free)</title>
+    <!-- タイトルを「Q 辞書ツール」に変更 -->
+    <title>Q 辞書ツール</title>
     <style>
         * { box-sizing: border-box; font-family: 'Courier New', Courier, monospace, sans-serif; }
         
-        /* 
-           上下の謎の空白を排除するため、margin/paddingを0に。
-           overflowをautoにして、はみ出したらスクロールできるように変更。
-        */
         html, body {
             width: 100%;
             height: 100%;
@@ -22,19 +17,18 @@
             padding: 0;
             background-color: #0c0714; 
             color: #ebd6ff; 
-            overflow: auto; /* スクロールを許可 */
-            -webkit-overflow-scrolling: touch; /* iOSの滑らかなスクロール */
+            overflow: auto; /* はみ出し時のスクロールを保証 */
+            -webkit-overflow-scrolling: touch;
         }
 
-        /* 全体を包むコンテナ。上下左右に1mm程度の極小クッションだけ残して空白を詰めました */
         .app-wrapper {
             padding: 4px;
             display: flex;
             flex-direction: column;
-            min-height: 100%; /* 画面ぴったり、またはそれ以上に伸びる */
+            min-height: 100%;
         }
 
-        /* トップバーの無駄な余白も極限まで削減 */
+        /* トップバー */
         .top-bar {
             display: flex;
             justify-content: space-between;
@@ -66,7 +60,7 @@
             height: 14px;
         }
 
-        /* メインレイアウト：基本は1画面に収まりつつ、狭ければ縦に伸びる */
+        /* メインレイアウト */
         .main-layout {
             display: flex;
             flex: 1;
@@ -80,10 +74,9 @@
             flex-direction: column;
             gap: 4px;
         }
-        /* カメラの高さが潰れないよう最低限度を確保 */
         .camera-container {
             flex: 1;
-            min-height: 140px;
+            min-height: 130px; /* 横画面時の縦幅を少しコンパクトに調整 */
             background: #000;
             border: 1.5px solid #b57cff;
             position: relative;
@@ -93,18 +86,18 @@
         #camera-stream { width: 100%; height: 100%; object-fit: cover; }
         
         .btn-shutter {
-            height: 32px;
+            height: 30px;
             background: linear-gradient(135deg, #5500aa, #220055);
             color: #ebd6ff;
             border: 1.5px solid #b57cff;
-            font-size: 0.85rem;
+            font-size: 0.8rem;
             font-weight: bold;
             border-radius: 4px;
             cursor: pointer;
         }
         .btn-shutter:active { background: #00ff64; color: #000; }
 
-        /* --- 右カラム: 操作・情報表示 --- */
+        /* --- 右カラム --- */
         .right-column {
             flex: 62;
             display: flex;
@@ -129,7 +122,7 @@
             background: #150f24;
             border: 1px solid rgba(181, 124, 255, 0.4);
             border-radius: 4px;
-            padding: 2px 0px;
+            padding: 1px 0px;
             text-align: center;
             display: flex;
             flex-direction: column;
@@ -141,11 +134,11 @@
         .slot-box .label { font-size: 0.5rem; color: #b57cff; pointer-events: none; }
         .slot-box.selected .label { color: #ff007f; }
         .slot-box .kanji-display {
-            font-size: 0.9rem;
+            font-size: 0.95rem;
             color: #ffffff;
             font-weight: bold;
-            min-height: 1rem;
-            line-height: 1rem;
+            min-height: 1.1rem;
+            line-height: 1.1rem;
             pointer-events: none;
         }
         .slot-box .page-output {
@@ -162,7 +155,7 @@
             border: 1px dashed rgba(181, 124, 255, 0.2);
             padding: 2px 4px;
             border-radius: 4px;
-            min-height: 24px;
+            min-height: 22px;
             display: flex;
             align-items: center;
             gap: 4px;
@@ -200,7 +193,7 @@
             border-radius: 2px;
             text-align: center;
             font-weight: bold;
-            height: 20px;
+            height: 18px;
         }
         .btn-manual-submit {
             background: #4a1c6d;
@@ -211,11 +204,11 @@
             font-weight: bold;
             border-radius: 2px;
             cursor: pointer;
-            height: 20px;
+            height: 18px;
         }
         .btn-manual-submit:active { background: #00ff64; color: #000; }
 
-        /* 計算コントロールセンター */
+        /* --- 計算コントロールセンター（バランス大調整） --- */
         .calc-panel {
             background: rgba(27, 15, 46, 0.6);
             border: 1px solid rgba(181, 124, 255, 0.3);
@@ -226,36 +219,42 @@
             flex-direction: column;
             justify-content: space-between;
             position: relative;
-            min-height: 65px; /* 最低限の押しやすさを確保 */
         }
         .calc-main-row {
             display: flex;
             gap: 4px;
-            flex: 1;
             align-items: center;
+            flex: 1;
         }
+        /* ANS枠：無駄な縦広がりを抑え、数字を引き立たせる */
         .result-display {
-            flex: 30;
+            flex: 25; /* 少しスリム化 */
             background: #06030a;
             border: 1px solid #b57cff;
             border-radius: 4px;
-            padding: 2px;
+            padding: 1px;
             text-align: center;
             display: flex;
             flex-direction: column;
             justify-content: center;
-            height: 100%;
-            min-height: 35px;
+            align-self: center;
+            height: 28px; /* 縦長化を防ぐ固定高 */
         }
-        .result-display .res-title { font-size: 0.5rem; color: #b57cff; }
-        .result-display .res-num { font-size: 1.25rem; font-weight: bold; color: #ff007f; text-shadow: 0 0 6px #ff007f; line-height: 1.25rem; }
+        .result-display .res-title { font-size: 0.45rem; color: #b57cff; line-height: 0.5rem; }
+        .result-display .res-num { 
+            font-size: 1.4rem; /* 数字をより大きく見やすく */
+            font-weight: bold; 
+            color: #ff007f; 
+            text-shadow: 0 0 6px #ff007f; 
+            line-height: 1.1rem; 
+        }
         
+        /* 計算ボタン群：縦に伸びすぎないように制限 */
         .calc-buttons {
-            flex: 70;
+            flex: 75;
             display: grid;
             grid-template-columns: repeat(5, 1fr);
             gap: 3px;
-            height: 100%;
         }
         .btn-calc {
             background: #2b124c;
@@ -268,24 +267,26 @@
             display: flex;
             justify-content: center;
             align-items: center;
-            height: 100%;
-            min-height: 35px;
+            height: 28px; /* 縦長化を防止しちょうど良い横長にする */
+            max-height: 28px;
         }
         .btn-calc:active { background: #ff007f; color: #000; }
         
+        /* 下部クリアボタン群：押しやすいように大型化 */
         .reset-container {
             display: grid;
             grid-template-columns: 1fr 1fr;
             gap: 4px;
             margin-top: 4px;
-            height: 18px;
+            height: 22px; /* 18pxから22pxに拡大 */
         }
         .btn-reset-half {
             background: #3a1525;
             border: 1px solid #ff3388;
             color: #ff99cc;
             padding: 0;
-            font-size: 0.6rem;
+            font-size: 0.65rem; /* 文字を少し大きく */
+            font-weight: bold;
             border-radius: 3px;
             cursor: pointer;
             display: flex;
@@ -353,19 +354,17 @@
 </head>
 <body>
 
-    <!-- アプリ全体を包むラッパー -->
     <div class="app-wrapper">
 
         <!-- スリムバー -->
         <div class="top-bar">
-            <h1>絶望要塞IG 辞書ツール</h1>
+            <h1>Q 辞書ツール</h1>
             <div class="config-box">
                 <label>API PASS:</label>
                 <input type="password" id="api-key" placeholder="AIzaSy...">
             </div>
         </div>
 
-        <!-- 左右分配レイアウト -->
         <div class="main-layout">
             
             <!-- 左カラム -->
@@ -466,7 +465,6 @@
 
     <canvas id="capture-canvas" style="display:none;"></canvas>
 
-    <!-- ※ロジック用JavaScriptは前回の動作するものをそのまま引き継いでいます -->
     <script type="module">
         const KANJI_DICTIONARY = {
             "七":7,"下":8,"丈":16,"丘":22,"並":25,"丸":29,"丼":31,"衣":31,"也":36,"井":48,
@@ -495,9 +493,10 @@
             "臣":1073,"解":1080,"計":1083,"誠":1093,"誉":1094,"謄":1108,"謦":1109,"象":1115,"財":1119,
             "買":1123,"贋":1130,"踊":1139,"転":1147,"載":1150,"込":1158,"述":1161,"邪":1188,"酒":1192,
             "醸":1197,"重":1199,"針":1205,"釘":1205,"銜":1209,"鍵":1216,"鏖":1219,"鑿":1222,"開":1226,
-            "険":1238,"雇":1247,"難":1251,"需":1256,"霖":1257,"靖":1260,"響":1269,"預":1273,"顔":1276,
-            "飆":1282,"飴":1286,"餅":1287,"首":1290,"馮":1293,"駐":1296,"騰":1298,"髪":1305,"髭":1305,
-            "鬨":1306,"鮭":1312,"鳴":1319,"鸞":1326,"麾":1330,"黄":1331,"黐":1332,"黶":1334
+            "険":1238,"雇":1247,"難":1251,"需":1256,"霖":1257,"開":1226,"険":1238,"雇":1247,"難":1251,
+            "需":1256,"霖":1257,"靖":1260,"響":1269,"預":1273,"顔":1276,"飆":1282,"飴":1286,
+            "餅":1287,"首":1290,"馮":1293,"駐":1296,"騰":1298,"髪":1305,"髭":1305,"鬨":1306,
+            "鮭":1312,"鳴":1319,"鸞":1326,"麾":1330,"黄":1331,"黐":1332,"黶":1334
         };
 
         let streamObject = null;
