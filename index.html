@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>絶望要塞IG スカウターツール（P3ベース最適化版）</title>
+    <title>絶望要塞IG スカウターツール（同期完全復旧版）</title>
     <!-- Firebase SDK (v10) -->
     <script type="importmap">
       {
@@ -68,7 +68,7 @@
 
         /* ==========================================================================
            PHASE 1: 設定画面
-           ========================================================================== */
+           ========================================================================= */
         #setup-phase {
             width: 100%;
             height: 100%;
@@ -146,7 +146,7 @@
 
         /* ==========================================================================
            PHASE 2: 横画面HUD
-           ========================================================================== */
+           ========================================================================= */
         #scan-phase {
             position: fixed;
             top: 0; left: 0; width: 100vw; height: 100vh;
@@ -466,7 +466,7 @@
 
     <script type="module">
         import { initializeApp } from "firebase/app";
-        import { getFirestore, doc, setDoc, onSnapshot, updateDoc, deleteDoc } from "firebase/firestore";
+        import { getFirestore, doc, setDoc, onSnapshot } from "firebase/firestore";
 
         const firebaseConfig = {
             apiKey: "YOUR_FIREBASE_API_KEY",
@@ -618,6 +618,7 @@
             setupPhase.style.display = 'flex';
         }
 
+        /* 📡 【修正】同期リスナー：ルーム情報が存在しない場合のフォールバックを安全に変更 */
         function startFirebaseRoomSync() {
             const roomId = document.getElementById('room-id').value.trim() || 'default_room';
             const user = document.getElementById('user-name').value.trim() || 'Unknown';
@@ -633,33 +634,48 @@
 
             unsubscribeRoom = onSnapshot(doc(db, "rooms", roomId), (snapshot) => {
                 if (!snapshot.exists()) {
-                    allPhotosMap = {}; document.getElementById('db-counter').innerText = "STOCKS: 0"; executeSearch(); return;
+                    allPhotosMap = {}; 
+                    document.getElementById('db-counter').innerText = "STOCKS: 0"; 
+                    executeSearch(); 
+                    return;
                 }
                 const data = snapshot.data();
+                
+                // メンバーリスト同期
                 if (data.members) {
                     const now = Date.now();
                     const activeMembers = Object.keys(data.members).filter(name => (now - data.members[name]) < 10000);
                     document.getElementById('member-list-text').innerText = `ONLINE: ${activeMembers.join(', ')}`;
                 }
+                
+                // 検索スロットの数字同期（フォーカスが当たっていない入力欄だけ連動して更新）
                 if (data.currentQueries) {
                     data.currentQueries.forEach((q, idx) => {
-                        if (document.activeElement !== searchBoxes[idx]) { searchBoxes[idx].value = q || ""; }
+                        if (document.activeElement !== searchBoxes[idx]) { 
+                            searchBoxes[idx].value = q || ""; 
+                        }
                     });
                 }
+                
+                // 保存されている画像データマップの同期
                 if (data.photoMap) {
                     allPhotosMap = data.photoMap;
                     document.getElementById('db-counter').innerText = `STOCKS: ${Object.keys(allPhotosMap).length}`;
                 } else {
-                    allPhotosMap = {}; document.getElementById('db-counter').innerText = "STOCKS: 0";
+                    allPhotosMap = {}; 
+                    document.getElementById('db-counter').innerText = "STOCKS: 0";
                 }
                 executeSearch();
             });
         }
 
+        /* 📡 【修正】安全な一元データ同期(setDoc merge版) */
         async function syncInputsToFirebase() {
             const roomId = document.getElementById('room-id').value.trim() || 'default_room';
             const queries = searchBoxes.map(b => b.value.trim());
-            try { await updateDoc(doc(db, "rooms", roomId), { currentQueries: queries }); } catch(e) {}
+            try { 
+                await setDoc(doc(db, "rooms", roomId), { currentQueries: queries }, { merge: true }); 
+            } catch(e) {}
         }
 
         async function processCaptureOCR(mode) {
@@ -715,7 +731,6 @@
             } catch (err) { showToast("API DETECT ERROR"); }
         }
 
-        /* 💡 【最適化】認識しやすかった旧P3（1.35倍サイズ）をデフォルトの「ベースの大きさ」に設定 */
         async function analyzeTargetModeWithAdvancedMatching(annotations, originalCanvas, halfW, srcH) {
             const fullList = annotations.slice(1);
             const numbersList = [];
@@ -770,7 +785,6 @@
                     baseCropW = Math.max(numObj.w, bestBlock.w, bestBlock.h) * 1.5;
                 }
 
-                // 🎯 元のP3のゆったりした広さ（1.35倍）を新しい標準のベース幅にします
                 const standardCropW = baseCropW * 1.35;
                 const standardCropH = standardCropW * (160 / 120);
 
@@ -778,14 +792,14 @@
                 cropCanvas.width = 120; cropCanvas.height = 160;
                 const cCtx = cropCanvas.getContext('2d');
 
-                // 📸 パターン1 (新ベース): 1番見やすかった旧P3のゆったりサイズ
+                // 📸 パターン1: 以前のP3（1.35倍を標準ベース化）
                 const cropX1 = Math.max(0, centerCx - (standardCropW / 2));
                 const cropY1 = Math.max(0, centerCy - (standardCropH / 2));
                 cCtx.clearRect(0,0,120,160);
                 cCtx.drawImage(originalCanvas, cropX1, cropY1, standardCropW, standardCropH, 0, 0, 120, 160);
                 const img1 = cropCanvas.toDataURL('image/jpeg', 0.65);
 
-                // 📸 パターン2 (さらに広め): 斜め補正や超遠距離用
+                // 📸 パターン2: さらに広め
                 const wideCropW = standardCropW * 1.25;
                 const wideCropH = standardCropH * 1.25;
                 const cropX2 = Math.max(0, centerCx - (wideCropW / 2));
@@ -794,7 +808,7 @@
                 cCtx.drawImage(originalCanvas, cropX2, cropY2, wideCropW, wideCropH, 0, 0, 120, 160);
                 const img2 = cropCanvas.toDataURL('image/jpeg', 0.65);
 
-                // 📸 パターン3 (ジャストズーム): 少し手元をアップで見たい時用
+                // 📸 パターン3: ジャストズーム
                 const zoomCropW = standardCropW * 0.75;
                 const zoomCropH = standardCropH * 0.75;
                 const cropX3 = Math.max(0, centerCx - (zoomCropW / 2));
@@ -815,8 +829,9 @@
                 const mergedMap = { ...allPhotosMap };
                 Object.keys(updates).forEach(num => { mergedMap[num] = updates[num]; });
                 try {
-                    await updateDoc(doc(db, "rooms", roomId), { photoMap: mergedMap });
-                    showToast(`STOCKED: ${matchCount} UNITS (P3 SIZE BASE)`);
+                    // setDocのマージ機能で相手のスキャン結果と合成。確実な同期経路
+                    await setDoc(doc(db, "rooms", roomId), { photoMap: mergedMap }, { merge: true });
+                    showToast(`STOCKED: ${matchCount} UNITS`);
                 } catch (e) { showToast("SYNC ERROR"); }
             } else { showToast("MATCHING CRITERIA FAILED"); }
         }
@@ -886,20 +901,23 @@
             });
         }
 
-        /* 💡 【大修正】ルーム完全リセット時にスロット内の数字も連動してすべて初期化する */
+        /* 📡 【大修正】物理削除(deleteDoc)ではなく、空値での初期化書き込みに変更 */
         async function resetSystem() {
             if (!confirm("ルーム全体のデータとスロット内の数字を完全にリセットしますか？")) return;
             const roomId = document.getElementById('room-id').value.trim() || 'default_room';
             try {
-                // 1. 各スロット入力欄を真っ白にする
+                // ローカル側の表示を先んじて空にする
                 searchBoxes.forEach(box => box.value = "");
                 slotPatternIndexes = [0, 0, 0, 0, 0];
                 allPhotosMap = {};
 
-                // 2. Firebase側ドキュメントを完全削除
-                await deleteDoc(doc(doc(db, "rooms", roomId).path));
-                
-                // 3. ローカル画面表示の更新
+                // ルーム全体を削除するのではなく「初期値」で上書きすることで
+                // 他の人のonSnapshotリスナーが切断されるのを防ぎつつ、全員の画面を綺麗に初期化
+                await setDoc(doc(db, "rooms", roomId), {
+                    currentQueries: ["", "", "", "", ""],
+                    photoMap: {}
+                }, { merge: true });
+
                 executeSearch();
                 showToast("ROOM & SLOTS RESET COMPLETE");
             } catch(e) {
