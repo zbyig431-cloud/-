@@ -16,7 +16,7 @@
             padding: 0;
             background-color: #0c0714; 
             color: #ebd6ff; 
-            overflow: auto; /* はみ出し時のスクロールを保証 */
+            overflow: auto;
             -webkit-overflow-scrolling: touch;
         }
 
@@ -207,7 +207,7 @@
         }
         .btn-manual-submit:active { background: #00ff64; color: #000; }
 
-        /* --- 計算コントロールセンター（アスペクト比基準の調整） --- */
+        /* --- 計算コントロールセンター --- */
         .calc-panel {
             background: rgba(27, 15, 46, 0.6);
             border: 1px solid rgba(181, 124, 255, 0.3);
@@ -226,10 +226,9 @@
             flex: 1;
         }
         
-        /* ANS枠：正方形（スクエア）アスペクト比を固定し、綺麗に配置 */
         .result-display {
             flex: 1;
-            aspect-ratio: 1 / 1; /* 正方形にする */
+            aspect-ratio: 1 / 1;
             background: #06030a;
             border: 1px solid #b57cff;
             border-radius: 4px;
@@ -253,7 +252,6 @@
             line-height: 1.1rem; 
         }
         
-        /* 計算ボタン群：1列5個のボタンがすべて正方形に維持されるよう調整 */
         .calc-buttons {
             flex: 5;
             display: grid;
@@ -271,13 +269,12 @@
             display: flex;
             justify-content: center;
             align-items: center;
-            aspect-ratio: 1 / 1; /* 正方形にする */
+            aspect-ratio: 1 / 1;
             width: 100%;
             height: auto;
         }
         .btn-calc:active { background: #ff007f; color: #000; }
         
-        /* クリアボタン：十分な高さを出した「押しやすい太めの長方形」に修正 */
         .reset-container {
             display: grid;
             grid-template-columns: 1fr 1fr;
@@ -288,14 +285,14 @@
             background: #3a1525;
             border: 1px solid #ff3388;
             color: #ff99cc;
-            font-size: 0.7rem; /* 文字をはっきり大きく */
+            font-size: 0.7rem;
             font-weight: bold;
             border-radius: 4px;
             cursor: pointer;
             display: flex;
             justify-content: center;
             align-items: center;
-            height: 28px; /* 高さをしっかりと出す */
+            height: 28px;
         }
         .btn-reset-half:active { background: #ff3388; color: #fff; }
 
@@ -628,25 +625,45 @@
         }
 
         function processDetectedText(text) {
+            // 括弧内の抽出ロジック
             const regex = /[「『](.*?)[」抑]/g;
-            let matches = [];
+            let rawMatches = [];
             let match;
             while ((match = regex.exec(text)) !== null) {
                 if (match[1]) {
                     for (let char of match[1]) {
-                        if (char.trim()) matches.push(char);
+                        if (char.trim()) rawMatches.push(char);
                     }
                 }
             }
 
-            if (matches.length === 0) {
+            if (rawMatches.length === 0) {
                 for (let char of text) {
-                    if (KANJI_DICTIONARY[char] || char === "下") {
-                        matches.push(char);
+                    if (KANJI_DICTIONARY[char] || char === "下" || char === "開") {
+                        rawMatches.push(char);
                     }
                 }
             }
 
+            // 【優先度強化ロジック】
+            // 誤認識しやすい漢字を検知したら、登録用リスト側は最優先で本命（卞、鬨）に置換
+            let forceSuggestShita = false;
+            let forceSuggestHiraki = false;
+            let processedMatches = [];
+
+            rawMatches.forEach(char => {
+                if (char === "下" || char === "卞") {
+                    processedMatches.push("卞");       // スロット側には「卞(176p)」を確定で送る
+                    forceSuggestShita = true;          // サジェスト側に「下(8p)」を強制表示させる
+                } else if (char === "開" || char === "鬨") {
+                    processedMatches.push("鬨");       // スロット側には「鬨(1306p)」を確定で送る
+                    forceSuggestHiraki = true;         // サジェスト側に「開(1226p)」を強制表示させる
+                } else {
+                    processedMatches.push(char);
+                }
+            });
+
+            // ホールドされていないスロットを一端リセット
             for (let i = 0; i < 4; i++) {
                 if (!selectedSlots.has(i)) {
                     displays[i].innerText = "-";
@@ -654,17 +671,11 @@
                 }
             }
 
-            let missedKanji = "";
-            let hasShita = false;
+            // スロット割り当て
+            processedMatches.forEach(char => {
+                if (!KANJI_DICTIONARY[char]) return;
 
-            matches.forEach(char => {
-                if (char === "下") hasShita = true;
-
-                if (!KANJI_DICTIONARY[char]) {
-                    missedKanji += char;
-                    return;
-                }
-
+                // 重複チェック
                 let isDuplicate = false;
                 for (let i = 0; i < 4; i++) {
                     if (displays[i].innerText === char) { isDuplicate = true; break; }
@@ -682,38 +693,40 @@
                 if (targetIdx !== -1) {
                     displays[targetIdx].innerText = char;
                     outputs[targetIdx].innerText = KANJI_DICTIONARY[char];
-                } else {
-                    missedKanji += char;
                 }
             });
 
-            generateSuggestions(missedKanji || text, hasShita);
+            // サジェスト機能へ状態を渡す
+            generateSuggestions(text, forceSuggestShita, forceSuggestHiraki);
         }
 
-        function generateSuggestions(targetText, hasShita = false) {
+        function generateSuggestions(targetText, forceSuggestShita, forceSuggestHiraki) {
             const suggestArea = document.getElementById('suggest-area');
             suggestArea.innerHTML = "";
 
+            let uniqueCandidates = [];
+
+            // 強制フラグがあるものをサジェストの特等席（先頭）に配置
+            if (forceSuggestShita && KANJI_DICTIONARY["下"]) uniqueCandidates.push("下");
+            if (forceSuggestHiraki && KANJI_DICTIONARY["開"]) uniqueCandidates.push("開");
+
+            // その他、文字コードの近さから類似漢字候補を割り出す通常ロジック
             const dictionaryKanjiList = Object.keys(KANJI_DICTIONARY);
             let candidates = [];
 
-            if (hasShita || targetText.includes("下") || targetText.includes("卞")) {
-                candidates.push({ kanji: "卞", score: 9999999 });
-            }
-
-            let forceKeisei = (targetText.includes("謦") || targetText.includes("言"));
-            let forceToki = (targetText.includes("鬨") || targetText.includes("門"));
-
             dictionaryKanjiList.forEach(dictK => {
-                if (dictK === "卞") return;
-                if (dictK === "謦" && forceKeisei) { candidates.push({ kanji: dictK, score: 888888 }); return; }
-                if (dictK === "鬨" && forceToki) { candidates.push({ kanji: dictK, score: 888887 }); return; }
+                // すでに確定配置したものはスキップ
+                if (dictK === "下" && forceSuggestShita) return;
+                if (dictK === "開" && forceSuggestHiraki) return;
+                
+                // 念のためのバックアップ
+                if (dictK === "馨" && (targetText.includes("謦") || targetText.includes("言"))) { candidates.push({ kanji: dictK, score: 888888 }); return; }
 
                 for (let rawChar of targetText) {
-                    let score = 0;
                     const codeDiff = Math.abs(dictK.charCodeAt(0) - rawChar.charCodeAt(0));
                     if (codeDiff === 0) continue;
                     
+                    let score = 0;
                     if (codeDiff < 100) score += 40;
                     else if (codeDiff < 500) score += 20;
 
@@ -724,37 +737,43 @@
             });
 
             candidates.sort((a, b) => b.score - a.score);
-            let uniqueCandidates = [];
-            let seen = new Set();
+            
             for (let c of candidates) {
-                if (!seen.has(c.kanji)) {
-                    seen.add(c.kanji);
+                if (!uniqueCandidates.includes(c.kanji)) {
                     uniqueCandidates.push(c.kanji);
                 }
                 if (uniqueCandidates.length >= 4) break;
             }
 
-            if (!uniqueCandidates.includes("卞") && (hasShita || targetText.includes("下"))) uniqueCandidates.unshift("卞");
-            if (!uniqueCandidates.includes("鬨")) uniqueCandidates.push("鬨");
-            if (!uniqueCandidates.includes("謦")) uniqueCandidates.push("謦");
+            // 万が一の保険枠補完
+            if (uniqueCandidates.length < 4 && !uniqueCandidates.includes("謦")) uniqueCandidates.push("謦");
 
             const finalCandidates = uniqueCandidates.slice(0, 4);
 
+            // サジェストボタン生成
             finalCandidates.forEach(kanji => {
                 if (!KANJI_DICTIONARY[kanji]) return;
                 const btn = document.createElement('button');
                 btn.className = 'btn-suggest';
                 btn.innerText = `${kanji}(${KANJI_DICTIONARY[kanji]}p)`;
                 btn.onclick = () => {
+                    // 空いているスロットを探す（全部埋まっていればS1を上書き）
                     let targetIdx = 0;
                     for (let i = 0; i < 4; i++) {
-                        if (displays[i].innerText === "-" || !displays[i].innerText) { targetIdx = i; break; }
+                        if (!selectedSlots.has(i) && (displays[i].innerText === "-" || !displays[i].innerText)) { 
+                            targetIdx = i; 
+                            break; 
+                        }
                     }
                     displays[targetIdx].innerText = kanji;
                     outputs[targetIdx].innerText = KANJI_DICTIONARY[kanji];
                 };
                 suggestArea.appendChild(btn);
             });
+
+            if (finalCandidates.length === 0) {
+                suggestArea.innerHTML = '<span style="color:rgba(181,124,255,0.3); font-size:0.55rem;">候補なし</span>';
+            }
         }
 
         window.calculate = function(type) {
