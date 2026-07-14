@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>絶望要塞IG スカウターツール（同期完全復旧版）</title>
+    <title>絶望要塞IG スカウターツール（3連ディスプレイ＆完全同期版）</title>
     <!-- Firebase SDK (v10) -->
     <script type="importmap">
       {
@@ -67,7 +67,7 @@
         }
 
         /* ==========================================================================
-           PHASE 1: 設定画面
+           PHASE 1: 設定画面（オンライン表示を廃止）
            ========================================================================= */
         #setup-phase {
             width: 100%;
@@ -77,6 +77,7 @@
             display: flex;
             flex-direction: column;
             gap: 20px;
+            justify-content: center;
         }
 
         h1 {
@@ -86,24 +87,6 @@
             text-shadow: 0 0 10px rgba(0,229,255,0.5);
             padding: 10px 0;
             border-bottom: 2px dashed var(--panel-border);
-        }
-
-        .member-status-bar {
-            background: rgba(0, 229, 255, 0.05);
-            border: 1px solid var(--panel-border);
-            padding: 10px;
-            border-radius: 4px;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            font-size: 12px;
-        }
-        .online-dot {
-            width: 8px;
-            height: 8px;
-            background-color: var(--cyber-green);
-            border-radius: 50%;
-            box-shadow: 0 0 8px var(--cyber-green);
         }
 
         .config-box {
@@ -145,7 +128,7 @@
         }
 
         /* ==========================================================================
-           PHASE 2: 横画面HUD
+           PHASE 2: 横画面HUD (右側エリアを3連スクショ用に拡張)
            ========================================================================= */
         #scan-phase {
             position: fixed;
@@ -153,7 +136,7 @@
             background: var(--bg-dark);
             display: none;
             z-index: 1000;
-            grid-template-columns: 1fr 300px;
+            grid-template-columns: 1fr 380px; /* 画像3枚並べるため300pxから380pxへ拡張 */
         }
 
         .hud-left {
@@ -181,7 +164,7 @@
             object-fit: contain; 
         }
 
-        /* 左下コントロールパネル */
+        /* 左下コントロールパネル（オンラインユーザー表示エリアを新設） */
         .hud-left-bottom-controls {
             height: 60px;
             background: rgba(10, 14, 20, 0.95);
@@ -192,11 +175,47 @@
             gap: 10px;
         }
 
+        /* 左下新設：オンライン表示枠 */
+        .hud-online-users-box {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            background: rgba(0, 229, 255, 0.05);
+            border: 1px solid rgba(0, 229, 255, 0.2);
+            padding: 4px 10px;
+            border-radius: 4px;
+            height: 42px;
+            max-width: 200px;
+            min-width: 120px;
+            overflow: hidden;
+        }
+        .hud-online-title {
+            font-size: 8px;
+            color: var(--cyber-green);
+            font-weight: bold;
+            letter-spacing: 0.5px;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+        .hud-online-title::before {
+            content: ''; display: inline-block; width: 5px; height: 5px; 
+            background: var(--cyber-green); border-radius: 50%; box-shadow: 0 0 4px var(--cyber-green);
+        }
+        .hud-online-list {
+            font-size: 10px;
+            color: #ffffff;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            margin-top: 2px;
+        }
+
         .btn-exit-icon, .btn-zoom-toggle, .btn-clear-slots {
             height: 42px;
-            padding: 0 15px;
+            padding: 0 12px;
             border-radius: 6px;
-            font-size: 13px;
+            font-size: 12px;
             font-weight: bold;
             display: flex;
             align-items: center;
@@ -204,29 +223,16 @@
             box-shadow: 0 0 10px rgba(0,0,0,0.5);
         }
 
-        .btn-exit-icon {
-            background: rgba(255, 51, 51, 0.1);
-            border: 1px solid var(--cyber-red);
-            color: var(--cyber-red);
-        }
+        .btn-exit-icon { background: rgba(255, 51, 51, 0.1); border: 1px solid var(--cyber-red); color: var(--cyber-red); }
         .btn-exit-icon:active { background: var(--cyber-red); color: #fff; }
 
-        .btn-zoom-toggle {
-            background: rgba(0, 229, 255, 0.1);
-            border: 1px solid var(--cyber-blue);
-            color: var(--cyber-blue);
-        }
+        .btn-zoom-toggle { background: rgba(0, 229, 255, 0.1); border: 1px solid var(--cyber-blue); color: var(--cyber-blue); }
         .btn-zoom-toggle:active { background: var(--cyber-blue); color: #000; }
 
-        .btn-clear-slots {
-            background: rgba(255, 145, 0, 0.1);
-            border: 1px solid var(--cyber-orange);
-            color: var(--cyber-orange);
-            margin-left: auto;
-        }
+        .btn-clear-slots { background: rgba(255, 145, 0, 0.1); border: 1px solid var(--cyber-orange); color: var(--cyber-orange); margin-left: auto; }
         .btn-clear-slots:active { background: var(--cyber-orange); color: #000; }
 
-        /* 右側：完全情報・操作パネルエリア */
+        /* 右側操作・情報パネルエリア */
         .hud-right {
             grid-column: 2;
             background: #0a0e14;
@@ -278,37 +284,46 @@
             color: var(--cyber-blue);
         }
         
-        .hud-slot-ans-zone {
+        /* 📸 【新設】3枚並び用コンテナ */
+        .hud-slot-triple-zone {
             flex: 1;
             height: 100%;
-            background: rgba(0,0,0,0.5);
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 3px;
+            background: rgba(0,0,0,0.3);
             border-radius: 3px;
-            overflow: hidden;
+            position: relative;
+        }
+        
+        .hud-mini-pane {
+            height: 100%;
+            background: rgba(0,0,0,0.6);
+            border: 1px solid rgba(255,255,255,0.05);
+            border-radius: 2px;
             display: flex;
             align-items: center;
             justify-content: center;
-            border: 1px solid rgba(255,255,255,0.08);
+            overflow: hidden;
             position: relative;
-            cursor: pointer;
         }
-        .hud-slot-ans-zone img {
+        .hud-mini-pane img {
             width: 100%;
             height: 100%;
             object-fit: contain;
         }
-        .hud-slot-ans-zone .no-img-text { font-size: 10px; color: #445566; font-weight: bold; }
-        .hud-slot-ans-zone .err-text { font-size: 10px; color: var(--cyber-red); font-weight: bold; }
+        .pane-label {
+            position: absolute; top: 1px; left: 2px; font-size: 7px;
+            color: rgba(0, 229, 255, 0.6); font-weight: bold; pointer-events: none;
+        }
         
-        .pattern-badge {
-            position: absolute;
-            top: 2px; right: 4px;
-            font-size: 8px;
-            background: rgba(0, 229, 255, 0.7);
-            color: #000;
-            padding: 0px 3px;
-            border-radius: 3px;
-            font-weight: bold;
-            pointer-events: none;
+        .triple-void-text {
+            position: absolute; width: 100%; text-align: center; top: 50%; left: 50%;
+            transform: translate(-50%, -50%); font-size: 10px; color: #3a4b5c; font-weight: bold; pointer-events: none;
+        }
+        .triple-err-text {
+            position: absolute; width: 100%; text-align: center; top: 50%; left: 50%;
+            transform: translate(-50%, -50%); font-size: 10px; color: var(--cyber-red); font-weight: bold; pointer-events: none;
         }
 
         .hud-control-bottom {
@@ -328,25 +343,17 @@
         }
 
         .btn-shutter-target {
-            padding: 10px 0;
-            border-radius: 6px;
+            padding: 10px 0; border-radius: 6px;
             background: linear-gradient(180deg, #ffffff 0%, #b5e9ff 100%);
-            border: 2px solid var(--cyber-blue);
-            color: #050b14;
-            font-size: 12px;
-            font-weight: 900;
+            border: 2px solid var(--cyber-blue); color: #050b14; font-size: 12px; font-weight: 900;
             box-shadow: 0 0 10px rgba(0,229,255,0.2);
         }
         .btn-shutter-target:active { background: var(--cyber-blue); color: #fff; transform: scale(0.95); }
 
         .btn-shutter-quest {
-            padding: 10px 0;
-            border-radius: 6px;
+            padding: 10px 0; border-radius: 6px;
             background: linear-gradient(180deg, #ffffff 0%, #e2c6ff 100%);
-            border: 2px solid var(--cyber-purple);
-            color: #050b14;
-            font-size: 12px;
-            font-weight: 900;
+            border: 2px solid var(--cyber-purple); color: #050b14; font-size: 12px; font-weight: 900;
             box-shadow: 0 0 10px rgba(181,124,255,0.2);
         }
         .btn-shutter-quest:active { background: var(--cyber-purple); color: #fff; transform: scale(0.95); }
@@ -376,13 +383,9 @@
 </head>
 <body>
 
-    <!-- PHASE 1: 設定画面 -->
+    <!-- PHASE 1: 設定画面（オンライン状況バーを削除） -->
     <div id="setup-phase">
         <h1>DESPAIR FORTRESS SCOUTER</h1>
-        <div class="member-status-bar">
-            <span class="online-dot"></span>
-            <span id="member-list-text">ONLINE: 待機中...</span>
-        </div>
         <div class="config-box">
             <div>
                 <label>ROOM ID:</label>
@@ -412,15 +415,19 @@
                 <div class="scan-dimmer" id="scan-indicator"></div>
             </div>
 
-            <!-- 左下：操作パネル -->
+            <!-- 左下：操作パネル（オンライン表示を追加） -->
             <div class="hud-left-bottom-controls">
                 <button class="btn-exit-icon" id="btn-exit-scan">🚪 EXIT</button>
+                <div class="hud-online-users-box">
+                    <div class="hud-online-title">ONLINE USERS</div>
+                    <div class="hud-online-list" id="hud-online-list-text">待機中...</div>
+                </div>
                 <button class="btn-zoom-toggle" id="btn-toggle-lens">🔄 1.0x / 0.5x</button>
                 <button class="btn-clear-slots" id="btn-clear-slots">🧹 CLEAR</button>
             </div>
         </div>
 
-        <!-- 右側セクション -->
+        <!-- 右側セクション（3枚並列用） -->
         <div class="hud-right">
             <div class="hud-panel-title">SCOUTER INTERFACE</div>
             
@@ -428,23 +435,23 @@
             <div class="hud-slot-list">
                 <div class="hud-slot-row" id="row-0">
                     <input type="tel" id="box-0" placeholder="01" maxlength="3">
-                    <div class="hud-slot-ans-zone" id="zone-0" data-index="0"><span class="no-img-text">VOID</span></div>
+                    <div class="hud-slot-triple-zone" id="zone-0"></div>
                 </div>
                 <div class="hud-slot-row" id="row-1">
                     <input type="tel" id="box-1" placeholder="02" maxlength="3">
-                    <div class="hud-slot-ans-zone" id="zone-1" data-index="1"><span class="no-img-text">VOID</span></div>
+                    <div class="hud-slot-triple-zone" id="zone-1"></div>
                 </div>
                 <div class="hud-slot-row" id="row-2">
                     <input type="tel" id="box-2" placeholder="03" maxlength="3">
-                    <div class="hud-slot-ans-zone" id="zone-2" data-index="2"><span class="no-img-text">VOID</span></div>
+                    <div class="hud-slot-triple-zone" id="zone-2"></div>
                 </div>
                 <div class="hud-slot-row" id="row-3">
                     <input type="tel" id="box-3" placeholder="04" maxlength="3">
-                    <div class="hud-slot-ans-zone" id="zone-3" data-index="3"><span class="no-img-text">VOID</span></div>
+                    <div class="hud-slot-triple-zone" id="zone-3"></div>
                 </div>
                 <div class="hud-slot-row" id="row-4">
                     <input type="tel" id="box-4" placeholder="05" maxlength="3">
-                    <div class="hud-slot-ans-zone" id="zone-4" data-index="4"><span class="no-img-text">VOID</span></div>
+                    <div class="hud-slot-triple-zone" id="zone-4"></div>
                 </div>
             </div>
 
@@ -486,8 +493,6 @@
         let presenceInterval = null;
         let isUltraWideMode = true; 
 
-        let slotPatternIndexes = [0, 0, 0, 0, 0];
-
         const setupPhase = document.getElementById('setup-phase');
         const scanPhase = document.getElementById('scan-phase');
         const searchBoxes = [
@@ -526,24 +531,10 @@
                     executeSearch();
                 });
             });
-
-            ansZones.forEach((zone, idx) => {
-                zone.addEventListener('click', () => {
-                    const query = searchBoxes[idx].value.trim();
-                    if (!query || !allPhotosMap[query]) return;
-                    
-                    const imgList = allPhotosMap[query].croppedImgs || [];
-                    if (imgList.length <= 1) return;
-
-                    slotPatternIndexes[idx] = (slotPatternIndexes[idx] + 1) % imgList.length;
-                    executeSearch();
-                });
-            });
         }
 
         function clearAllSlots() {
             searchBoxes.forEach(box => box.value = "");
-            slotPatternIndexes = [0, 0, 0, 0, 0];
             syncInputsToFirebase();
             executeSearch();
             showToast("SLOTS CLEARED");
@@ -618,7 +609,6 @@
             setupPhase.style.display = 'flex';
         }
 
-        /* 📡 【修正】同期リスナー：ルーム情報が存在しない場合のフォールバックを安全に変更 */
         function startFirebaseRoomSync() {
             const roomId = document.getElementById('room-id').value.trim() || 'default_room';
             const user = document.getElementById('user-name').value.trim() || 'Unknown';
@@ -627,7 +617,10 @@
             const reportPresence = async () => {
                 const rId = document.getElementById('room-id').value.trim() || 'default_room';
                 const uName = document.getElementById('user-name').value.trim() || 'Unknown';
-                try { await setDoc(doc(db, "rooms", rId), { members: { [uName]: Date.now() } }, { merge: true }); } catch(e){}
+                try {
+                    // ドット記法によるピンポイントな生存確認書き込み
+                    await setDoc(doc(db, "rooms", rId), { members: { [uName]: Date.now() } }, { merge: true });
+                } catch(e){}
             };
             reportPresence();
             presenceInterval = setInterval(reportPresence, 4000);
@@ -641,14 +634,14 @@
                 }
                 const data = snapshot.data();
                 
-                // メンバーリスト同期
+                // 📡 【変更】左下のオンラインユーザー名を更新
                 if (data.members) {
                     const now = Date.now();
                     const activeMembers = Object.keys(data.members).filter(name => (now - data.members[name]) < 10000);
-                    document.getElementById('member-list-text').innerText = `ONLINE: ${activeMembers.join(', ')}`;
+                    document.getElementById('hud-online-list-text').innerText = activeMembers.join(', ') || 'なし';
                 }
                 
-                // 検索スロットの数字同期（フォーカスが当たっていない入力欄だけ連動して更新）
+                // 検索スロットの数字同期
                 if (data.currentQueries) {
                     data.currentQueries.forEach((q, idx) => {
                         if (document.activeElement !== searchBoxes[idx]) { 
@@ -657,7 +650,7 @@
                     });
                 }
                 
-                // 保存されている画像データマップの同期
+                // 全画像データの安全マップ取得
                 if (data.photoMap) {
                     allPhotosMap = data.photoMap;
                     document.getElementById('db-counter').innerText = `STOCKS: ${Object.keys(allPhotosMap).length}`;
@@ -669,7 +662,6 @@
             });
         }
 
-        /* 📡 【修正】安全な一元データ同期(setDoc merge版) */
         async function syncInputsToFirebase() {
             const roomId = document.getElementById('room-id').value.trim() || 'default_room';
             const queries = searchBoxes.map(b => b.value.trim());
@@ -763,10 +755,11 @@
 
             if (numbersList.length === 0) { showToast("NO 3-DIGIT TARGETS"); return; }
 
-            const updates = {};
+            const roomId = document.getElementById('room-id').value.trim() || 'default_room';
             let matchCount = 0;
 
-            numbersList.forEach(numObj => {
+            // 📡 【最重要修正】全体を上書きせず、見つけた個別番号のフィールドだけをFirestoreのドット記法でピンポイント更新
+            for (const numObj of numbersList) {
                 const verticalCandidates = genericBlocks.filter(b => {
                     const xDiff = Math.abs(numObj.cx - b.cx);
                     const yDiff = b.cy - numObj.cy;
@@ -797,7 +790,7 @@
                 const cropY1 = Math.max(0, centerCy - (standardCropH / 2));
                 cCtx.clearRect(0,0,120,160);
                 cCtx.drawImage(originalCanvas, cropX1, cropY1, standardCropW, standardCropH, 0, 0, 120, 160);
-                const img1 = cropCanvas.toDataURL('image/jpeg', 0.65);
+                const img1 = cropCanvas.toDataURL('image/jpeg', 0.60);
 
                 // 📸 パターン2: さらに広め
                 const wideCropW = standardCropW * 1.25;
@@ -806,7 +799,7 @@
                 const cropY2 = Math.max(0, centerCy - (wideCropH / 2));
                 cCtx.clearRect(0,0,120,160);
                 cCtx.drawImage(originalCanvas, cropX2, cropY2, wideCropW, wideCropH, 0, 0, 120, 160);
-                const img2 = cropCanvas.toDataURL('image/jpeg', 0.65);
+                const img2 = cropCanvas.toDataURL('image/jpeg', 0.60);
 
                 // 📸 パターン3: ジャストズーム
                 const zoomCropW = standardCropW * 0.75;
@@ -815,24 +808,24 @@
                 const cropY3 = Math.max(0, centerCy - (zoomCropH / 2));
                 cCtx.clearRect(0,0,120,160);
                 cCtx.drawImage(originalCanvas, cropX3, cropY3, zoomCropW, zoomCropH, 0, 0, 120, 160);
-                const img3 = cropCanvas.toDataURL('image/jpeg', 0.65);
+                const img3 = cropCanvas.toDataURL('image/jpeg', 0.60);
 
-                updates[numObj.text] = {
+                const singleUnitData = {
                     croppedImgs: [img1, img2, img3],
                     timestamp: Date.now()
                 };
-                matchCount++;
-            });
+
+                try {
+                    // 他人のデータを絶対に消さない差分プッシュ。競合バグを完全解消
+                    const updatePayload = {};
+                    updatePayload[`photoMap.${numObj.text}`] = singleUnitData;
+                    await setDoc(doc(db, "rooms", roomId), updatePayload, { merge: true });
+                    matchCount++;
+                } catch (e) { console.error("個別同期エラー:", e); }
+            }
 
             if (matchCount > 0) {
-                const roomId = document.getElementById('room-id').value.trim() || 'default_room';
-                const mergedMap = { ...allPhotosMap };
-                Object.keys(updates).forEach(num => { mergedMap[num] = updates[num]; });
-                try {
-                    // setDocのマージ機能で相手のスキャン結果と合成。確実な同期経路
-                    await setDoc(doc(db, "rooms", roomId), { photoMap: mergedMap }, { merge: true });
-                    showToast(`STOCKED: ${matchCount} UNITS`);
-                } catch (e) { showToast("SYNC ERROR"); }
+                showToast(`STOCKED: ${matchCount} UNITS`);
             } else { showToast("MATCHING CRITERIA FAILED"); }
         }
 
@@ -862,6 +855,7 @@
             } else { showToast("NO NUMBERS DETECTED"); }
         }
 
+        /* 📸 【大刷新】3連ディスプレイ連動検索処理 */
         function executeSearch() {
             searchBoxes.forEach((box, index) => {
                 const query = box.value.trim();
@@ -869,7 +863,7 @@
                 const rowDiv = document.getElementById('row-' + index);
 
                 if (!query) {
-                    zone.innerHTML = '<span class="no-img-text">VOID</span>';
+                    zone.innerHTML = '<span class="triple-void-text">VOID</span>';
                     rowDiv.classList.remove('has-error');
                     return;
                 }
@@ -877,46 +871,46 @@
                 const foundMatch = allPhotosMap[query];
                 
                 if (foundMatch) {
-                    const imgList = foundMatch.croppedImgs || (foundMatch.croppedImg ? [foundMatch.croppedImg] : []);
+                    const imgList = foundMatch.croppedImgs || (foundMatch.croppedImg ? [foundMatch.croppedImg, foundMatch.croppedImg, foundMatch.croppedImg] : []);
                     
-                    if (imgList.length > 0) {
-                        let pIdx = slotPatternIndexes[index] || 0;
-                        if (pIdx >= imgList.length) { pIdx = 0; slotPatternIndexes[index] = 0; }
-
-                        const currentImgData = imgList[pIdx];
-                        
+                    if (imgList.length >= 3) {
                         zone.innerHTML = `
-                            <img src="${currentImgData}">
-                            <div class="pattern-badge">P${pIdx + 1}/${imgList.length}</div>
+                            <div class="hud-mini-pane"><span class="pane-label">P1</span><img src="${imgList[0]}"></div>
+                            <div class="hud-mini-pane"><span class="pane-label">P2</span><img src="${imgList[1]}"></div>
+                            <div class="hud-mini-pane"><span class="pane-label">P3</span><img src="${imgList[2]}"></div>
+                        `;
+                        rowDiv.classList.remove('has-error');
+                    } else if (imgList.length > 0) {
+                        // 過去の古い形式のデータが残っていた場合用
+                        zone.innerHTML = `
+                            <div class="hud-mini-pane"><span class="pane-label">P1</span><img src="${imgList[0]}"></div>
+                            <div class="hud-mini-pane"></div>
+                            <div class="hud-mini-pane"></div>
                         `;
                         rowDiv.classList.remove('has-error');
                     } else {
-                        zone.innerHTML = '<span class="err-text">NONE</span>';
+                        zone.innerHTML = '<span class="triple-err-text">NONE</span>';
                         rowDiv.classList.add('has-error');
                     }
                 } else {
-                    zone.innerHTML = '<span class="err-text">NONE</span>';
+                    zone.innerHTML = '<span class="triple-err-text">NONE</span>';
                     rowDiv.classList.add('has-error');
                 }
             });
         }
 
-        /* 📡 【大修正】物理削除(deleteDoc)ではなく、空値での初期化書き込みに変更 */
         async function resetSystem() {
             if (!confirm("ルーム全体のデータとスロット内の数字を完全にリセットしますか？")) return;
             const roomId = document.getElementById('room-id').value.trim() || 'default_room';
             try {
-                // ローカル側の表示を先んじて空にする
                 searchBoxes.forEach(box => box.value = "");
-                slotPatternIndexes = [0, 0, 0, 0, 0];
                 allPhotosMap = {};
 
-                // ルーム全体を削除するのではなく「初期値」で上書きすることで
-                // 他の人のonSnapshotリスナーが切断されるのを防ぎつつ、全員の画面を綺麗に初期化
+                // 完全削除ではなく初期構造でマージ上書きし、リスナー切断を防ぐ
                 await setDoc(doc(db, "rooms", roomId), {
                     currentQueries: ["", "", "", "", ""],
                     photoMap: {}
-                }, { merge: true });
+                }, { merge: false }); // 完全にリセットする時は中身を真っ新に上書き
 
                 executeSearch();
                 showToast("ROOM & SLOTS RESET COMPLETE");
