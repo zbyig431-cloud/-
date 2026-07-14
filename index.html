@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>絶望要塞IG スカウターツール（比率維持・分離版）</title>
+    <title>絶望要塞IG スカウターツール（比率維持・一画面最適化版）</title>
     <!-- Firebase SDK (v10) -->
     <script type="importmap">
       {
@@ -226,25 +226,25 @@
             color: #000;
         }
 
-        /* 右側：完全情報・操作パネルエリア */
+        /* 右側：完全情報・操作パネルエリア（縦幅を1画面に収めるよう最適化） */
         .hud-right {
             grid-column: 2;
             background: #0a0e14;
             border-left: 2px solid rgba(0, 229, 255, 0.3);
             display: flex;
             flex-direction: column;
-            padding: 8px;
-            gap: 8px;
+            padding: 6px;       /* 8pxから6pxに縮小 */
+            gap: 6px;           /* 8pxから6pxに縮小 */
             height: 100%;
-            overflow-y: auto;
+            overflow: hidden;   /* scrollからhiddenにして絶対にハみ出させない */
         }
 
         .hud-panel-title {
-            font-size: 11px;
+            font-size: 10px;    /* 11pxから10pxに */
             color: #8cc8ff;
             text-align: center;
             border-bottom: 1px solid rgba(255,255,255,0.1);
-            padding-bottom: 4px;
+            padding-bottom: 2px;
             font-weight: bold;
             letter-spacing: 1px;
         }
@@ -253,7 +253,7 @@
         .hud-slot-list {
             display: flex;
             flex-direction: column;
-            gap: 5px;
+            gap: 4px;           /* 5pxから4pxに縮小 */
         }
         .hud-slot-row {
             display: flex;
@@ -261,16 +261,18 @@
             background: rgba(20, 30, 45, 0.6);
             border: 1px solid rgba(140, 200, 255, 0.2);
             border-radius: 4px;
-            padding: 4px;
+            padding: 3px;
             gap: 6px;
-            height: 56px;
+            height: 46px;       /* 56pxから46pxに大幅スリム化！ */
         }
         .hud-slot-row.has-error { border-color: rgba(255, 51, 51, 0.4); background: rgba(255,0,0,0.05); }
+        
+        /* スロットの入力ボックス */
         .hud-slot-row input {
-            width: 48px;
-            height: 36px;
+            width: 44px;        /* 48pxから44pxに */
+            height: 32px;       /* 36pxから32pxに */
             padding: 2px;
-            font-size: 16px;
+            font-size: 15px;    /* 16pxから15pxに */
             font-weight: bold;
             text-align: center;
             background: #000;
@@ -278,6 +280,7 @@
             color: var(--cyber-blue);
         }
         
+        /* スロットの画像表示エリア */
         .hud-slot-ans-zone {
             flex: 1;
             height: 100%;
@@ -295,26 +298,26 @@
             object-fit: contain;
         }
         .hud-slot-ans-zone .no-img-text {
-            font-size: 11px;
+            font-size: 10px;    /* 11pxから10pxに */
             color: #445566;
             font-weight: bold;
         }
         .hud-slot-ans-zone .err-text {
-            font-size: 11px;
+            font-size: 10px;    /* 11pxから10pxに */
             color: var(--cyber-red);
             font-weight: bold;
         }
 
         /* 下部コントロール：2連並列シャッターボタン */
         .hud-control-bottom {
-            margin-top: auto;
+            margin-top: auto;   /* これで一番下に張り付きます */
             display: flex;
             flex-direction: column;
-            gap: 6px;
-            padding-top: 6px;
+            gap: 4px;           /* 6pxから4pxに縮小 */
+            padding-top: 4px;
             border-top: 1px solid rgba(255,255,255,0.1);
         }
-        .stocks-counter { font-size: 10px; color: #8cc8ff; font-weight: bold; text-align: center; }
+        .stocks-counter { font-size: 9px; color: #8cc8ff; font-weight: bold; text-align: center; }
 
         .shutter-grid {
             display: grid;
@@ -322,25 +325,26 @@
             gap: 6px;
         }
 
+        /* シャッターボタンの高さ微調整 */
         .btn-shutter-target {
-            padding: 12px 0;
+            padding: 10px 0;    /* 12pxから10pxに縮小 */
             border-radius: 6px;
             background: linear-gradient(180deg, #ffffff 0%, #b5e9ff 100%);
             border: 2px solid var(--cyber-blue);
             color: #050b14;
-            font-size: 13px;
+            font-size: 12px;    /* 13pxから12pxに */
             font-weight: 900;
             box-shadow: 0 0 10px rgba(0,229,255,0.2);
         }
         .btn-shutter-target:active { background: var(--cyber-blue); color: #fff; transform: scale(0.95); }
 
         .btn-shutter-quest {
-            padding: 12px 0;
+            padding: 10px 0;    /* 12pxから10pxに縮小 */
             border-radius: 6px;
             background: linear-gradient(180deg, #ffffff 0%, #e2c6ff 100%);
             border: 2px solid var(--cyber-purple);
             color: #050b14;
-            font-size: 13px;
+            font-size: 12px;    /* 13pxから12pxに */
             font-weight: 900;
             box-shadow: 0 0 10px rgba(181,124,255,0.2);
         }
