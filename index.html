@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>絶望要塞IG かくれんぼツール</title>
+    <title>絶望要塞IG スカウターツール（正方形ボックス最適化版）</title>
     <!-- Firebase SDK (v10) -->
     <script type="importmap">
       {
@@ -715,7 +715,7 @@
             } catch (err) { showToast("API DETECT ERROR"); }
         }
 
-        /* 💡 精査・正方形ターゲットのみをクローズアップ切り出しロジック */
+        /* 💡 切り出し範囲を拡大 ＆ 誤検知防止フィルターを強化したロジック */
         async function analyzeTargetModeWithAdvancedMatching(annotations, originalCanvas, halfW, srcH) {
             const fullList = annotations.slice(1);
             
@@ -753,47 +753,49 @@
             let matchCount = 0;
 
             numbersList.forEach(numObj => {
+                // 🛠️ 改善①：左右のズレ許容値を w * 1.2 から w * 0.5 に厳格化（ほぼ真下のボックスのみを捕捉して誤検知排除）
+                // 🛠️ 改善②：縦方向の距離も yDiff < h * 5 に収めて、下方に離れすぎた関係のない四角形を無視
                 const verticalCandidates = genericBlocks.filter(b => {
                     const xDiff = Math.abs(numObj.cx - b.cx);
                     const yDiff = b.cy - numObj.cy;
-                    return (xDiff < numObj.w * 1.2) && (yDiff > 0) && (yDiff < numObj.h * 8);
+                    return (xDiff < numObj.w * 0.5) && (yDiff > 0) && (yDiff < numObj.h * 5);
                 });
 
-                // 正方形(ボックス)の座標情報を決定する
+                // 🛠️ 改善③：基本切り出しサイズ（boxSize）の基準を「w * 1.3」から「w * 1.6」へ大幅に拡張
                 let boxCx = numObj.cx;
-                let boxCy = numObj.cy + (numObj.h * 3.5); // 予測値
-                let boxSize = numObj.w * 1.3;            // 予測正方形幅
+                let boxCy = numObj.cy + (numObj.h * 3.5); 
+                let boxSize = numObj.w * 1.6; 
 
                 if (verticalCandidates.length > 0) {
                     verticalCandidates.sort((a, b) => Math.abs(numObj.cx - a.cx) - Math.abs(numObj.cx - b.cx));
                     const bestBlock = verticalCandidates[0];
                     boxCx = bestBlock.cx;
                     boxCy = bestBlock.cy;
-                    boxSize = Math.max(bestBlock.w, bestBlock.h) * 1.2; // 確実に正方形を収める
+                    // 正しい四角ブロックを発見した際も、倍率を「1.2」から「1.55」へ広げ、周囲にゆとりを持たせます
+                    boxSize = Math.max(bestBlock.w, bestBlock.h) * 1.55; 
                 }
 
-                // 出力画像：140x120のキャンバスを生成
                 const cropCanvas = document.createElement('canvas');
                 cropCanvas.width = 140; cropCanvas.height = 120;
                 const cCtx = cropCanvas.getContext('2d');
 
-                // 🎯 パターン1: 正方形ボックスジャスト中心
+                // 🎯 パターン1: 標準（前バージョンより一回り広め）
                 const cropX1 = Math.max(0, boxCx - (boxSize / 2));
                 const cropY1 = Math.max(0, boxCy - (boxSize / 2));
                 cCtx.clearRect(0,0,140,120);
                 cCtx.drawImage(originalCanvas, cropX1, cropY1, boxSize, boxSize, 0, 0, 140, 120);
                 const img1 = cropCanvas.toDataURL('image/jpeg', 0.65);
 
-                // 🎯 パターン2: ズーム気味（少し狭めて四角形を大きく写す）
-                const boxSize2 = boxSize * 0.85;
+                // 🎯 パターン2: 少しズーム気味（前バージョンより広め）
+                const boxSize2 = boxSize * 0.90; 
                 const cropX2 = Math.max(0, boxCx - (boxSize2 / 2));
                 const cropY2 = Math.max(0, boxCy - (boxSize2 / 2));
                 cCtx.clearRect(0,0,140,120);
                 cCtx.drawImage(originalCanvas, cropX2, cropY2, boxSize2, boxSize2, 0, 0, 140, 120);
                 const img2 = cropCanvas.toDataURL('image/jpeg', 0.65);
 
-                // 🎯 パターン3: ルーズ気味（周囲の余白、万が一のズレを考慮し一回り広く写す）
-                const boxSize3 = boxSize * 1.25;
+                // 🎯 パターン3: ルーズ（さらに一回り広く、周囲の背景まで多めに巻き込んで切り出し）
+                const boxSize3 = boxSize * 1.45; 
                 const cropX3 = Math.max(0, boxCx - (boxSize3 / 2));
                 const cropY3 = Math.max(0, boxCy - (boxSize3 / 2));
                 cCtx.clearRect(0,0,140,120);
