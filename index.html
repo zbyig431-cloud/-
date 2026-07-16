@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>N かくれんぼツール</title>
+    <title>絶望要塞IG スカウターツール（重複入力防止版）</title>
     <!-- Firebase SDK (v10) -->
     <script type="importmap">
       {
@@ -77,6 +77,7 @@
             display: flex;
             flex-direction: column;
             gap: 20px;
+            justify-content: center;
         }
 
         h1 {
@@ -86,24 +87,6 @@
             text-shadow: 0 0 10px rgba(0,229,255,0.5);
             padding: 10px 0;
             border-bottom: 2px dashed var(--panel-border);
-        }
-
-        .member-status-bar {
-            background: rgba(0, 229, 255, 0.05);
-            border: 1px solid var(--panel-border);
-            padding: 10px;
-            border-radius: 4px;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            font-size: 12px;
-        }
-        .online-dot {
-            width: 8px;
-            height: 8px;
-            background-color: var(--cyber-green);
-            border-radius: 50%;
-            box-shadow: 0 0 8px var(--cyber-green);
         }
 
         .config-box {
@@ -153,7 +136,7 @@
             background: var(--bg-dark);
             display: none;
             z-index: 1000;
-            grid-template-columns: 1fr 300px;
+            grid-template-columns: 1fr 320px;
         }
 
         .hud-left {
@@ -181,7 +164,6 @@
             object-fit: contain; 
         }
 
-        /* 左下コントロールパネル */
         .hud-left-bottom-controls {
             height: 60px;
             background: rgba(10, 14, 20, 0.95);
@@ -192,11 +174,46 @@
             gap: 10px;
         }
 
+        .hud-online-users-box {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            background: rgba(0, 229, 255, 0.05);
+            border: 1px solid rgba(0, 229, 255, 0.2);
+            padding: 4px 10px;
+            border-radius: 4px;
+            height: 42px;
+            max-width: 200px;
+            min-width: 120px;
+            overflow: hidden;
+        }
+        .hud-online-title {
+            font-size: 8px;
+            color: var(--cyber-green);
+            font-weight: bold;
+            letter-spacing: 0.5px;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+        .hud-online-title::before {
+            content: ''; display: inline-block; width: 5px; height: 5px; 
+            background: var(--cyber-green); border-radius: 50%; box-shadow: 0 0 4px var(--cyber-green);
+        }
+        .hud-online-list {
+            font-size: 10px;
+            color: #ffffff;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            margin-top: 2px;
+        }
+
         .btn-exit-icon, .btn-zoom-toggle, .btn-clear-slots {
             height: 42px;
-            padding: 0 15px;
+            padding: 0 12px;
             border-radius: 6px;
-            font-size: 13px;
+            font-size: 12px;
             font-weight: bold;
             display: flex;
             align-items: center;
@@ -204,29 +221,15 @@
             box-shadow: 0 0 10px rgba(0,0,0,0.5);
         }
 
-        .btn-exit-icon {
-            background: rgba(255, 51, 51, 0.1);
-            border: 1px solid var(--cyber-red);
-            color: var(--cyber-red);
-        }
+        .btn-exit-icon { background: rgba(255, 51, 51, 0.1); border: 1px solid var(--cyber-red); color: var(--cyber-red); }
         .btn-exit-icon:active { background: var(--cyber-red); color: #fff; }
 
-        .btn-zoom-toggle {
-            background: rgba(0, 229, 255, 0.1);
-            border: 1px solid var(--cyber-blue);
-            color: var(--cyber-blue);
-        }
+        .btn-zoom-toggle { background: rgba(0, 229, 255, 0.1); border: 1px solid var(--cyber-blue); color: var(--cyber-blue); }
         .btn-zoom-toggle:active { background: var(--cyber-blue); color: #000; }
 
-        .btn-clear-slots {
-            background: rgba(255, 145, 0, 0.1);
-            border: 1px solid var(--cyber-orange);
-            color: var(--cyber-orange);
-            margin-left: auto;
-        }
+        .btn-clear-slots { background: rgba(255, 145, 0, 0.1); border: 1px solid var(--cyber-orange); color: var(--cyber-orange); margin-left: auto; }
         .btn-clear-slots:active { background: var(--cyber-orange); color: #000; }
 
-        /* 右側：完全情報・操作パネルエリア */
         .hud-right {
             grid-column: 2;
             background: #0a0e14;
@@ -281,13 +284,12 @@
         .hud-slot-ans-zone {
             flex: 1;
             height: 100%;
-            background: rgba(0,0,0,0.5);
+            background: rgba(0,0,0,0.4);
             border-radius: 3px;
-            overflow: hidden;
             display: flex;
             align-items: center;
             justify-content: center;
-            border: 1px solid rgba(255,255,255,0.08);
+            overflow: hidden;
             position: relative;
             cursor: pointer;
         }
@@ -296,20 +298,14 @@
             height: 100%;
             object-fit: contain;
         }
-        .hud-slot-ans-zone .no-img-text { font-size: 10px; color: #445566; font-weight: bold; }
-        .hud-slot-ans-zone .err-text { font-size: 10px; color: var(--cyber-red); font-weight: bold; }
-        
-        .pattern-badge {
-            position: absolute;
-            top: 2px; right: 4px;
-            font-size: 8px;
-            background: rgba(0, 229, 255, 0.7);
-            color: #000;
-            padding: 0px 3px;
-            border-radius: 3px;
-            font-weight: bold;
-            pointer-events: none;
+        .pane-label-badge {
+            position: absolute; top: 2px; left: 4px; font-size: 8px;
+            color: #fff; background: rgba(0, 229, 255, 0.7); 
+            padding: 1px 4px; border-radius: 2px; font-weight: bold; pointer-events: none;
         }
+        
+        .void-text { font-size: 11px; color: #3a4b5c; font-weight: bold; pointer-events: none; }
+        .err-text { font-size: 11px; color: var(--cyber-red); font-weight: bold; pointer-events: none; }
 
         .hud-control-bottom {
             margin-top: auto;
@@ -328,25 +324,17 @@
         }
 
         .btn-shutter-target {
-            padding: 10px 0;
-            border-radius: 6px;
+            padding: 10px 0; border-radius: 6px;
             background: linear-gradient(180deg, #ffffff 0%, #b5e9ff 100%);
-            border: 2px solid var(--cyber-blue);
-            color: #050b14;
-            font-size: 12px;
-            font-weight: 900;
+            border: 2px solid var(--cyber-blue); color: #050b14; font-size: 12px; font-weight: 900;
             box-shadow: 0 0 10px rgba(0,229,255,0.2);
         }
         .btn-shutter-target:active { background: var(--cyber-blue); color: #fff; transform: scale(0.95); }
 
         .btn-shutter-quest {
-            padding: 10px 0;
-            border-radius: 6px;
+            padding: 10px 0; border-radius: 6px;
             background: linear-gradient(180deg, #ffffff 0%, #e2c6ff 100%);
-            border: 2px solid var(--cyber-purple);
-            color: #050b14;
-            font-size: 12px;
-            font-weight: 900;
+            border: 2px solid var(--cyber-purple); color: #050b14; font-size: 12px; font-weight: 900;
             box-shadow: 0 0 10px rgba(181,124,255,0.2);
         }
         .btn-shutter-quest:active { background: var(--cyber-purple); color: #fff; transform: scale(0.95); }
@@ -379,10 +367,6 @@
     <!-- PHASE 1: 設定画面 -->
     <div id="setup-phase">
         <h1>DESPAIR FORTRESS SCOUTER</h1>
-        <div class="member-status-bar">
-            <span class="online-dot"></span>
-            <span id="member-list-text">ONLINE: 待機中...</span>
-        </div>
         <div class="config-box">
             <div>
                 <label>ROOM ID:</label>
@@ -414,45 +398,49 @@
 
             <!-- 左下：操作パネル -->
             <div class="hud-left-bottom-controls">
-                <button class="btn-exit-icon" id="btn-exit-scan">ホームへ</button>
-                <button class="btn-zoom-toggle" id="btn-toggle-lens">倍率変更</button>
-                <button class="btn-clear-slots" id="btn-clear-slots">クリア</button>
+                <button class="btn-exit-icon" id="btn-exit-scan">🚪 EXIT</button>
+                <div class="hud-online-users-box">
+                    <div class="hud-online-title">ONLINE USERS</div>
+                    <div class="hud-online-list" id="hud-online-list-text">待機中...</div>
+                </div>
+                <button class="btn-zoom-toggle" id="btn-toggle-lens">🔄 1.0x / 0.5x</button>
+                <button class="btn-clear-slots" id="btn-clear-slots">🧹 CLEAR</button>
             </div>
         </div>
 
-        <!-- 右側セクション -->
+        <!-- 右側セクション（タップ切り替え式に戻す） -->
         <div class="hud-right">
-            <div class="hud-panel-title">スクショが表示されます</div>
+            <div class="hud-panel-title">SCOUTER INTERFACE</div>
             
             <!-- スロット群 -->
             <div class="hud-slot-list">
                 <div class="hud-slot-row" id="row-0">
                     <input type="tel" id="box-0" placeholder="01" maxlength="3">
-                    <div class="hud-slot-ans-zone" id="zone-0" data-index="0"><span class="no-img-text">VOID</span></div>
+                    <div class="hud-slot-ans-zone" id="zone-0" data-slot-index="0"></div>
                 </div>
                 <div class="hud-slot-row" id="row-1">
                     <input type="tel" id="box-1" placeholder="02" maxlength="3">
-                    <div class="hud-slot-ans-zone" id="zone-1" data-index="1"><span class="no-img-text">VOID</span></div>
+                    <div class="hud-slot-ans-zone" id="zone-1" data-slot-index="1"></div>
                 </div>
                 <div class="hud-slot-row" id="row-2">
                     <input type="tel" id="box-2" placeholder="03" maxlength="3">
-                    <div class="hud-slot-ans-zone" id="zone-2" data-index="2"><span class="no-img-text">VOID</span></div>
+                    <div class="hud-slot-ans-zone" id="zone-2" data-slot-index="2"></div>
                 </div>
                 <div class="hud-slot-row" id="row-3">
                     <input type="tel" id="box-3" placeholder="04" maxlength="3">
-                    <div class="hud-slot-ans-zone" id="zone-3" data-index="3"><span class="no-img-text">VOID</span></div>
+                    <div class="hud-slot-ans-zone" id="zone-3" data-slot-index="3"></div>
                 </div>
                 <div class="hud-slot-row" id="row-4">
                     <input type="tel" id="box-4" placeholder="05" maxlength="3">
-                    <div class="hud-slot-ans-zone" id="zone-4" data-index="4"><span class="no-img-text">VOID</span></div>
+                    <div class="hud-slot-ans-zone" id="zone-4" data-slot-index="4"></div>
                 </div>
             </div>
 
             <div class="hud-control-bottom">
                 <div class="stocks-counter" id="db-counter">STOCKS: 0</div>
                 <div class="shutter-grid">
-                    <button class="btn-shutter-target" id="shutter-target">ターゲット</button>
-                    <button class="btn-shutter-quest" id="shutter-quest">問題文</button>
+                    <button class="btn-shutter-target" id="shutter-target">🎯 TARGET</button>
+                    <button class="btn-shutter-quest" id="shutter-quest">📋 QUEST</button>
                 </div>
             </div>
         </div>
@@ -481,12 +469,13 @@
         const db = getFirestore(app);
 
         let localStream = null;
-        let allPhotosMap = {}; 
+        let globalPhotoMap = {}; 
         let unsubscribeRoom = null;
         let presenceInterval = null;
         let isUltraWideMode = true; 
 
-        let slotPatternIndexes = [0, 0, 0, 0, 0];
+        // 各スロットが現在P1, P2, P3のどれを表示しているかを管理する配列 (0=P1, 1=P2, 2=P3)
+        let slotViewModes = [0, 0, 0, 0, 0];
 
         const setupPhase = document.getElementById('setup-phase');
         const scanPhase = document.getElementById('scan-phase');
@@ -527,23 +516,590 @@
                 });
             });
 
-            ansZones.forEach((zone, idx) => {
-                zone.addEventListener('click', () => {
-                    const query = searchBoxes[idx].value.trim();
-                    if (!query || !allPhotosMap[query]) return;
-                    
-                    const imgList = allPhotosMap[query].croppedImgs || [];
-                    if (imgList.length <= 1) return;
-
-                    slotPatternIndexes[idx] = (slotPatternIndexes[idx] + 1) % imgList.length;
-                    executeSearch();
+            // 各スロットの表示領域をタップしたときの切り替えイベントを追加
+            ansZones.forEach((zone) => {
+                zone.addEventListener('click', (e) => {
+                    const idx = parseInt(zone.getAttribute('data-slot-index'));
+                    // 0 -> 1 -> 2 -> 0 のループ切り替え
+                    slotViewModes[idx] = (slotViewModes[idx] + 1) % 3;
+                    executeSearch(); // 画面再描画
                 });
             });
         }
 
         function clearAllSlots() {
             searchBoxes.forEach(box => box.value = "");
-            slotPatternIndexes = [0, 0, 0, 0, 0];
+            syncInputsToFirebase();
+            executeSearch();
+            showToast("SLOTS CLEARED");
+        }
+
+        async function startCameraEngine() {
+            setupPhase.style.display = 'none';
+            scanPhase.style.display = 'grid'; 
+
+            if(localStream) { localStream.getTracks().forEach(track => track.stop()); }
+
+            try {
+                const tempStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" }, audio: false });
+                const devices = await navigator.mediaDevices.enumerateDevices();
+                const videoDevices = devices.filter(device => device.kind === 'videoinput');
+                tempStream.getTracks().forEach(track => track.stop());
+
+                let targetDeviceId = null;
+                const backCameras = videoDevices.filter(d => 
+                    d.label.toLowerCase().includes('back') || d.label.toLowerCase().includes('rear') || 
+                    d.label.toLowerCase().includes('背面') || d.label.toLowerCase().includes('カメラ')
+                );
+
+                if (backCameras.length > 0) {
+                    if (isUltraWideMode) {
+                        const ultraWide = backCameras.find(d => 
+                            d.label.toLowerCase().includes('ultra') || d.label.toLowerCase().includes('0.5') ||
+                            d.label.toLowerCase().includes('super') || d.label.toLowerCase().includes('ウルトラ') ||
+                            d.label.toLowerCase().includes('超広角') || d.label.toLowerCase().includes('3')
+                        );
+                        targetDeviceId = ultraWide ? ultraWide.deviceId : (backCameras[1] ? backCameras[1].deviceId : backCameras[0].deviceId);
+                    } else {
+                        const standardLens = backCameras.find(d => d.label.toLowerCase().includes OCRスキャン時に既にスロットに入っている数字を除外するロジックを追加した、修正版のコードを作成しました。
+
+### ✨ 改善内容
+OCRで数字（QUESTモード）を検出した際、**「既にいずれかの入力スロットに存在する数字」は追加対象から自動的に除外**する強力なフィルターを追加しました。これにより、画像のように同じ「111」が2つのスロットに入ってしまうことは無くなります。
+
+以下のコードを丸ごとコピーして差し替えてください。
+
+```html
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>絶望要塞IG スカウターツール（重複入力防止版）</title>
+    <!-- Firebase SDK (v10) -->
+    <script type="importmap">
+      {
+        "imports": {
+          "firebase/app": "[https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js](https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js)",
+          "firebase/firestore": "[https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js](https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js)"
+        }
+      }
+    </script>
+    <style>
+        :root {
+            --bg-dark: #0a0e14;
+            --cyber-blue: #00e5ff;
+            --cyber-green: #39ff14;
+            --cyber-purple: #b57cff;
+            --cyber-red: #ff3333;
+            --cyber-orange: #ff9100;
+            --panel-bg: rgba(16, 23, 33, 0.95);
+            --panel-border: rgba(0, 229, 255, 0.2);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Courier New', Courier, monospace, "Helvetica Neue", Arial, sans-serif;
+            -webkit-user-select: none;
+            user-select: none;
+        }
+
+        body, html {
+            width: 100%;
+            height: 100%;
+            background-color: var(--bg-dark);
+            color: #e0e6ed;
+            overflow: hidden;
+        }
+
+        input[type="text"], input[type="password"], input[type="tel"] {
+            background: rgba(7, 13, 22, 0.9);
+            border: 1px solid var(--panel-border);
+            color: #fff;
+            padding: 10px;
+            border-radius: 4px;
+            font-size: 14px;
+            width: 100%;
+            outline: none;
+        }
+        input:focus {
+            border-color: var(--cyber-blue);
+        }
+
+        button {
+            cursor: pointer;
+            border: none;
+            border-radius: 4px;
+            font-weight: bold;
+            transition: all 0.2s;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        /* ==========================================================================
+           PHASE 1: 設定画面
+           ========================================================================= */
+        #setup-phase {
+            width: 100%;
+            height: 100%;
+            overflow-y: auto;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            justify-content: center;
+        }
+
+        h1 {
+            font-size: 20px;
+            text-align: center;
+            color: var(--cyber-blue);
+            text-shadow: 0 0 10px rgba(0,229,255,0.5);
+            padding: 10px 0;
+            border-bottom: 2px dashed var(--panel-border);
+        }
+
+        .config-box {
+            background: var(--panel-bg);
+            border: 1px solid var(--panel-border);
+            padding: 15px;
+            border-radius: 6px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+        .config-box label {
+            font-size: 12px;
+            color: #8cc8ff;
+            display: block;
+            margin-bottom: 4px;
+        }
+
+        .action-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 12px;
+        }
+
+        .btn-start-scan {
+            background: linear-gradient(135deg, #0077ff, var(--cyber-blue));
+            color: #fff;
+            padding: 16px;
+            font-size: 18px;
+            box-shadow: 0 0 15px rgba(0,229,255,0.4);
+        }
+
+        .btn-reset-system {
+            background: rgba(255, 51, 51, 0.1);
+            border: 1px solid var(--cyber-red);
+            color: var(--cyber-red);
+            padding: 12px;
+            font-size: 13px;
+        }
+
+        /* ==========================================================================
+           PHASE 2: 横画面HUD
+           ========================================================================= */
+        #scan-phase {
+            position: fixed;
+            top: 0; left: 0; width: 100vw; height: 100vh;
+            background: var(--bg-dark);
+            display: none;
+            z-index: 1000;
+            grid-template-columns: 1fr 320px;
+        }
+
+        .hud-left {
+            grid-column: 1;
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+            background: #05080c;
+        }
+
+        .finder-container {
+            width: 100%;
+            flex: 1;
+            position: relative;
+            background: #000;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        #camera-stream {
+            width: 100%;
+            height: 100%;
+            object-fit: contain; 
+        }
+
+        .hud-left-bottom-controls {
+            height: 60px;
+            background: rgba(10, 14, 20, 0.95);
+            border-top: 1px solid rgba(0, 229, 255, 0.3);
+            display: flex;
+            align-items: center;
+            padding: 0 15px;
+            gap: 10px;
+        }
+
+        .hud-online-users-box {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            background: rgba(0, 229, 255, 0.05);
+            border: 1px solid rgba(0, 229, 255, 0.2);
+            padding: 4px 10px;
+            border-radius: 4px;
+            height: 42px;
+            max-width: 200px;
+            min-width: 120px;
+            overflow: hidden;
+        }
+        .hud-online-title {
+            font-size: 8px;
+            color: var(--cyber-green);
+            font-weight: bold;
+            letter-spacing: 0.5px;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+        .hud-online-title::before {
+            content: ''; display: inline-block; width: 5px; height: 5px; 
+            background: var(--cyber-green); border-radius: 50%; box-shadow: 0 0 4px var(--cyber-green);
+        }
+        .hud-online-list {
+            font-size: 10px;
+            color: #ffffff;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            margin-top: 2px;
+        }
+
+        .btn-exit-icon, .btn-zoom-toggle, .btn-clear-slots {
+            height: 42px;
+            padding: 0 12px;
+            border-radius: 6px;
+            font-size: 12px;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 0 10px rgba(0,0,0,0.5);
+        }
+
+        .btn-exit-icon { background: rgba(255, 51, 51, 0.1); border: 1px solid var(--cyber-red); color: var(--cyber-red); }
+        .btn-exit-icon:active { background: var(--cyber-red); color: #fff; }
+
+        .btn-zoom-toggle { background: rgba(0, 229, 255, 0.1); border: 1px solid var(--cyber-blue); color: var(--cyber-blue); }
+        .btn-zoom-toggle:active { background: var(--cyber-blue); color: #000; }
+
+        .btn-clear-slots { background: rgba(255, 145, 0, 0.1); border: 1px solid var(--cyber-orange); color: var(--cyber-orange); margin-left: auto; }
+        .btn-clear-slots:active { background: var(--cyber-orange); color: #000; }
+
+        .hud-right {
+            grid-column: 2;
+            background: #0a0e14;
+            border-left: 2px solid rgba(0, 229, 255, 0.3);
+            display: flex;
+            flex-direction: column;
+            padding: 6px;
+            gap: 6px;
+            height: 100%;
+            overflow: hidden;
+        }
+
+        .hud-panel-title {
+            font-size: 10px;
+            color: #8cc8ff;
+            text-align: center;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+            padding-bottom: 2px;
+            font-weight: bold;
+            letter-spacing: 1px;
+        }
+
+        .hud-slot-list {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+        .hud-slot-row {
+            display: flex;
+            align-items: center;
+            background: rgba(20, 30, 45, 0.6);
+            border: 1px solid rgba(140, 200, 255, 0.2);
+            border-radius: 4px;
+            padding: 3px;
+            gap: 6px;
+            height: 52px;
+        }
+        .hud-slot-row.has-error { border-color: rgba(255, 51, 51, 0.4); background: rgba(255,0,0,0.05); }
+        
+        .hud-slot-row input {
+            width: 44px;
+            height: 32px;
+            padding: 2px;
+            font-size: 15px;
+            font-weight: bold;
+            text-align: center;
+            background: #000;
+            border-color: rgba(0,229,255,0.4);
+            color: var(--cyber-blue);
+        }
+        
+        .hud-slot-ans-zone {
+            flex: 1;
+            height: 100%;
+            background: rgba(0,0,0,0.4);
+            border-radius: 3px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            position: relative;
+            cursor: pointer;
+        }
+        .hud-slot-ans-zone img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+        }
+        .pane-label-badge {
+            position: absolute; top: 2px; left: 4px; font-size: 8px;
+            color: #fff; background: rgba(0, 229, 255, 0.7); 
+            padding: 1px 4px; border-radius: 2px; font-weight: bold; pointer-events: none;
+        }
+        
+        .void-text { font-size: 11px; color: #3a4b5c; font-weight: bold; pointer-events: none; }
+        .err-text { font-size: 11px; color: var(--cyber-red); font-weight: bold; pointer-events: none; }
+
+        .hud-control-bottom {
+            margin-top: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            padding-top: 4px;
+            border-top: 1px solid rgba(255,255,255,0.1);
+        }
+        .stocks-counter { font-size: 9px; color: #8cc8ff; font-weight: bold; text-align: center; }
+
+        .shutter-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 6px;
+        }
+
+        .btn-shutter-target {
+            padding: 10px 0; border-radius: 6px;
+            background: linear-gradient(180deg, #ffffff 0%, #b5e9ff 100%);
+            border: 2px solid var(--cyber-blue); color: #050b14; font-size: 12px; font-weight: 900;
+            box-shadow: 0 0 10px rgba(0,229,255,0.2);
+        }
+        .btn-shutter-target:active { background: var(--cyber-blue); color: #fff; transform: scale(0.95); }
+
+        .btn-shutter-quest {
+            padding: 10px 0; border-radius: 6px;
+            background: linear-gradient(180deg, #ffffff 0%, #e2c6ff 100%);
+            border: 2px solid var(--cyber-purple); color: #050b14; font-size: 12px; font-weight: 900;
+            box-shadow: 0 0 10px rgba(181,124,255,0.2);
+        }
+        .btn-shutter-quest:active { background: var(--cyber-purple); color: #fff; transform: scale(0.95); }
+        
+        .scan-dimmer {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0, 229, 255, 0.2); opacity: 0; pointer-events: none; z-index: 5;
+            transition: opacity 0.1s;
+        }
+        .scan-dimmer.active { opacity: 1; }
+
+        .toast-log {
+            position: absolute; left: 20px; bottom: 80px; background: rgba(0,0,0,0.85);
+            border-left: 3px solid var(--cyber-blue); padding: 8px 14px; font-size: 11px;
+            z-index: 20; pointer-events: none; opacity: 0; transition: all 0.2s;
+        }
+        .toast-log.show { opacity: 1; }
+
+        .camera-crosshair {
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            width: 30px; height: 30px; pointer-events: none; opacity: 0.3;
+        }
+        .camera-crosshair::before, .camera-crosshair::after { content: ''; position: absolute; background: white; }
+        .camera-crosshair::before { top: 14px; left: 0; width: 30px; height: 2px; }
+        .camera-crosshair::after { left: 14px; top: 0; width: 2px; height: 30px; }
+    </style>
+</head>
+<body>
+
+    <!-- PHASE 1: 設定画面 -->
+    <div id="setup-phase">
+        <h1>DESPAIR FORTRESS SCOUTER</h1>
+        <div class="config-box">
+            <div>
+                <label>ROOM ID:</label>
+                <input type="text" id="room-id" placeholder="team1">
+            </div>
+            <div>
+                <label>YOUR NAME:</label>
+                <input type="text" id="user-name" placeholder="プレイヤー名">
+            </div>
+            <div>
+                <label>GOOGLE VISION API PASS:</label>
+                <input type="password" id="api-key" placeholder="AIzaSy...">
+            </div>
+        </div>
+        <div class="action-grid">
+            <button class="btn-start-scan" id="btn-enter-scan">📷 スキャン画面を開始する</button>
+            <button class="btn-reset-system" id="btn-reset-all">ルーム全体のデータを完全リセット</button>
+        </div>
+    </div>
+
+    <!-- PHASE 2: 横画面スキャンHUD -->
+    <div id="scan-phase">
+        <div class="hud-left">
+            <div class="finder-container">
+                <video id="camera-stream" autoplay playsinline muted></video>
+                <div class="camera-crosshair"></div>
+                <div class="scan-dimmer" id="scan-indicator"></div>
+            </div>
+
+            <!-- 左下：操作パネル -->
+            <div class="hud-left-bottom-controls">
+                <button class="btn-exit-icon" id="btn-exit-scan">🚪 EXIT</button>
+                <div class="hud-online-users-box">
+                    <div class="hud-online-title">ONLINE USERS</div>
+                    <div class="hud-online-list" id="hud-online-list-text">待機中...</div>
+                </div>
+                <button class="btn-zoom-toggle" id="btn-toggle-lens">🔄 1.0x / 0.5x</button>
+                <button class="btn-clear-slots" id="btn-clear-slots">🧹 CLEAR</button>
+            </div>
+        </div>
+
+        <!-- 右側セクション（タップ切り替え式に戻す） -->
+        <div class="hud-right">
+            <div class="hud-panel-title">SCOUTER INTERFACE</div>
+            
+            <!-- スロット群 -->
+            <div class="hud-slot-list">
+                <div class="hud-slot-row" id="row-0">
+                    <input type="tel" id="box-0" placeholder="01" maxlength="3">
+                    <div class="hud-slot-ans-zone" id="zone-0" data-slot-index="0"></div>
+                </div>
+                <div class="hud-slot-row" id="row-1">
+                    <input type="tel" id="box-1" placeholder="02" maxlength="3">
+                    <div class="hud-slot-ans-zone" id="zone-1" data-slot-index="1"></div>
+                </div>
+                <div class="hud-slot-row" id="row-2">
+                    <input type="tel" id="box-2" placeholder="03" maxlength="3">
+                    <div class="hud-slot-ans-zone" id="zone-2" data-slot-index="2"></div>
+                </div>
+                <div class="hud-slot-row" id="row-3">
+                    <input type="tel" id="box-3" placeholder="04" maxlength="3">
+                    <div class="hud-slot-ans-zone" id="zone-3" data-slot-index="3"></div>
+                </div>
+                <div class="hud-slot-row" id="row-4">
+                    <input type="tel" id="box-4" placeholder="05" maxlength="3">
+                    <div class="hud-slot-ans-zone" id="zone-4" data-slot-index="4"></div>
+                </div>
+            </div>
+
+            <div class="hud-control-bottom">
+                <div class="stocks-counter" id="db-counter">STOCKS: 0</div>
+                <div class="shutter-grid">
+                    <button class="btn-shutter-target" id="shutter-target">🎯 TARGET</button>
+                    <button class="btn-shutter-quest" id="shutter-quest">📋 QUEST</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="toast-log" id="toast-log">SCANNING...</div>
+    </div>
+
+    <!-- 作業用隠しキャンバス -->
+    <canvas id="split-work-canvas" style="display:none;"></canvas>
+    <canvas id="capture-canvas" style="display:none;"></canvas>
+
+    <script type="module">
+        import { initializeApp } from "firebase/app";
+        import { getFirestore, doc, setDoc, onSnapshot } from "firebase/firestore";
+
+        const firebaseConfig = {
+            apiKey: "YOUR_FIREBASE_API_KEY",
+            authDomain: "YOUR_PROJECT.firebaseapp.com",
+            projectId: "YOUR_PROJECT_ID",
+            storageBucket: "YOUR_PROJECT.appspot.com",
+            messagingSenderId: "YOUR_SENDER_ID",
+            appId: "YOUR_APP_ID"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        let localStream = null;
+        let globalPhotoMap = {}; 
+        let unsubscribeRoom = null;
+        let presenceInterval = null;
+        let isUltraWideMode = true; 
+
+        // 各スロットが現在P1, P2, P3のどれを表示しているかを管理する配列 (0=P1, 1=P2, 2=P3)
+        let slotViewModes = [0, 0, 0, 0, 0];
+
+        const setupPhase = document.getElementById('setup-phase');
+        const scanPhase = document.getElementById('scan-phase');
+        const searchBoxes = [
+            document.getElementById('box-0'), document.getElementById('box-1'),
+            document.getElementById('box-2'), document.getElementById('box-3'),
+            document.getElementById('box-4')
+        ];
+        const ansZones = [
+            document.getElementById('zone-0'), document.getElementById('zone-1'),
+            document.getElementById('zone-2'), document.getElementById('zone-3'),
+            document.getElementById('zone-4')
+        ];
+
+        window.addEventListener('DOMContentLoaded', () => {
+            loadConfig();
+            initEventListeners();
+        });
+
+        function initEventListeners() {
+            document.getElementById('btn-enter-scan').addEventListener('click', () => { isUltraWideMode = true; startCameraEngine(); });
+            document.getElementById('btn-exit-scan').addEventListener('click', exitScanMode);
+            document.getElementById('btn-reset-all').addEventListener('click', resetSystem);
+            document.getElementById('btn-toggle-lens').addEventListener('click', toggleCameraLens);
+            document.getElementById('btn-clear-slots').addEventListener('click', clearAllSlots);
+
+            document.getElementById('shutter-target').addEventListener('click', () => processCaptureOCR("target"));
+            document.getElementById('shutter-quest').addEventListener('click', () => processCaptureOCR("question"));
+
+            ['room-id', 'user-name', 'api-key'].forEach(id => {
+                document.getElementById(id).addEventListener('input', saveConfig);
+            });
+
+            searchBoxes.forEach((box) => {
+                box.addEventListener('input', () => {
+                    syncInputsToFirebase();
+                    executeSearch();
+                });
+            });
+
+            // 各スロットの表示領域をタップしたときの切り替えイベントを追加
+            ansZones.forEach((zone) => {
+                zone.addEventListener('click', (e) => {
+                    const idx = parseInt(zone.getAttribute('data-slot-index'));
+                    // 0 -> 1 -> 2 -> 0 のループ切り替え
+                    slotViewModes[idx] = (slotViewModes[idx] + 1) % 3;
+                    executeSearch(); // 画面再描画
+                });
+            });
+        }
+
+        function clearAllSlots() {
+            searchBoxes.forEach(box => box.value = "");
             syncInputsToFirebase();
             executeSearch();
             showToast("SLOTS CLEARED");
@@ -618,7 +1174,6 @@
             setupPhase.style.display = 'flex';
         }
 
-        /* 📡 【修正】同期リスナー：ルーム情報が存在しない場合のフォールバックを安全に変更 */
         function startFirebaseRoomSync() {
             const roomId = document.getElementById('room-id').value.trim() || 'default_room';
             const user = document.getElementById('user-name').value.trim() || 'Unknown';
@@ -627,28 +1182,30 @@
             const reportPresence = async () => {
                 const rId = document.getElementById('room-id').value.trim() || 'default_room';
                 const uName = document.getElementById('user-name').value.trim() || 'Unknown';
-                try { await setDoc(doc(db, "rooms", rId), { members: { [uName]: Date.now() } }, { merge: true }); } catch(e){}
+                try {
+                    await setDoc(doc(db, "rooms", rId), { members: { [uName]: Date.now() } }, { merge: true });
+                } catch(e){}
             };
             reportPresence();
             presenceInterval = setInterval(reportPresence, 4000);
 
             unsubscribeRoom = onSnapshot(doc(db, "rooms", roomId), (snapshot) => {
                 if (!snapshot.exists()) {
-                    allPhotosMap = {}; 
+                    globalPhotoMap = {}; 
                     document.getElementById('db-counter').innerText = "STOCKS: 0"; 
                     executeSearch(); 
                     return;
                 }
                 const data = snapshot.data();
                 
-                // メンバーリスト同期
+                // オンラインユーザー名の更新
                 if (data.members) {
                     const now = Date.now();
                     const activeMembers = Object.keys(data.members).filter(name => (now - data.members[name]) < 10000);
-                    document.getElementById('member-list-text').innerText = `ONLINE: ${activeMembers.join(', ')}`;
+                    document.getElementById('hud-online-list-text').innerText = activeMembers.join(', ') || 'なし';
                 }
                 
-                // 検索スロットの数字同期（フォーカスが当たっていない入力欄だけ連動して更新）
+                // 検索スロットの数字同期
                 if (data.currentQueries) {
                     data.currentQueries.forEach((q, idx) => {
                         if (document.activeElement !== searchBoxes[idx]) { 
@@ -657,19 +1214,18 @@
                     });
                 }
                 
-                // 保存されている画像データマップの同期
+                // 全画像データの取得
                 if (data.photoMap) {
-                    allPhotosMap = data.photoMap;
-                    document.getElementById('db-counter').innerText = `STOCKS: ${Object.keys(allPhotosMap).length}`;
+                    globalPhotoMap = data.photoMap;
+                    document.getElementById('db-counter').innerText = `STOCKS: ${Object.keys(globalPhotoMap).length}`;
                 } else {
-                    allPhotosMap = {}; 
+                    globalPhotoMap = {}; 
                     document.getElementById('db-counter').innerText = "STOCKS: 0";
                 }
                 executeSearch();
             });
         }
 
-        /* 📡 【修正】安全な一元データ同期(setDoc merge版) */
         async function syncInputsToFirebase() {
             const roomId = document.getElementById('room-id').value.trim() || 'default_room';
             const queries = searchBoxes.map(b => b.value.trim());
@@ -708,7 +1264,7 @@
             fCtx.drawImage(workCanvas, halfW, 0, halfW, srcH, 0, srcH, halfW, srcH);
 
             const base64Image = finalCanvas.toDataURL('image/jpeg', 0.85).split(',')[1];
-            const url = `https://vision.googleapis.com/v1/images:annotate?key=${apiKey}`;
+            const url = `[https://vision.googleapis.com/v1/images:annotate?key=$](https://vision.googleapis.com/v1/images:annotate?key=$){apiKey}`;
             const requestBody = {
                 requests: [{
                     image: { content: base64Image },
@@ -763,10 +1319,11 @@
 
             if (numbersList.length === 0) { showToast("NO 3-DIGIT TARGETS"); return; }
 
-            const updates = {};
+            const roomId = document.getElementById('room-id').value.trim() || 'default_room';
             let matchCount = 0;
 
-            numbersList.forEach(numObj => {
+            const updates = {};
+            for (const numObj of numbersList) {
                 const verticalCandidates = genericBlocks.filter(b => {
                     const xDiff = Math.abs(numObj.cx - b.cx);
                     const yDiff = b.cy - numObj.cy;
@@ -792,57 +1349,60 @@
                 cropCanvas.width = 120; cropCanvas.height = 160;
                 const cCtx = cropCanvas.getContext('2d');
 
-                // 📸 パターン1: 以前のP3（1.35倍を標準ベース化）
+                // P1: 通常倍率
                 const cropX1 = Math.max(0, centerCx - (standardCropW / 2));
                 const cropY1 = Math.max(0, centerCy - (standardCropH / 2));
                 cCtx.clearRect(0,0,120,160);
                 cCtx.drawImage(originalCanvas, cropX1, cropY1, standardCropW, standardCropH, 0, 0, 120, 160);
-                const img1 = cropCanvas.toDataURL('image/jpeg', 0.65);
+                const img1 = cropCanvas.toDataURL('image/jpeg', 0.50);
 
-                // 📸 パターン2: さらに広め
+                // P2: 広域
                 const wideCropW = standardCropW * 1.25;
                 const wideCropH = standardCropH * 1.25;
                 const cropX2 = Math.max(0, centerCx - (wideCropW / 2));
                 const cropY2 = Math.max(0, centerCy - (wideCropH / 2));
                 cCtx.clearRect(0,0,120,160);
                 cCtx.drawImage(originalCanvas, cropX2, cropY2, wideCropW, wideCropH, 0, 0, 120, 160);
-                const img2 = cropCanvas.toDataURL('image/jpeg', 0.65);
+                const img2 = cropCanvas.toDataURL('image/jpeg', 0.50);
 
-                // 📸 パターン3: ジャストズーム
+                // P3: ズーム
                 const zoomCropW = standardCropW * 0.75;
                 const zoomCropH = standardCropH * 0.75;
                 const cropX3 = Math.max(0, centerCx - (zoomCropW / 2));
                 const cropY3 = Math.max(0, centerCy - (zoomCropH / 2));
                 cCtx.clearRect(0,0,120,160);
                 cCtx.drawImage(originalCanvas, cropX3, cropY3, zoomCropW, zoomCropH, 0, 0, 120, 160);
-                const img3 = cropCanvas.toDataURL('image/jpeg', 0.65);
+                const img3 = cropCanvas.toDataURL('image/jpeg', 0.50);
 
-                updates[numObj.text] = {
+                updates[`photoMap.${numObj.text}`] = {
                     croppedImgs: [img1, img2, img3],
                     timestamp: Date.now()
                 };
                 matchCount++;
-            });
+            }
 
             if (matchCount > 0) {
-                const roomId = document.getElementById('room-id').value.trim() || 'default_room';
-                const mergedMap = { ...allPhotosMap };
-                Object.keys(updates).forEach(num => { mergedMap[num] = updates[num]; });
                 try {
-                    // setDocのマージ機能で相手のスキャン結果と合成。確実な同期経路
-                    await setDoc(doc(db, "rooms", roomId), { photoMap: mergedMap }, { merge: true });
+                    await setDoc(doc(db, "rooms", roomId), updates, { merge: true });
                     showToast(`STOCKED: ${matchCount} UNITS`);
                 } catch (e) { showToast("SYNC ERROR"); }
             } else { showToast("MATCHING CRITERIA FAILED"); }
         }
 
+        /* 💡 QUESTモードの OCRスキャン：重複入力防止ロジック */
         async function analyzeQuestionModeAdvanced(annotations, halfW, srcH) {
             const fullList = annotations.slice(1);
             const foundNumbers = [];
             
+            // 🚨【新設】現在スロットに入っている数字をすべて取得してSetにする（チェック用）
+            const existingNumbers = new Set(searchBoxes.map(box => box.value.trim()));
+
             fullList.forEach(item => {
                 const text = item.description.trim();
                 if (/^\d{3}$/.test(text)) {
+                    // 🚨【重複フィルター】Setの中に既に存在する数字なら無視して次のループへ
+                    if (existingNumbers.has(text)) return;
+
                     const box = item.boundingPoly.vertices;
                     let cx = ((box[0]?.x ?? 0) + (box[2]?.x ?? 0)) / 2;
                     let cy = ((box[0]?.y ?? 0) + (box[2]?.y ?? 0)) / 2;
@@ -859,7 +1419,7 @@
                 showToast(`QUEST AUTOFILL: ${limit} SLOTS`);
                 syncInputsToFirebase();
                 executeSearch();
-            } else { showToast("NO NUMBERS DETECTED"); }
+            } else { showToast("NO NEW NUMBERS"); }
         }
 
         function executeSearch() {
@@ -869,31 +1429,24 @@
                 const rowDiv = document.getElementById('row-' + index);
 
                 if (!query) {
-                    zone.innerHTML = '<span class="no-img-text">VOID</span>';
+                    zone.innerHTML = '<span class="void-text">VOID</span>';
                     rowDiv.classList.remove('has-error');
                     return;
                 }
 
-                const foundMatch = allPhotosMap[query];
+                const foundMatch = globalPhotoMap[query];
                 
-                if (foundMatch) {
-                    const imgList = foundMatch.croppedImgs || (foundMatch.croppedImg ? [foundMatch.croppedImg] : []);
+                if (foundMatch && foundMatch.croppedImgs && foundMatch.croppedImgs.length >= 3) {
+                    // 現在このスロットが選択しているモード(0=P1, 1=P2, 2=P3)を取得
+                    const currentMode = slotViewModes[index];
+                    const labels = ["P1 (標準)", "P2 (広域)", "P3 (ズーム)"];
+                    const imgList = foundMatch.croppedImgs;
                     
-                    if (imgList.length > 0) {
-                        let pIdx = slotPatternIndexes[index] || 0;
-                        if (pIdx >= imgList.length) { pIdx = 0; slotPatternIndexes[index] = 0; }
-
-                        const currentImgData = imgList[pIdx];
-                        
-                        zone.innerHTML = `
-                            <img src="${currentImgData}">
-                            <div class="pattern-badge">P${pIdx + 1}/${imgList.length}</div>
-                        `;
-                        rowDiv.classList.remove('has-error');
-                    } else {
-                        zone.innerHTML = '<span class="err-text">NONE</span>';
-                        rowDiv.classList.add('has-error');
-                    }
+                    zone.innerHTML = `
+                        <span class="pane-label-badge">${labels[currentMode]}</span>
+                        <img src="${imgList[currentMode]}">
+                    `;
+                    rowDiv.classList.remove('has-error');
                 } else {
                     zone.innerHTML = '<span class="err-text">NONE</span>';
                     rowDiv.classList.add('has-error');
@@ -901,23 +1454,23 @@
             });
         }
 
-        /* 📡 【大修正】物理削除(deleteDoc)ではなく、空値での初期化書き込みに変更 */
         async function resetSystem() {
             if (!confirm("ルーム全体のデータとスロット内の数字を完全にリセットしますか？")) return;
             const roomId = document.getElementById('room-id').value.trim() || 'default_room';
             try {
-                // ローカル側の表示を先んじて空にする
                 searchBoxes.forEach(box => box.value = "");
-                slotPatternIndexes = [0, 0, 0, 0, 0];
-                allPhotosMap = {};
-
-                // ルーム全体を削除するのではなく「初期値」で上書きすることで
-                // 他の人のonSnapshotリスナーが切断されるのを防ぎつつ、全員の画面を綺麗に初期化
+                slotViewModes = [0, 0, 0, 0, 0];
+                
+                const now = Date.now();
+                const uName = document.getElementById('user-name').value.trim() || 'Unknown';
+                
+                // ドキュメントを完全上書きして過去のデータを消し去る
                 await setDoc(doc(db, "rooms", roomId), {
                     currentQueries: ["", "", "", "", ""],
-                    photoMap: {}
-                }, { merge: true });
+                    members: { [uName]: now }
+                }, { merge: false });
 
+                globalPhotoMap = {};
                 executeSearch();
                 showToast("ROOM & SLOTS RESET COMPLETE");
             } catch(e) {
