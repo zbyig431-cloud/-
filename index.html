@@ -2,272 +2,471 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>DESPAIR FORTRESS SCOUTER</title>
-    
-    <!-- Google Fonts & Tailwind CSS for modern Scouter UI -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Orbitron:wght@400;700&display=swap" rel="stylesheet">
-    
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>トワもんGemini</title>
     <!-- Firebase SDK (v10) -->
-    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
-
+    <script type="importmap">
+      {
+        "imports": {
+          "firebase/app": "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js",
+          "firebase/firestore": "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js"
+        }
+      }
+    </script>
     <style>
         :root {
-            --scouter-cyan: #00f0ff;
-            --scouter-bg: #030712;
-            --scouter-panel: rgba(17, 24, 39, 0.8);
-            --scouter-green: #00ff66;
-            --scouter-red: #ff3b30;
+            --bg-dark: #0a0e14;
+            --cyber-blue: #00e5ff;
+            --cyber-green: #39ff14;
+            --cyber-purple: #b57cff;
+            --cyber-red: #ff3333;
+            --cyber-orange: #ff9100;
+            --panel-bg: rgba(16, 23, 33, 0.95);
+            --panel-border: rgba(0, 229, 255, 0.2);
         }
 
-        body {
-            font-family: 'Share Tech Mono', 'Orbitron', monospace;
-            background-color: var(--scouter-bg);
-            color: var(--scouter-cyan);
-            overflow-x: hidden;
-            user-select: none;
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Courier New', Courier, monospace, "Helvetica Neue", Arial, sans-serif;
             -webkit-user-select: none;
+            user-select: none;
         }
 
-        /* SF風スキャンラインアニメーション */
-        .scanline {
+        body, html {
             width: 100%;
-            height: 100px;
-            background: linear-gradient(
-                to bottom,
-                rgba(0, 240, 255, 0),
-                rgba(0, 240, 255, 0.08) 50%,
-                rgba(0, 240, 255, 0)
-            );
-            position: absolute;
-            animation: scan 6s linear infinite;
-            pointer-events: none;
-            z-index: 50;
+            height: 100%;
+            background-color: var(--bg-dark);
+            color: #e0e6ed;
+            overflow: hidden;
         }
 
-        @keyframes scan {
-            0% { top: -100px; }
-            100% { top: 100%; }
+        input[type="text"], input[type="password"], input[type="tel"] {
+            background: rgba(7, 13, 22, 0.9);
+            border: 1px solid var(--panel-border);
+            color: #fff;
+            padding: 10px;
+            border-radius: 4px;
+            font-size: 14px;
+            width: 100%;
+            outline: none;
+        }
+        input:focus {
+            border-color: var(--cyber-blue);
         }
 
-        .neon-border {
-            box-shadow: 0 0 15px rgba(0, 240, 255, 0.3);
-            border: 1px solid var(--scouter-cyan);
+        button {
+            cursor: pointer;
+            border: none;
+            border-radius: 4px;
+            font-weight: bold;
+            transition: all 0.2s;
+            text-transform: uppercase;
+            letter-spacing: 1px;
         }
 
-        .neon-text {
-            text-shadow: 0 0 8px rgba(0, 240, 255, 0.6);
+        /* ==========================================================================
+           PHASE 1: 設定画面
+           ========================================================================= */
+        #setup-phase {
+            width: 100%;
+            height: 100%;
+            overflow-y: auto;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
         }
 
-        /* スキャン画面左下のオンライン表示デザイン */
-        .scannerview-status {
+        h1 {
+            font-size: 20px;
+            text-align: center;
+            color: var(--cyber-blue);
+            text-shadow: 0 0 10px rgba(0,229,255,0.5);
+            padding: 10px 0;
+            border-bottom: 2px dashed var(--panel-border);
+        }
+
+        .member-status-bar {
+            background: rgba(0, 229, 255, 0.05);
+            border: 1px solid var(--panel-border);
+            padding: 10px;
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 12px;
+        }
+        .online-dot {
+            width: 8px;
+            height: 8px;
+            background-color: var(--cyber-green);
+            border-radius: 50%;
+            box-shadow: 0 0 8px var(--cyber-green);
+        }
+
+        .config-box {
+            background: var(--panel-bg);
+            border: 1px solid var(--panel-border);
+            padding: 15px;
+            border-radius: 6px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+        .config-box label {
+            font-size: 12px;
+            color: #8cc8ff;
+            display: block;
+            margin-bottom: 4px;
+        }
+
+        .action-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 12px;
+        }
+
+        .btn-start-scan {
+            background: linear-gradient(135deg, #0077ff, var(--cyber-blue));
+            color: #fff;
+            padding: 16px;
+            font-size: 18px;
+            box-shadow: 0 0 15px rgba(0,229,255,0.4);
+        }
+
+        .btn-reset-system {
+            background: rgba(255, 51, 51, 0.1);
+            border: 1px solid var(--cyber-red);
+            color: var(--cyber-red);
+            padding: 12px;
+            font-size: 13px;
+        }
+
+        /* ==========================================================================
+           PHASE 2: 横画面HUD
+           ========================================================================= */
+        #scan-phase {
+            position: fixed;
+            top: 0; left: 0; width: 100vw; height: 100vh;
+            background: var(--bg-dark);
+            display: none;
+            z-index: 1000;
+            grid-template-columns: 1fr 300px;
+        }
+
+        .hud-left {
+            grid-column: 1;
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+            background: #05080c;
+        }
+
+        .finder-container {
+            width: 100%;
+            flex: 1;
+            position: relative;
+            background: #000;
+            overflow: hidden;
             display: flex;
             align-items: center;
             justify-content: center;
-            background: rgba(0, 0, 0, 0.7);
-            border: 1px solid var(--scouter-cyan);
-            border-radius: 4px;
-            padding: 6px 10px;
-            font-size: 11px;
-            color: var(--scouter-cyan);
-            font-family: 'Share Tech Mono', monospace;
-            min-width: 110px;
-            height: 44px;
-            box-sizing: border-box;
-            text-transform: uppercase;
         }
 
-        /* 緑のちかちかインジケーター */
-        .status-indicator {
-            width: 8px;
-            height: 8px;
-            background-color: var(--scouter-green);
-            border-radius: 50%;
-            margin-right: 8px;
-            box-shadow: 0 0 8px var(--scouter-green);
-            animation: blink 2s infinite;
-            flex-shrink: 0;
+        #camera-stream {
+            width: 100%;
+            height: 100%;
+            object-fit: contain; 
         }
 
-        @keyframes blink {
-            0% { opacity: 0.4; }
-            50% { opacity: 1; }
-            100% { opacity: 0.4; }
-        }
-
-        /* コントロール周りのボタンスタイル */
-        .control-btn {
-            background: rgba(0, 0, 0, 0.6);
-            border: 1px solid var(--scouter-cyan);
-            color: var(--scouter-cyan);
-            border-radius: 4px;
-            height: 44px;
-            min-width: 65px;
-            font-size: 13px;
-            font-weight: bold;
-            transition: all 0.2s;
-        }
-
-        .control-btn:active {
-            background: var(--scouter-cyan);
-            color: #000;
-        }
-
-        .control-row {
+        /* 左下コントロールパネル */
+        .hud-left-bottom-controls {
+            height: 60px;
+            background: rgba(10, 14, 20, 0.95);
+            border-top: 1px solid rgba(0, 229, 255, 0.3);
             display: flex;
             align-items: center;
-            justify-content: space-between;
-            width: 100%;
-            gap: 8px;
+            padding: 0 15px;
+            gap: 10px;
         }
 
-        /* スロット画像の枠線効果 */
-        .slot-img-container {
-            border: 1px solid rgba(0, 240, 255, 0.3);
-            transition: all 0.3s;
+        .btn-exit-icon, .btn-zoom-toggle, .btn-clear-slots {
+            height: 42px;
+            padding: 0 15px;
+            border-radius: 6px;
+            font-size: 13px;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 0 10px rgba(0,0,0,0.5);
         }
 
-        .slot-img-container.active {
-            border-color: var(--scouter-green);
-            box-shadow: 0 0 10px rgba(0, 255, 102, 0.4);
+        .btn-exit-icon {
+            background: rgba(255, 51, 51, 0.1);
+            border: 1px solid var(--cyber-red);
+            color: var(--cyber-red);
         }
+        .btn-exit-icon:active { background: var(--cyber-red); color: #fff; }
+
+        .btn-zoom-toggle {
+            background: rgba(0, 229, 255, 0.1);
+            border: 1px solid var(--cyber-blue);
+            color: var(--cyber-blue);
+        }
+        .btn-zoom-toggle:active { background: var(--cyber-blue); color: #000; }
+
+        .btn-clear-slots {
+            background: rgba(255, 145, 0, 0.1);
+            border: 1px solid var(--cyber-orange);
+            color: var(--cyber-orange);
+            margin-left: auto;
+        }
+        .btn-clear-slots:active { background: var(--cyber-orange); color: #000; }
+
+        /* 右側：完全情報・操作パネルエリア */
+        .hud-right {
+            grid-column: 2;
+            background: #0a0e14;
+            border-left: 2px solid rgba(0, 229, 255, 0.3);
+            display: flex;
+            flex-direction: column;
+            padding: 6px;
+            gap: 6px;
+            height: 100%;
+            overflow: hidden;
+        }
+
+        .hud-panel-title {
+            font-size: 10px;
+            color: #8cc8ff;
+            text-align: center;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+            padding-bottom: 2px;
+            font-weight: bold;
+            letter-spacing: 1px;
+        }
+
+        .hud-slot-list {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+        .hud-slot-row {
+            display: flex;
+            align-items: center;
+            background: rgba(20, 30, 45, 0.6);
+            border: 1px solid rgba(140, 200, 255, 0.2);
+            border-radius: 4px;
+            padding: 3px;
+            gap: 6px;
+            height: 52px;
+        }
+        .hud-slot-row.has-error { border-color: rgba(255, 51, 51, 0.4); background: rgba(255,0,0,0.05); }
+        
+        .hud-slot-row input {
+            width: 44px;
+            height: 32px;
+            padding: 2px;
+            font-size: 15px;
+            font-weight: bold;
+            text-align: center;
+            background: #000;
+            border-color: rgba(0,229,255,0.4);
+            color: var(--cyber-blue);
+        }
+        
+        .hud-slot-ans-zone {
+            flex: 1;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            border-radius: 3px;
+            overflow: hidden;
+            display: flex !important; /* 3枚並びレイアウトを強制適用 */
+            justify-content: space-around; /* 3枚を均等に配置 */
+            align-items: center;
+            border: 1px solid rgba(255,255,255,0.08);
+            position: relative;
+            cursor: pointer;
+            gap: 3px;
+            padding: 2px;
+        }
+        .hud-slot-ans-zone img {
+            width: 31% !important; /* 横に3つ並ぶよう均等サイズに調整 */
+            height: auto !important;
+            max-height: 100% !important;
+            object-fit: contain;
+            border: 1px solid rgba(0, 229, 255, 0.4);
+            border-radius: 3px;
+        }
+        .hud-slot-ans-zone .no-img-text { font-size: 10px; color: #445566; font-weight: bold; margin: auto; }
+        .hud-slot-ans-zone .err-text { font-size: 10px; color: var(--cyber-red); font-weight: bold; margin: auto; }
+        
+        /* タップ切り替えが不要になったため、パターンバッジは非表示にします */
+        .pattern-badge {
+            display: none !important;
+        }
+
+        .hud-control-bottom {
+            margin-top: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            padding-top: 4px;
+            border-top: 1px solid rgba(255,255,255,0.1);
+        }
+        .stocks-counter { font-size: 9px; color: #8cc8ff; font-weight: bold; text-align: center; }
+
+        .shutter-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 6px;
+        }
+
+        .btn-shutter-target {
+            padding: 10px 0;
+            border-radius: 6px;
+            background: linear-gradient(180deg, #ffffff 0%, #b5e9ff 100%);
+            border: 2px solid var(--cyber-blue);
+            color: #050b14;
+            font-size: 12px;
+            font-weight: 900;
+            box-shadow: 0 0 10px rgba(0,229,255,0.2);
+        }
+        .btn-shutter-target:active { background: var(--cyber-blue); color: #fff; transform: scale(0.95); }
+
+        .btn-shutter-quest {
+            padding: 10px 0;
+            border-radius: 6px;
+            background: linear-gradient(180deg, #ffffff 0%, #e2c6ff 100%);
+            border: 2px solid var(--cyber-purple);
+            color: #050b14;
+            font-size: 12px;
+            font-weight: 900;
+            box-shadow: 0 0 10px rgba(181,124,255,0.2);
+        }
+        .btn-shutter-quest:active { background: var(--cyber-purple); color: #fff; transform: scale(0.95); }
+        
+        .scan-dimmer {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0, 229, 255, 0.2); opacity: 0; pointer-events: none; z-index: 5;
+            transition: opacity 0.1s;
+        }
+        .scan-dimmer.active { opacity: 1; }
+
+        .toast-log {
+            position: absolute; left: 20px; bottom: 80px; background: rgba(0,0,0,0.85);
+            border-left: 3px solid var(--cyber-blue); padding: 8px 14px; font-size: 11px;
+            z-index: 20; pointer-events: none; opacity: 0; transition: all 0.2s;
+        }
+        .toast-log.show { opacity: 1; }
+
+        .camera-crosshair {
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            width: 30px; height: 30px; pointer-events: none; opacity: 0.3;
+        }
+        .camera-crosshair::before, .camera-crosshair::after { content: ''; position: absolute; background: white; }
+        .camera-crosshair::before { top: 14px; left: 0; width: 30px; height: 2px; }
+        .camera-crosshair::after { left: 14px; top: 0; width: 2px; height: 30px; }
     </style>
 </head>
-<body class="min-h-screen flex flex-col justify-between p-4 relative">
-    <div class="scanline"></div>
+<body>
 
-    <!-- ================= HOME SCREEN ================= -->
-    <div id="home-screen" class="flex-grow flex flex-col justify-between py-6 z-10">
-        <header class="text-center">
-            <h1 class="text-2xl font-bold tracking-widest neon-text mb-1">DESPAIR FORTRESS SCOUTER</h1>
-            <div class="w-full h-0.5 bg-gradient-to-r from-transparent via-[#00f0ff] to-transparent my-4"></div>
-        </header>
-
-        <!-- 設定パネル -->
-        <main class="flex-grow flex flex-col justify-center max-w-md mx-auto w-full px-4">
-            <div class="bg-[rgba(17,24,39,0.8)] p-6 rounded-lg neon-border space-y-5">
-                <!-- ルームID設定 -->
-                <div>
-                    <label class="block text-xs uppercase tracking-wider mb-2 text-cyan-400">Room ID:</label>
-                    <input type="text" id="room-id-input" class="w-full bg-slate-900 border border-cyan-800 rounded px-3 py-2 text-cyan-200 focus:outline-none focus:border-cyan-400 font-mono" placeholder="例: 123456" value="123456">
-                </div>
-
-                <!-- ユーザーネーム設定 -->
-                <div>
-                    <label class="block text-xs uppercase tracking-wider mb-2 text-cyan-400">Your Name:</label>
-                    <input type="text" id="username-input" class="w-full bg-slate-900 border border-cyan-800 rounded px-3 py-2 text-cyan-200 focus:outline-none focus:border-cyan-400" placeholder="例: トワもん" value="トワもん">
-                </div>
-
-                <!-- Google Cloud Vision API キー（パスワード） -->
-                <div>
-                    <label class="block text-xs uppercase tracking-wider mb-2 text-cyan-400 font-mono">Google Vision API Pass:</label>
-                    <input type="password" id="vision-api-key-input" class="w-full bg-slate-900 border border-cyan-800 rounded px-3 py-2 text-cyan-200 focus:outline-none focus:border-cyan-400" placeholder="APIキーを入力してください" value="AIzaSyAqjlpWIPNCQVJqVnl_M4Orm3gZrnCULfM">
-                </div>
-            </div>
-        </main>
-
-        <!-- アクションボタン群 -->
-        <footer class="max-w-md mx-auto w-full px-4 space-y-3">
-            <button id="start-btn" class="w-full bg-gradient-to-r from-cyan-500 to-blue-600 text-black font-bold py-4 px-6 rounded-lg text-lg uppercase tracking-wider shadow-[0_0_15px_rgba(6,182,212,0.4)] transition-all active:scale-95 flex items-center justify-center gap-2">
-                📸 スキャン画面を開始する
-            </button>
-            <button id="reset-room-btn" class="w-full bg-transparent hover:bg-red-950/20 text-red-500 border border-red-900 font-bold py-3 px-6 rounded-lg text-sm tracking-wider transition-all active:scale-95">
-                ルーム全体のデータを完全リセット
-            </button>
-        </footer>
-    </div>
-
-    <!-- ================= SCANNER SCREEN ================= -->
-    <div id="scanner-screen" class="hidden fixed inset-0 z-20 flex flex-col justify-between bg-black">
-        <!-- 上部カメラフィードエリア -->
-        <div class="relative flex-grow w-full bg-zinc-950 overflow-hidden flex items-center justify-center">
-            <video id="video" class="absolute w-full h-full object-cover" autoplay playsinline muted></video>
-            <canvas id="canvas" class="hidden"></canvas>
-
-            <!-- スカウターの枠線オーバーレイ -->
-            <div class="absolute inset-4 border border-cyan-500/20 pointer-events-none flex flex-col justify-between p-2">
-                <div class="flex justify-between">
-                    <div class="w-6 h-6 border-t-2 border-l-2 border-cyan-400"></div>
-                    <div class="w-6 h-6 border-t-2 border-r-2 border-cyan-400"></div>
-                </div>
-                <!-- ターゲット照準器（中央中央に配置） -->
-                <div class="self-center w-40 h-20 border-2 border-dashed border-red-500/40 rounded flex items-center justify-center relative">
-                    <span class="absolute text-[9px] text-red-500/60 font-mono -top-5">ALIGN TARGET HERE</span>
-                </div>
-                <div class="flex justify-between">
-                    <div class="w-6 h-6 border-b-2 border-l-2 border-cyan-400"></div>
-                    <div class="w-6 h-6 border-b-2 border-r-2 border-cyan-400"></div>
-                </div>
-            </div>
-
-            <!-- スキャン撮影ボタン（映像の右中央に重ねて配置） -->
-            <button id="capture-btn" class="absolute right-6 top-1/2 -translate-y-1/2 w-16 h-16 bg-red-600/80 active:bg-red-500 border-4 border-white rounded-full shadow-lg flex items-center justify-center z-30 transition-all active:scale-90">
-                <span class="text-white text-[10px] font-bold tracking-wider font-mono">SCAN</span>
-            </button>
+    <!-- PHASE 1: 設定画面 -->
+    <div id="setup-phase">
+        <h1>DESPAIR FORTRESS SCOUTER</h1>
+        <div class="member-status-bar">
+            <span class="online-dot"></span>
+            <span id="member-list-text">ONLINE: 待機中...</span>
         </div>
-
-        <!-- 下部コントロールパネル（入力・オンライン状態・クリア・データベース表示） -->
-        <div class="bg-slate-950 p-3 space-y-3 border-t border-cyan-900/50">
-            <!-- 1. 操作・表示統合行（スキャン画面左下） -->
-            <div class="control-row">
-                <!-- 左側：倍率調整ボタン -->
-                <button id="zoom-btn" class="control-btn">1.0x</button>
-
-                <!-- 【引っ越し＆新規設計】中央：オンラインメンバー表示 -->
-                <div id="online-status" class="scannerview-status">
-                    <span class="status-indicator"></span>
-                    <span id="online-text">待機中...</span>
-                </div>
-
-                <!-- 右側：スロットクリアボタン -->
-                <button id="clear-btn" class="control-btn">クリア</button>
+        <div class="config-box">
+            <div>
+                <label>ROOM ID:</label>
+                <input type="text" id="room-id" placeholder="team1">
             </div>
-
-            <!-- 2. 手動入力 ＆ リアルタイム同期スロット -->
-            <div class="grid grid-cols-3 gap-2">
-                <!-- スロット1 -->
-                <div class="bg-slate-900/80 p-2 rounded border border-cyan-950 flex flex-col items-center">
-                    <span class="text-[9px] text-cyan-600 font-mono">SLOT 01</span>
-                    <input type="text" id="slot-1-input" class="w-full text-center bg-black border border-cyan-900/50 rounded py-1 text-sm text-cyan-300 font-mono focus:outline-none focus:border-cyan-400" placeholder="---">
-                    <div id="slot-1-img-container" class="slot-img-container mt-1.5 w-full aspect-video bg-black flex items-center justify-center overflow-hidden rounded">
-                        <span class="text-[9px] text-zinc-700 font-mono">NO IMAGE</span>
-                    </div>
-                </div>
-
-                <!-- スロット2 -->
-                <div class="bg-slate-900/80 p-2 rounded border border-cyan-950 flex flex-col items-center">
-                    <span class="text-[9px] text-cyan-600 font-mono">SLOT 02</span>
-                    <input type="text" id="slot-2-input" class="w-full text-center bg-black border border-cyan-900/50 rounded py-1 text-sm text-cyan-300 font-mono focus:outline-none focus:border-cyan-400" placeholder="---">
-                    <div id="slot-2-img-container" class="slot-img-container mt-1.5 w-full aspect-video bg-black flex items-center justify-center overflow-hidden rounded">
-                        <span class="text-[9px] text-zinc-700 font-mono">NO IMAGE</span>
-                    </div>
-                </div>
-
-                <!-- スロット3 -->
-                <div class="bg-slate-900/80 p-2 rounded border border-cyan-950 flex flex-col items-center">
-                    <span class="text-[9px] text-cyan-600 font-mono">SLOT 03</span>
-                    <input type="text" id="slot-3-input" class="w-full text-center bg-black border border-cyan-900/50 rounded py-1 text-sm text-cyan-300 font-mono focus:outline-none focus:border-cyan-400" placeholder="---">
-                    <div id="slot-3-img-container" class="slot-img-container mt-1.5 w-full aspect-video bg-black flex items-center justify-center overflow-hidden rounded">
-                        <span class="text-[9px] text-zinc-700 font-mono">NO IMAGE</span>
-                    </div>
-                </div>
+            <div>
+                <label>YOUR NAME:</label>
+                <input type="text" id="user-name" placeholder="プレイヤー名">
             </div>
-
-            <!-- ホームへ戻る -->
-            <button id="back-to-home-btn" class="w-full py-2 bg-slate-900 hover:bg-slate-800 text-cyan-500 border border-cyan-950 rounded text-xs tracking-wider uppercase font-mono transition-all">
-                ◀ Setup Configuration Screen
-            </button>
+            <div>
+                <label>GOOGLE VISION API PASS:</label>
+                <input type="password" id="api-key" placeholder="AIzaSy...">
+            </div>
+        </div>
+        <div class="action-grid">
+            <button class="btn-start-scan" id="btn-enter-scan">📷 スキャン画面を開始する</button>
+            <button class="btn-reset-system" id="btn-reset-all">ルーム全体のデータを完全リセット</button>
         </div>
     </div>
 
-    <!-- ================= JAVASCRIPT ================= -->
-    <script>
-        // ==========================================
-        // 🔴【超重要】Firebaseの「本物の設定値」
-        // ==========================================
-        const firebaseConfig = {
+    <!-- PHASE 2: 横画面スキャンHUD -->
+    <div id="scan-phase">
+        <div class="hud-left">
+            <div class="finder-container">
+                <video id="camera-stream" autoplay playsinline muted></video>
+                <div class="camera-crosshair"></div>
+                <div class="scan-dimmer" id="scan-indicator"></div>
+            </div>
+
+            <!-- 左下：操作パネル -->
+            <div class="hud-left-bottom-controls">
+                <button class="btn-exit-icon" id="btn-exit-scan">ホームへ</button>
+                <button class="btn-zoom-toggle" id="btn-toggle-lens">倍率変更</button>
+                <button class="btn-clear-slots" id="btn-clear-slots">クリア</button>
+            </div>
+        </div>
+
+        <!-- 右側セクション -->
+        <div class="hud-right">
+            <div class="hud-panel-title">スクショが表示されます</div>
+            
+            <!-- スロット群 -->
+            <div class="hud-slot-list">
+                <div class="hud-slot-row" id="row-0">
+                    <input type="tel" id="box-0" placeholder="01" maxlength="3">
+                    <div class="hud-slot-ans-zone" id="zone-0" data-index="0"><span class="no-img-text">VOID</span></div>
+                </div>
+                <div class="hud-slot-row" id="row-1">
+                    <input type="tel" id="box-1" placeholder="02" maxlength="3">
+                    <div class="hud-slot-ans-zone" id="zone-1" data-index="1"><span class="no-img-text">VOID</span></div>
+                </div>
+                <div class="hud-slot-row" id="row-2">
+                    <input type="tel" id="box-2" placeholder="03" maxlength="3">
+                    <div class="hud-slot-ans-zone" id="zone-2" data-index="2"><span class="no-img-text">VOID</span></div>
+                </div>
+                <div class="hud-slot-row" id="row-3">
+                    <input type="tel" id="box-3" placeholder="04" maxlength="3">
+                    <div class="hud-slot-ans-zone" id="zone-3" data-index="3"><span class="no-img-text">VOID</span></div>
+                </div>
+                <div class="hud-slot-row" id="row-4">
+                    <input type="tel" id="box-4" placeholder="05" maxlength="3">
+                    <div class="hud-slot-ans-zone" id="zone-4" data-index="4"><span class="no-img-text">VOID</span></div>
+                </div>
+            </div>
+
+            <div class="hud-control-bottom">
+                <div class="stocks-counter" id="db-counter">STOCKS: 0</div>
+                <div class="shutter-grid">
+                    <button class="btn-shutter-target" id="shutter-target">ターゲット</button>
+                    <button class="btn-shutter-quest" id="shutter-quest">問題文</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="toast-log" id="toast-log">SCANNING...</div>
+    </div>
+
+    <!-- 作業用隠しキャンバス -->
+    <canvas id="split-work-canvas" style="display:none;"></canvas>
+    <canvas id="capture-canvas" style="display:none;"></canvas>
+
+    <script type="module">
+        import { initializeApp } from "firebase/app";
+        import { getFirestore, doc, setDoc, onSnapshot } from "firebase/firestore";
+
+　　　　const firebaseConfig = {
             apiKey: "AIzaSyAqjlpWIPNCQVJqVnl_M4Orm3gZrnCULfM",
             authDomain: "tmon-gemini.firebaseapp.com",
             projectId: "tmon-gemini",
@@ -276,363 +475,461 @@
             appId: "1:90913647133:web:10185c7981f69e10f95c34"
         };
 
-        // Initialize Firebase Compat
-        firebase.initializeApp(firebaseConfig);
-        const db = firebase.firestore();
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
 
-        // Application State Variables
         let localStream = null;
-        let currentRoomId = '123456';
-        let currentUsername = 'トワもん';
+        let allPhotosMap = {}; 
         let unsubscribeRoom = null;
-        let currentZoomLevel = 1.0;
-        let activeTracks = [];
+        let presenceInterval = null;
+        let isUltraWideMode = true; 
 
-        // DOM elements
-        const homeScreen = document.getElementById('home-screen');
-        const scannerScreen = document.getElementById('scanner-screen');
-        const roomIdInput = document.getElementById('room-id-input');
-        const usernameInput = document.getElementById('username-input');
-        const visionApiKeyInput = document.getElementById('vision-api-key-input');
-        
-        const startBtn = document.getElementById('start-btn');
-        const resetRoomBtn = document.getElementById('reset-room-btn');
-        const backToHomeBtn = document.getElementById('back-to-home-btn');
-        
-        const video = document.getElementById('video');
-        const canvas = document.getElementById('canvas');
-        const captureBtn = document.getElementById('capture-btn');
-        const zoomBtn = document.getElementById('zoom-btn');
-        const clearBtn = document.getElementById('clear-btn');
-        
-        const onlineText = document.getElementById('online-text');
+        let slotPatternIndexes = [0, 0, 0, 0, 0];
 
-        const slotInputs = [
-            document.getElementById('slot-1-input'),
-            document.getElementById('slot-2-input'),
-            document.getElementById('slot-3-input')
+        const setupPhase = document.getElementById('setup-phase');
+        const scanPhase = document.getElementById('scan-phase');
+        const searchBoxes = [
+            document.getElementById('box-0'), document.getElementById('box-1'),
+            document.getElementById('box-2'), document.getElementById('box-3'),
+            document.getElementById('box-4')
         ];
-        const slotContainers = [
-            document.getElementById('slot-1-img-container'),
-            document.getElementById('slot-2-img-container'),
-            document.getElementById('slot-3-img-container')
+        const ansZones = [
+            document.getElementById('zone-0'), document.getElementById('zone-1'),
+            document.getElementById('zone-2'), document.getElementById('zone-3'),
+            document.getElementById('zone-4')
         ];
 
-        // ================= EVENT LISTENERS =================
-
-        // 1. スキャン画面の起動
-        startBtn.addEventListener('click', async () => {
-            currentRoomId = roomIdInput.value.trim() || 'default-room';
-            currentUsername = usernameInput.value.trim() || 'No Name';
-            
-            homeScreen.classList.add('hidden');
-            scannerScreen.classList.remove('hidden');
-            
-            await startCamera();
-            startFirebaseRoomSync();
+        window.addEventListener('DOMContentLoaded', () => {
+            loadConfig();
+            initEventListeners();
         });
 
-        // 2. 設定（セットアップ）画面へ戻る
-        backToHomeBtn.addEventListener('click', () => {
-            stopCamera();
-            if (unsubscribeRoom) {
-                unsubscribeRoom();
-                unsubscribeRoom = null;
-            }
-            
-            // Firebaseからローカルメンバー存在データを削除
-            db.collection('rooms').doc(currentRoomId).collection('members').doc(currentUsername).delete();
+        function initEventListeners() {
+            document.getElementById('btn-enter-scan').addEventListener('click', () => { isUltraWideMode = true; startCameraEngine(); });
+            document.getElementById('btn-exit-scan').addEventListener('click', exitScanMode);
+            document.getElementById('btn-reset-all').addEventListener('click', resetSystem);
+            document.getElementById('btn-toggle-lens').addEventListener('click', toggleCameraLens);
+            document.getElementById('btn-clear-slots').addEventListener('click', clearAllSlots);
 
-            scannerScreen.classList.add('hidden');
-            homeScreen.classList.remove('hidden');
-        });
+            document.getElementById('shutter-target').addEventListener('click', () => processCaptureOCR("target"));
+            document.getElementById('shutter-quest').addEventListener('click', () => processCaptureOCR("question"));
 
-        // 3. ルームデータ完全リセット
-        resetRoomBtn.addEventListener('click', async () => {
-            const rid = roomIdInput.value.trim() || '123456';
-            if (confirm(`ルームID [${rid}] の画像データ・スロット・メンバーデータをすべて削除して初期化しますか？`)) {
-                try {
-                    const roomDocRef = db.collection('rooms').doc(rid);
-                    await roomDocRef.set({
-                        photoMap: {},
-                        currentQueries: ["", "", ""]
-                    });
-                    
-                    // メンバー情報のクリーンアップ
-                    const membersSnap = await roomDocRef.collection('members').get();
-                    const batch = db.batch();
-                    membersSnap.docs.forEach(doc => batch.delete(doc.ref));
-                    await batch.commit();
-
-                    alert('ルーム情報を完全にクリーンアップしました。');
-                } catch (e) {
-                    console.error('リセットエラー:', e);
-                    alert('初期化中にエラーが発生しました。');
-                }
-            }
-        });
-
-        // 4. クリア（入力リセット）ボタンの挙動
-        clearBtn.addEventListener('click', async () => {
-            await updateFirebaseQueries(["", "", ""]);
-        });
-
-        // 5. 手動入力時のFirebaseリアルタイム反映
-        slotInputs.forEach((input, index) => {
-            input.addEventListener('input', async () => {
-                const updatedQueries = slotInputs.map(inp => inp.value.trim());
-                await updateFirebaseQueries(updatedQueries);
+            ['room-id', 'user-name', 'api-key'].forEach(id => {
+                document.getElementById(id).addEventListener('input', saveConfig);
             });
-        });
 
-        // 6. デジタルズーム切り替え (1.0x -> 2.0x -> 4.0x -> 1.0x)
-        zoomBtn.addEventListener('click', () => {
-            if (activeTracks.length > 0 && 'zoom' in activeTracks[0].getCapabilities()) {
-                const caps = activeTracks[0].getCapabilities();
-                const min = caps.zoom.min || 1;
-                const max = caps.zoom.max || 4;
-                
-                if (currentZoomLevel === 1.0) currentZoomLevel = Math.min(2.0, max);
-                else if (currentZoomLevel === 2.0) currentZoomLevel = Math.min(4.0, max);
-                else currentZoomLevel = min;
+            searchBoxes.forEach((box) => {
+                box.addEventListener('input', () => {
+                    syncInputsToFirebase();
+                    executeSearch();
+                });
+            });
 
-                activeTracks[0].applyConstraints({ advanced: [{ zoom: currentZoomLevel }] })
-                    .then(() => { zoomBtn.innerText = `${currentZoomLevel.toFixed(1)}x`; })
-                    .catch(err => console.warn('ズーム設定エラー:', err));
-            } else {
-                // ハードウェアズーム非対応端末用の簡易CSS変形フォールバック
-                if (currentZoomLevel === 1.0) currentZoomLevel = 2.0;
-                else if (currentZoomLevel === 2.0) currentZoomLevel = 4.0;
-                else currentZoomLevel = 1.0;
+            // ゾーンタップ時のイベントは不要（または全枚出力中のリロード用等に現状キープ。バグを避けるため干渉しません）
+            ansZones.forEach((zone, idx) => {
+                zone.addEventListener('click', () => {
+                    const query = searchBoxes[idx].value.trim();
+                    if (!query || !allPhotosMap[query]) return;
+                    
+                    const imgList = allPhotosMap[query].croppedImgs || [];
+                    if (imgList.length <= 1) return;
 
-                video.style.transform = `scale(${currentZoomLevel})`;
-                zoomBtn.innerText = `${currentZoomLevel.toFixed(1)}x`;
-            }
-        });
+                    slotPatternIndexes[idx] = (slotPatternIndexes[idx] + 1) % imgList.length;
+                    executeSearch();
+                });
+            });
+        }
 
-        // ================= CAMERA ENGINE =================
+        function clearAllSlots() {
+            searchBoxes.forEach(box => box.value = "");
+            slotPatternIndexes = [0, 0, 0, 0, 0];
+            syncInputsToFirebase();
+            executeSearch();
+            showToast("SLOTS CLEARED");
+        }
 
-        async function startCamera() {
+        async function startCameraEngine() {
+            setupPhase.style.display = 'none';
+            scanPhase.style.display = 'grid'; 
+
+            if(localStream) { localStream.getTracks().forEach(track => track.stop()); }
+
             try {
+                const tempStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" }, audio: false });
+                const devices = await navigator.mediaDevices.enumerateDevices();
+                const videoDevices = devices.filter(device => device.kind === 'videoinput');
+                tempStream.getTracks().forEach(track => track.stop());
+
+                let targetDeviceId = null;
+                const backCameras = videoDevices.filter(d => 
+                    d.label.toLowerCase().includes('back') || d.label.toLowerCase().includes('rear') || 
+                    d.label.toLowerCase().includes('背面') || d.label.toLowerCase().includes('カメラ')
+                );
+
+                if (backCameras.length > 0) {
+                    if (isUltraWideMode) {
+                        const ultraWide = backCameras.find(d => 
+                            d.label.toLowerCase().includes('ultra') || d.label.toLowerCase().includes('0.5') ||
+                            d.label.toLowerCase().includes('super') || d.label.toLowerCase().includes('ウルトラ') ||
+                            d.label.toLowerCase().includes('超広角') || d.label.toLowerCase().includes('3')
+                        );
+                        targetDeviceId = ultraWide ? ultraWide.deviceId : (backCameras[1] ? backCameras[1].deviceId : backCameras[0].deviceId);
+                    } else {
+                        const standardLens = backCameras.find(d => d.label.toLowerCase().includes('main') || d.label.toLowerCase().includes('wide') || d.label.toLowerCase().includes('広角')) || backCameras[0];
+                        targetDeviceId = standardLens ? standardLens.deviceId : backCameras[0].deviceId;
+                    }
+                }
+
                 const constraints = {
                     video: {
-                        facingMode: { exact: "environment" },
-                        width: { ideal: 1280 },
-                        height: { ideal: 720 }
+                        deviceId: targetDeviceId ? { exact: targetDeviceId } : undefined,
+                        facingMode: targetDeviceId ? undefined : { ideal: "environment" },
+                        width: { ideal: 1920 },
+                        height: { ideal: 1080 }
                     },
                     audio: false
                 };
+
                 localStream = await navigator.mediaDevices.getUserMedia(constraints);
-            } catch (err) {
-                console.warn("背面カメラの取得に失敗しました。汎用カメラを使用します:", err);
-                try {
-                    localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
-                } catch (fallbackErr) {
-                    alert("カメラを起動できませんでした。ブラウザの設定でカメラ許可を確認してください。");
-                    return;
-                }
-            }
-            video.srcObject = localStream;
-            activeTracks = localStream.getVideoTracks();
-        }
-
-        function stopCamera() {
-            if (localStream) {
-                localStream.getTracks().forEach(track => track.stop());
-                localStream = null;
-            }
-            activeTracks = [];
-        }
-
-        // ================= CLOUD VISION API OCR & TRIMMING =================
-
-        captureBtn.addEventListener('click', async () => {
-            if (!localStream) return;
-
-            captureBtn.disabled = true;
-            captureBtn.style.opacity = "0.5";
-
-            const ctx = canvas.getContext('2d');
-            canvas.width = video.videoWidth;
-            canvas.height = video.videoHeight;
-            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-
-            const ocrApiKey = visionApiKeyInput.value.trim();
-            if (!ocrApiKey) {
-                alert('Cloud Vision APIキーが無効です。設定に戻って確認してください。');
-                resetCaptureButton();
-                return;
-            }
-
-            try {
-                // 中央のトリミング領域を計算（アス比やスカウターの枠に対応）
-                const boxW = canvas.width * 0.4;
-                const boxH = canvas.height * 0.2;
-                const boxX = (canvas.width - boxW) / 2;
-                const boxY = (canvas.height - boxH) / 2;
-
-                const ocrCanvas = document.createElement('canvas');
-                ocrCanvas.width = boxW;
-                ocrCanvas.height = boxH;
-                const ocrCtx = ocrCanvas.getContext('2d');
-                ocrCtx.drawImage(canvas, boxX, boxY, boxW, boxH, 0, 0, boxW, boxH);
-
-                const base64Img = ocrCanvas.toDataURL('image/jpeg').replace(/^data:image\/jpeg;base64,/, "");
-
-                // Google Vision OCR API 呼び出し
-                const res = await fetch(`https://vision.googleapis.com/v1/images:annotate?key=${ocrApiKey}`, {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({
-                        requests: [{
-                            image: { content: base64Img },
-                            features: [{ type: "TEXT_DETECTION" }]
-                        }]
-                    })
-                });
-
-                const data = await res.json();
-                const annotations = data.responses?.[0]?.textAnnotations;
+                document.getElementById('camera-stream').srcObject = localStream;
+                if (scanPhase.requestFullscreen) { scanPhase.requestFullscreen().catch(() => {}); }
                 
-                if (!annotations || annotations.length === 0) {
-                    alert('文字を検出できませんでした。照準器に数字が綺麗に収まるようにして再度撮影してください。');
-                    resetCaptureButton();
-                    return;
-                }
-
-                // OCRで得られた最初の一連の数字を取り出し
-                const rawText = annotations[0].description;
-                const numericMatch = rawText.match(/\d+/);
-
-                if (!numericMatch) {
-                    alert(`数字が読み取れませんでした。\n読み取ったテキスト: "${rawText}"`);
-                    resetCaptureButton();
-                    return;
-                }
-
-                const detectedNumber = numericMatch[0];
-
-                // 登録のための異なるサイズ比率の3つをトリミング作成
-                const tWidths = [canvas.width * 0.5, canvas.width * 0.6, canvas.width * 0.7];
-                const tHeights = [canvas.height * 0.4, canvas.height * 0.5, canvas.height * 0.6];
-                const imagesBase64 = [];
-
-                for (let i = 0; i < 3; i++) {
-                    const tempCanvas = document.createElement('canvas');
-                    tempCanvas.width = tWidths[i];
-                    tempCanvas.height = tHeights[i];
-                    const tempCtx = tempCanvas.getContext('2d');
-                    
-                    const tx = (canvas.width - tWidths[i]) / 2;
-                    const ty = (canvas.height - tHeights[i]) / 2;
-                    
-                    tempCtx.drawImage(canvas, tx, ty, tWidths[i], tHeights[i], 0, 0, tWidths[i], tHeights[i]);
-                    imagesBase64.push(tempCanvas.toDataURL('image/jpeg', 0.6));
-                }
-
-                // Firebaseへ画像を同期アップロード
-                const roomDocRef = db.collection('rooms').doc(currentRoomId);
-                await db.runTransaction(async (transaction) => {
-                    const sfDoc = await transaction.get(roomDocRef);
-                    let currentMap = {};
-                    if (sfDoc.exists) {
-                        currentMap = sfDoc.data().photoMap || {};
-                    }
-                    currentMap[detectedNumber] = imagesBase64;
-                    transaction.set(roomDocRef, { photoMap: currentMap }, { merge: true });
-                });
-
-                alert(`データベースに【${detectedNumber}】を登録しました！`);
+                startFirebaseRoomSync();
+                showToast(`LENS: ${isUltraWideMode ? '0.5x ULTRA' : '1.0x MAIN'}`);
 
             } catch (err) {
-                console.error(err);
-                alert('OCRスキャン、またはデータベース通信中にエラーが発生しました。');
-            } finally {
-                resetCaptureButton();
+                showToast("CAMERA INITIALIZE FAILED");
             }
-        });
-
-        function resetCaptureButton() {
-            captureBtn.disabled = false;
-            captureBtn.style.opacity = "1";
         }
 
-        // ================= FIREBASE SYNC CONTROLLER =================
+        function toggleCameraLens() {
+            isUltraWideMode = !isUltraWideMode;
+            showToast(isUltraWideMode ? "SWITCHING TO 0.5x..." : "SWITCHING TO 1.0x...");
+            startCameraEngine();
+        }
 
-        async function updateFirebaseQueries(queries) {
-            try {
-                await db.collection('rooms').doc(currentRoomId).set({
-                    currentQueries: queries
-                }, { merge: true });
-            } catch (e) {
-                console.error("クエリアップデートエラー: ", e);
-            }
+        function exitScanMode() {
+            if(localStream) { localStream.getTracks().forEach(track => track.stop()); localStream = null; }
+            if (document.exitFullscreen) { document.exitFullscreen().catch(()=>{}); }
+            if(unsubscribeRoom) { unsubscribeRoom(); unsubscribeRoom = null; }
+            clearInterval(presenceInterval);
+            scanPhase.style.display = 'none';
+            setupPhase.style.display = 'flex';
         }
 
         function startFirebaseRoomSync() {
-            const roomDocRef = db.collection('rooms').doc(currentRoomId);
+            const roomId = document.getElementById('room-id').value.trim() || 'default_room';
+            const user = document.getElementById('user-name').value.trim() || 'Unknown';
 
-            // 自身をオンライン登録
-            const memberRef = roomDocRef.collection('members').doc(currentUsername);
-            memberRef.set({
-                lastActive: firebase.firestore.FieldValue.serverTimestamp()
-            });
+            if(presenceInterval) clearInterval(presenceInterval);
+            const reportPresence = async () => {
+                const rId = document.getElementById('room-id').value.trim() || 'default_room';
+                const uName = document.getElementById('user-name').value.trim() || 'Unknown';
+                try { await setDoc(doc(db, "rooms", rId), { members: { [uName]: Date.now() } }, { merge: true }); } catch(e){}
+            };
+            reportPresence();
+            presenceInterval = setInterval(reportPresence, 4000);
 
-            // メンバーがオフラインになった時の処理
-            memberRef.onDisconnect().delete();
-
-            // 部屋データ全体のリアルタイム監視（画像データベース ＆ クエリ）
-            unsubscribeRoom = roomDocRef.onSnapshot((doc) => {
-                if (!doc.exists) return;
+            unsubscribeRoom = onSnapshot(doc(db, "rooms", roomId), (snapshot) => {
+                if (!snapshot.exists()) {
+                    allPhotosMap = {}; 
+                    document.getElementById('db-counter').innerText = "STOCKS: 0"; 
+                    executeSearch(); 
+                    return;
+                }
+                const data = snapshot.data();
                 
-                const data = doc.data();
-                const photoMap = data.photoMap || {};
-                const queries = data.currentQueries || ["", "", ""];
-
-                // 1. 各スロットの入力値を更新
-                queries.forEach((val, index) => {
-                    if (document.activeElement !== slotInputs[index]) {
-                        slotInputs[index].value = val;
-                    }
-                });
-
-                // 2. クエリに合致した画像の出し分けロジック
-                queries.forEach((query, index) => {
-                    const container = slotContainers[index];
-                    container.innerHTML = "";
-                    container.classList.remove('active');
-
-                    if (query && photoMap[query]) {
-                        // 3パターンあるうち、それぞれのスロットに割り当てた比率の画像を描写
-                        const base64Src = photoMap[query][index] || photoMap[query][0];
-                        const img = document.createElement('img');
-                        img.src = base64Src;
-                        img.className = "w-full h-full object-cover";
-                        container.appendChild(img);
-                        container.classList.add('active');
-                    } else {
-                        container.innerHTML = `<span class="text-[9px] text-zinc-700 font-mono">NO IMAGE</span>`;
-                    }
-                });
-            }, (error) => {
-                console.error("スナップショット受信エラー:", error);
-            });
-
-            // オンラインメンバー一覧のリアルタイム監視
-            roomDocRef.collection('members').onSnapshot((snapshot) => {
-                const memberList = [];
-                snapshot.forEach(doc => {
-                    memberList.push(doc.id);
-                });
+                // メンバーリスト同期
+                if (data.members) {
+                    const now = Date.now();
+                    const activeMembers = Object.keys(data.members).filter(name => (now - data.members[name]) < 10000);
+                    document.getElementById('member-list-text').innerText = `ONLINE: ${activeMembers.join(', ')}`;
+                }
                 
-                if (memberList.length > 0) {
-                    // 表示テキストを「オンライン人数」または「ユーザー名のリスト」に書き換えます
-                    onlineText.innerText = `${memberList.length} ONLINE`;
-                    onlineText.title = memberList.join(', '); // ホバーした時に参加者の名前を確認できるように設定
+                // 検索スロットの数字同期（フォーカスが当たっていない入力欄だけ連動して更新）
+                if (data.currentQueries) {
+                    data.currentQueries.forEach((q, idx) => {
+                        if (document.activeElement !== searchBoxes[idx]) { 
+                            searchBoxes[idx].value = q || ""; 
+                        }
+                    });
+                }
+                
+                // 保存されている画像データマップの同期
+                if (data.photoMap) {
+                    allPhotosMap = data.photoMap;
+                    document.getElementById('db-counter').innerText = `STOCKS: ${Object.keys(allPhotosMap).length}`;
                 } else {
-                    onlineText.innerText = "STANDBY";
+                    allPhotosMap = {}; 
+                    document.getElementById('db-counter').innerText = "STOCKS: 0";
+                }
+                executeSearch();
+            });
+        }
+
+        async function syncInputsToFirebase() {
+            const roomId = document.getElementById('room-id').value.trim() || 'default_room';
+            const queries = searchBoxes.map(b => b.value.trim());
+            try { 
+                await setDoc(doc(db, "rooms", roomId), { currentQueries: queries }, { merge: true }); 
+            } catch(e) {}
+        }
+
+        async function processCaptureOCR(mode) {
+            const videoEl = document.getElementById('camera-stream');
+            const apiKey = document.getElementById('api-key').value.trim();
+            if(!localStream || !apiKey) return;
+
+            const indicator = document.getElementById('scan-indicator');
+            indicator.classList.add('active');
+            setTimeout(() => indicator.classList.remove('active'), 120);
+            showToast("HIGH-RES DUAL SCANNING...");
+
+            const srcW = videoEl.videoWidth;
+            const srcH = videoEl.videoHeight;
+
+            const workCanvas = document.getElementById('split-work-canvas');
+            workCanvas.width = srcW;
+            workCanvas.height = srcH;
+            const wCtx = workCanvas.getContext('2d');
+            wCtx.drawImage(videoEl, 0, 0, srcW, srcH);
+
+            const finalCanvas = document.getElementById('capture-canvas');
+            const halfW = Math.floor(srcW / 2);
+            
+            finalCanvas.width = halfW;
+            finalCanvas.height = srcH * 2; 
+            const fCtx = finalCanvas.getContext('2d');
+
+            fCtx.drawImage(workCanvas, 0, 0, halfW, srcH, 0, 0, halfW, srcH);
+            fCtx.drawImage(workCanvas, halfW, 0, halfW, srcH, 0, srcH, halfW, srcH);
+
+            const base64Image = finalCanvas.toDataURL('image/jpeg', 0.85).split(',')[1];
+            const url = `https://vision.googleapis.com/v1/images:annotate?key=${apiKey}`;
+            const requestBody = {
+                requests: [{
+                    image: { content: base64Image },
+                    features: [{ type: "TEXT_DETECTION" }]
+                }]
+            };
+
+            try {
+                const response = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(requestBody) });
+                const resData = await response.json();
+                if (!resData.responses || !resData.responses[0].textAnnotations) { showToast("NO TEXT DETECTED"); return; }
+
+                const annotations = resData.responses[0].textAnnotations;
+                
+                if (mode === "target") {
+                    await analyzeTargetModeWithAdvancedMatching(annotations, workCanvas, halfW, srcH);
+                } else {
+                    await analyzeQuestionModeAdvanced(annotations, halfW, srcH);
+                }
+            } catch (err) { showToast("API DETECT ERROR"); }
+        }
+
+        async function analyzeTargetModeWithAdvancedMatching(annotations, originalCanvas, halfW, srcH) {
+            const fullList = annotations.slice(1);
+            const numbersList = [];
+            const genericBlocks = [];
+
+            fullList.forEach(item => {
+                const text = item.description.trim();
+                const box = item.boundingPoly.vertices;
+                if (!box || box.length < 4) return;
+
+                let cx = ((box[0]?.x ?? 0) + (box[1]?.x ?? 0) + (box[2]?.x ?? 0) + (box[3]?.x ?? 0)) / 4;
+                let cy = ((box[0]?.y ?? 0) + (box[1]?.y ?? 0) + (box[2]?.y ?? 0) + (box[3]?.y ?? 0)) / 4;
+
+                const h = Math.max(box[0]?.y ?? 0, box[1]?.y ?? 0, box[2]?.y ?? 0, box[3]?.y ?? 0) - Math.min(box[0]?.y ?? 0, box[1]?.y ?? 0, box[2]?.y ?? 0, box[3]?.y ?? 0);
+                const w = Math.max(box[0]?.x ?? 0, box[1]?.x ?? 0, box[2]?.x ?? 0, box[3]?.x ?? 0) - Math.min(box[0]?.x ?? 0, box[1]?.x ?? 0, box[2]?.x ?? 0, box[3]?.x ?? 0);
+
+                if (cy >= srcH) {
+                    cx = cx + halfW;
+                    cy = cy - srcH; 
+                }
+
+                const info = { text, cx, cy, w, h };
+
+                if (/^\d{3}$/.test(text)) {
+                    numbersList.push(info);
+                } else {
+                    genericBlocks.push(info);
                 }
             });
+
+            if (numbersList.length === 0) { showToast("NO 3-DIGIT TARGETS"); return; }
+
+            const updates = {};
+            let matchCount = 0;
+
+            numbersList.forEach(numObj => {
+                const verticalCandidates = genericBlocks.filter(b => {
+                    const xDiff = Math.abs(numObj.cx - b.cx);
+                    const yDiff = b.cy - numObj.cy;
+                    return (xDiff < numObj.w * 0.5) && (yDiff > 0) && (yDiff < numObj.h * 5);
+                });
+
+                let centerCx = numObj.cx;
+                let centerCy = numObj.cy + (numObj.h * 1.8);
+                let baseCropW = numObj.w * 1.7;
+
+                if (verticalCandidates.length > 0) {
+                    verticalCandidates.sort((a, b) => Math.abs(numObj.cx - a.cx) - Math.abs(numObj.cx - b.cx));
+                    const bestBlock = verticalCandidates[0];
+                    centerCx = (numObj.cx + bestBlock.cx) / 2;
+                    centerCy = (numObj.cy + bestBlock.cy) / 2;
+                    baseCropW = Math.max(numObj.w, bestBlock.w, bestBlock.h) * 1.5;
+                }
+
+                const standardCropW = baseCropW * 1.35;
+                const standardCropH = standardCropW * (160 / 120);
+
+                const cropCanvas = document.createElement('canvas');
+                cropCanvas.width = 120; cropCanvas.height = 160;
+                const cCtx = cropCanvas.getContext('2d');
+
+                // 📸 パターン1: 標準ベース化
+                const cropX1 = Math.max(0, centerCx - (standardCropW / 2));
+                const cropY1 = Math.max(0, centerCy - (standardCropH / 2));
+                cCtx.clearRect(0,0,120,160);
+                cCtx.drawImage(originalCanvas, cropX1, cropY1, standardCropW, standardCropH, 0, 0, 120, 160);
+                const img1 = cropCanvas.toDataURL('image/jpeg', 0.65);
+
+                // 📸 パターン2: さらに広め
+                const wideCropW = standardCropW * 1.25;
+                const wideCropH = standardCropH * 1.25;
+                const cropX2 = Math.max(0, centerCx - (wideCropW / 2));
+                const cropY2 = Math.max(0, centerCy - (wideCropH / 2));
+                cCtx.clearRect(0,0,120,160);
+                cCtx.drawImage(originalCanvas, cropX2, cropY2, wideCropW, wideCropH, 0, 0, 120, 160);
+                const img2 = cropCanvas.toDataURL('image/jpeg', 0.65);
+
+                // 📸 パターン3: ジャストズーム
+                const zoomCropW = standardCropW * 0.75;
+                const zoomCropH = standardCropH * 0.75;
+                const cropX3 = Math.max(0, centerCx - (zoomCropW / 2));
+                const cropY3 = Math.max(0, centerCy - (zoomCropH / 2));
+                cCtx.clearRect(0,0,120,160);
+                cCtx.drawImage(originalCanvas, cropX3, cropY3, zoomCropW, zoomCropH, 0, 0, 120, 160);
+                const img3 = cropCanvas.toDataURL('image/jpeg', 0.65);
+
+                updates[numObj.text] = {
+                    croppedImgs: [img1, img2, img3],
+                    timestamp: Date.now()
+                };
+                matchCount++;
+            });
+
+            if (matchCount > 0) {
+                const roomId = document.getElementById('room-id').value.trim() || 'default_room';
+                const mergedMap = { ...allPhotosMap };
+                Object.keys(updates).forEach(num => { mergedMap[num] = updates[num]; });
+                try {
+                    await setDoc(doc(db, "rooms", roomId), { photoMap: mergedMap }, { merge: true });
+                    showToast(`STOCKED: ${matchCount} UNITS`);
+                } catch (e) { showToast("SYNC ERROR"); }
+            } else { showToast("MATCHING CRITERIA FAILED"); }
+        }
+
+        async function analyzeQuestionModeAdvanced(annotations, halfW, srcH) {
+            const fullList = annotations.slice(1);
+            const foundNumbers = [];
+            
+            fullList.forEach(item => {
+                const text = item.description.trim();
+                if (/^\d{3}$/.test(text)) {
+                    const box = item.boundingPoly.vertices;
+                    let cx = ((box[0]?.x ?? 0) + (box[2]?.x ?? 0)) / 2;
+                    let cy = ((box[0]?.y ?? 0) + (box[2]?.y ?? 0)) / 2;
+                    
+                    if (cy >= srcH) { cx = cx + halfW; }
+                    foundNumbers.push({ text, x: cx });
+                }
+            });
+            foundNumbers.sort((a, b) => a.x - b.x);
+
+            if (foundNumbers.length >= 1) {
+                const limit = Math.min(foundNumbers.length, 5);
+                for(let i = 0; i < limit; i++) { searchBoxes[i].value = foundNumbers[i].text; }
+                showToast(`QUEST AUTOFILL: ${limit} SLOTS`);
+                syncInputsToFirebase();
+                executeSearch();
+            } else { showToast("NO NUMBERS DETECTED"); }
+        }
+
+        function executeSearch() {
+            searchBoxes.forEach((box, index) => {
+                const query = box.value.trim();
+                const zone = ansZones[index];
+                const rowDiv = document.getElementById('row-' + index);
+
+                if (!query) {
+                    zone.innerHTML = '<span class="no-img-text">VOID</span>';
+                    rowDiv.classList.remove('has-error');
+                    return;
+                }
+
+                const foundMatch = allPhotosMap[query];
+                
+                if (foundMatch) {
+                    const imgList = foundMatch.croppedImgs || (foundMatch.croppedImg ? [foundMatch.croppedImg] : []);
+                    
+                    if (imgList.length > 0) {
+                        // 3つのパターン画像をすべて横並びで出力
+                        let htmlContent = "";
+                        imgList.forEach((imgSrc) => {
+                            htmlContent += `<img src="${imgSrc}">`;
+                        });
+                        
+                        zone.innerHTML = htmlContent;
+                        rowDiv.classList.remove('has-error');
+                    } else {
+                        zone.innerHTML = '<span class="err-text">NONE</span>';
+                        rowDiv.classList.add('has-error');
+                    }
+                } else {
+                    zone.innerHTML = '<span class="err-text">NONE</span>';
+                    rowDiv.classList.add('has-error');
+                }
+            });
+        }
+
+        async function resetSystem() {
+            if (!confirm("ルーム全体のデータとスロット内の数字を完全にリセットしますか？")) return;
+            const roomId = document.getElementById('room-id').value.trim() || 'default_room';
+            try {
+                searchBoxes.forEach(box => box.value = "");
+                slotPatternIndexes = [0, 0, 0, 0, 0];
+                allPhotosMap = {};
+
+                await setDoc(doc(db, "rooms", roomId), {
+                    currentQueries: ["", "", "", "", ""],
+                    photoMap: {}
+                }, { merge: true });
+
+                executeSearch();
+                showToast("ROOM & SLOTS RESET COMPLETE");
+            } catch(e) {
+                showToast("RESET ERROR");
+            }
+        }
+
+        function saveConfig() {
+            localStorage.setItem('cyber_ocr_api_key', document.getElementById('api-key').value);
+            localStorage.setItem('cyber_room_id', document.getElementById('room-id').value);
+            localStorage.setItem('cyber_user_name', document.getElementById('user-name').value);
+        }
+        function loadConfig() {
+            document.getElementById('api-key').value = localStorage.getItem('cyber_ocr_api_key') || "";
+            document.getElementById('room-id').value = localStorage.getItem('cyber_room_id') || "team1";
+            document.getElementById('user-name').value = localStorage.getItem('cyber_user_name') || "";
+        }
+        function showToast(msg) {
+            const toast = document.getElementById('toast-log');
+            toast.innerText = msg; toast.classList.add('show');
+            clearTimeout(toast.timeout);
+            toast.timeout = setTimeout(() => toast.classList.remove('show'), 2500);
         }
     </script>
 </body>
