@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>N かくれんぼツール</title>
+    <title>トワもんGemini</title>
     <!-- Firebase SDK (v10) -->
     <script type="importmap">
       {
@@ -284,31 +284,29 @@
             background: rgba(0,0,0,0.5);
             border-radius: 3px;
             overflow: hidden;
-            display: flex;
+            display: flex !important; /* 3枚並びレイアウトを強制適用 */
+            justify-content: space-around; /* 3枚を均等に配置 */
             align-items: center;
-            justify-content: center;
             border: 1px solid rgba(255,255,255,0.08);
             position: relative;
             cursor: pointer;
+            gap: 3px;
+            padding: 2px;
         }
         .hud-slot-ans-zone img {
-            width: 100%;
-            height: 100%;
+            width: 31% !important; /* 横に3つ並ぶよう均等サイズに調整 */
+            height: auto !important;
+            max-height: 100% !important;
             object-fit: contain;
-        }
-        .hud-slot-ans-zone .no-img-text { font-size: 10px; color: #445566; font-weight: bold; }
-        .hud-slot-ans-zone .err-text { font-size: 10px; color: var(--cyber-red); font-weight: bold; }
-        
-        .pattern-badge {
-            position: absolute;
-            top: 2px; right: 4px;
-            font-size: 8px;
-            background: rgba(0, 229, 255, 0.7);
-            color: #000;
-            padding: 0px 3px;
+            border: 1px solid rgba(0, 229, 255, 0.4);
             border-radius: 3px;
-            font-weight: bold;
-            pointer-events: none;
+        }
+        .hud-slot-ans-zone .no-img-text { font-size: 10px; color: #445566; font-weight: bold; margin: auto; }
+        .hud-slot-ans-zone .err-text { font-size: 10px; color: var(--cyber-red); font-weight: bold; margin: auto; }
+        
+        /* タップ切り替えが不要になったため、パターンバッジは非表示にします */
+        .pattern-badge {
+            display: none !important;
         }
 
         .hud-control-bottom {
@@ -527,6 +525,7 @@
                 });
             });
 
+            // ゾーンタップ時のイベントは不要（または全枚出力中のリロード用等に現状キープ。バグを避けるため干渉しません）
             ansZones.forEach((zone, idx) => {
                 zone.addEventListener('click', () => {
                     const query = searchBoxes[idx].value.trim();
@@ -618,7 +617,6 @@
             setupPhase.style.display = 'flex';
         }
 
-        /* 📡 【修正】同期リスナー：ルーム情報が存在しない場合のフォールバックを安全に変更 */
         function startFirebaseRoomSync() {
             const roomId = document.getElementById('room-id').value.trim() || 'default_room';
             const user = document.getElementById('user-name').value.trim() || 'Unknown';
@@ -669,7 +667,6 @@
             });
         }
 
-        /* 📡 【修正】安全な一元データ同期(setDoc merge版) */
         async function syncInputsToFirebase() {
             const roomId = document.getElementById('room-id').value.trim() || 'default_room';
             const queries = searchBoxes.map(b => b.value.trim());
@@ -792,7 +789,7 @@
                 cropCanvas.width = 120; cropCanvas.height = 160;
                 const cCtx = cropCanvas.getContext('2d');
 
-                // 📸 パターン1: 以前のP3（1.35倍を標準ベース化）
+                // 📸 パターン1: 標準ベース化
                 const cropX1 = Math.max(0, centerCx - (standardCropW / 2));
                 const cropY1 = Math.max(0, centerCy - (standardCropH / 2));
                 cCtx.clearRect(0,0,120,160);
@@ -829,7 +826,6 @@
                 const mergedMap = { ...allPhotosMap };
                 Object.keys(updates).forEach(num => { mergedMap[num] = updates[num]; });
                 try {
-                    // setDocのマージ機能で相手のスキャン結果と合成。確実な同期経路
                     await setDoc(doc(db, "rooms", roomId), { photoMap: mergedMap }, { merge: true });
                     showToast(`STOCKED: ${matchCount} UNITS`);
                 } catch (e) { showToast("SYNC ERROR"); }
@@ -880,15 +876,13 @@
                     const imgList = foundMatch.croppedImgs || (foundMatch.croppedImg ? [foundMatch.croppedImg] : []);
                     
                     if (imgList.length > 0) {
-                        let pIdx = slotPatternIndexes[index] || 0;
-                        if (pIdx >= imgList.length) { pIdx = 0; slotPatternIndexes[index] = 0; }
-
-                        const currentImgData = imgList[pIdx];
+                        // 3つのパターン画像をすべて横並びで出力
+                        let htmlContent = "";
+                        imgList.forEach((imgSrc) => {
+                            htmlContent += `<img src="${imgSrc}">`;
+                        });
                         
-                        zone.innerHTML = `
-                            <img src="${currentImgData}">
-                            <div class="pattern-badge">P${pIdx + 1}/${imgList.length}</div>
-                        `;
+                        zone.innerHTML = htmlContent;
                         rowDiv.classList.remove('has-error');
                     } else {
                         zone.innerHTML = '<span class="err-text">NONE</span>';
@@ -901,18 +895,14 @@
             });
         }
 
-        /* 📡 【大修正】物理削除(deleteDoc)ではなく、空値での初期化書き込みに変更 */
         async function resetSystem() {
             if (!confirm("ルーム全体のデータとスロット内の数字を完全にリセットしますか？")) return;
             const roomId = document.getElementById('room-id').value.trim() || 'default_room';
             try {
-                // ローカル側の表示を先んじて空にする
                 searchBoxes.forEach(box => box.value = "");
                 slotPatternIndexes = [0, 0, 0, 0, 0];
                 allPhotosMap = {};
 
-                // ルーム全体を削除するのではなく「初期値」で上書きすることで
-                // 他の人のonSnapshotリスナーが切断されるのを防ぎつつ、全員の画面を綺麗に初期化
                 await setDoc(doc(db, "rooms", roomId), {
                     currentQueries: ["", "", "", "", ""],
                     photoMap: {}
