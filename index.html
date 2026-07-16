@@ -376,7 +376,7 @@
 
     <!-- PHASE 1: 設定画面 -->
     <div id="setup-phase">
-        <h1>DESPAIR FORTRESS SCOUTER</h1>
+        <h1>トワもんGemini</h1>
         <div class="member-status-bar">
             <span class="online-dot"></span>
             <span id="member-list-text">ONLINE: 待機中...</span>
@@ -387,17 +387,17 @@
                 <input type="text" id="room-id" placeholder="team1">
             </div>
             <div>
-                <label>YOUR NAME:</label>
+                <label>PLAYER NAME:</label>
                 <input type="text" id="user-name" placeholder="プレイヤー名">
             </div>
             <div>
-                <label>GOOGLE VISION API PASS:</label>
+                <label>PASS WORD:</label>
                 <input type="password" id="api-key" placeholder="AIzaSy...">
             </div>
         </div>
         <div class="action-grid">
-            <button class="btn-start-scan" id="btn-enter-scan">📷 スキャン画面を開始する</button>
-            <button class="btn-reset-system" id="btn-reset-all">ルーム全体のデータを完全リセット</button>
+            <button class="btn-start-scan" id="btn-enter-scan">スキャンモード</button>
+            <button class="btn-reset-system" id="btn-reset-all">ルームリセット</button>
         </div>
     </div>
 
@@ -413,7 +413,7 @@
             <!-- 左下：操作パネル -->
             <div class="hud-left-bottom-controls">
                 <button class="btn-exit-icon" id="btn-exit-scan">ホームへ</button>
-                <button class="btn-zoom-toggle" id="btn-toggle-lens">倍率変更</button>
+                <button class="btn-zoom-toggle" id="btn-toggle-lens">1.0/0.5</button>
                 <button class="btn-clear-slots" id="btn-clear-slots">クリア</button>
             </div>
         </div>
@@ -449,8 +449,8 @@
             <div class="hud-control-bottom">
                 <div class="stocks-counter" id="db-counter">STOCKS: 0</div>
                 <div class="shutter-grid">
-                    <button class="btn-shutter-target" id="shutter-target">ターゲット</button>
-                    <button class="btn-shutter-quest" id="shutter-quest">問題文</button>
+                    <button class="btn-shutter-target" id="shutter-target">スキャン</button>
+                    <button class="btn-shutter-quest" id="shutter-quest">問題撮影</button>
                 </div>
             </div>
         </div>
