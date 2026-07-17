@@ -74,8 +74,10 @@
             gap: 4px;
         }
         .camera-container {
-            flex: 1;
-            min-height: 130px;
+　　　　　　 width: 100%;
+            aspect-ratio: 16 / 9;   /* ★横持ちスマホの標準比率「16:9」に固定 */
+            max-height: 55vh;       /* ★カメラが高くなりすぎないよう、画面全体の高さの55%を上限に制限（1画面に収めるため） */
+            margin: 0 auto;         /* 中央寄せ */
             background: #000;
             border: 1.5px solid #b57cff;
             position: relative;
