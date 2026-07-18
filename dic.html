@@ -920,24 +920,26 @@ for (const item of chars) {
                 return;
             }
 
-            if (type === 'sort_digits') {
-                if (allPages.length === 0) { document.getElementById('calc-result').innerText = "ERR"; return; }
-                allPages.sort((a, b) => b - a);
-                let combinedResult = "";
-                allPages.forEach(p => { combinedResult += (p % 10).toString(); });
-                document.getElementById('calc-result').innerText = combinedResult;
-                clearAllSelections();
-                return;
-            }
+if (type === 'sort_digits') {
 
-            if (type === 'sub') {
-                if (allPages.length < 1) { document.getElementById('calc-result').innerText = "ERR"; return; }
-                const maxNum = Math.max(...allPages);
-                const minNum = Math.min(...allPages);
-                document.getElementById('calc-result').innerText = maxNum - minNum;
-                clearAllSelections();
-                return;
-            }
+    let combinedResult = "";
+
+    for (let i = 0; i < 4; i++) {
+
+        const page = parseInt(outputs[i].innerText);
+
+        if (!isNaN(page)) {
+            combinedResult += (page % 10).toString();
+        }
+
+    }
+
+    document.getElementById('calc-result').innerText =
+        combinedResult || "ERR";
+
+    clearAllSelections();
+    return;
+}
 
             if (type === 'rem') {
                 if (allPages.length === 0) { alert("数値がありません"); return; }
