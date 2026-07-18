@@ -627,9 +627,8 @@
                     body: JSON.stringify({ requests: [{ image: { content: base64Image }, features: [{ type: "TEXT_DETECTION" }] }] })
                 });
                 const data = await response.json();
-                const fullText = data.responses[0]?.textAnnotations?.[0]?.description || "";
-                
-                processDetectedText(fullText);
+const annotations = data.responses[0]?.textAnnotations || [];
+processDetectedText(annotations);
             } catch (e) { 
                 alert("スキャンエラー"); 
             } finally {
@@ -674,18 +673,16 @@ async function captureAndScanLimited() {
 
         const data = await response.json();
 
-        const fullText =
-            data.responses[0]?.textAnnotations?.[0]?.description || "";
+const annotations = data.responses[0]?.textAnnotations || [];
 
-        processLimitedDetectedText(fullText);
-
+processLimitedDetectedText(annotations);
     }finally{
         indicator.style.display='none';
     }
 
 }
         
-        function processDetectedText(text) {
+        function processDetectedText(annotations) {
             // 括弧内の抽出ロジック
             const regex = /[「『](.*?)[」抑]/g;
             let rawMatches = [];
@@ -760,16 +757,30 @@ async function captureAndScanLimited() {
             // サジェスト機能へ状態を渡す
             generateSuggestions(text, forceSuggestShita, forceSuggestHiraki);
         }
-function processLimitedDetectedText(text){
+function processLimitedDetectedText(annotations){
 
-    let matches = [];
+let matches = [];
 
-    // 限定漢字だけ抽出
-    for(const ch of text){
-        if(LIMITED_KANJI.has(ch)){
-            matches.push(ch);
-        }
+// 左から右へ並べる
+const chars = annotations
+    .slice(1)
+    .filter(a => a.description.length === 1)
+    .map(a => ({
+        char: a.description,
+        x: Math.min(...a.boundingPoly.vertices.map(v => v.x || 0))
+    }))
+    .sort((a, b) => a.x - b.x);
+
+// 限定漢字だけ抽出
+for (const item of chars) {
+
+    const ch = item.char;
+
+    if (LIMITED_KANJI.has(ch)) {
+        matches.push(ch);
     }
+
+}
 
     // ホールドされていないスロットだけクリア
     for(let i = 0; i < 4; i++){
