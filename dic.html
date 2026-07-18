@@ -627,8 +627,10 @@
                     body: JSON.stringify({ requests: [{ image: { content: base64Image }, features: [{ type: "TEXT_DETECTION" }] }] })
                 });
                 const data = await response.json();
-const annotations = data.responses[0]?.textAnnotations || [];
-processDetectedText(annotations);
+const fullText =
+    data.responses[0]?.textAnnotations?.[0]?.description || "";
+
+processDetectedText(fullText);
             } catch (e) { 
                 alert("スキャンエラー"); 
             } finally {
@@ -682,7 +684,7 @@ processLimitedDetectedText(annotations);
 
 }
         
-        function processDetectedText(annotations) {
+function processDetectedText(text) {
             // 括弧内の抽出ロジック
             const regex = /[「『](.*?)[」抑]/g;
             let rawMatches = [];
