@@ -66,9 +66,7 @@
             letter-spacing: 1px;
         }
 
-        /* ==========================================================================
-           PHASE 1: 設定画面
-           ========================================================================= */
+        /* PHASE 1: 設定画面 */
         #setup-phase {
             width: 100%;
             height: 100%;
@@ -144,9 +142,7 @@
             font-size: 13px;
         }
 
-        /* ==========================================================================
-           PHASE 2: 横画面HUD
-           ========================================================================= */
+        /* PHASE 2: 横画面HUD */
         #scan-phase {
             position: fixed;
             top: 0; left: 0; width: 100vw; height: 100vh;
@@ -181,7 +177,6 @@
             object-fit: contain; 
         }
 
-        /* 左下コントロールパネル */
         .hud-left-bottom-controls {
             height: 60px;
             background: rgba(10, 14, 20, 0.95);
@@ -192,7 +187,7 @@
             gap: 10px;
         }
 
-        .btn-exit-icon, .btn-zoom-toggle, .btn-clear-slots {
+        .btn-exit-icon, .btn-zoom-toggle, .btn-camera-toggle, .btn-clear-slots {
             height: 42px;
             padding: 0 15px;
             border-radius: 6px;
@@ -218,6 +213,13 @@
         }
         .btn-zoom-toggle:active { background: var(--cyber-blue); color: #000; }
 
+        .btn-camera-toggle {
+            background: rgba(181, 124, 255, 0.1);
+            border: 1px solid var(--cyber-purple);
+            color: var(--cyber-purple);
+        }
+        .btn-camera-toggle:active { background: var(--cyber-purple); color: #000; }
+
         .btn-clear-slots {
             background: rgba(255, 145, 0, 0.1);
             border: 1px solid var(--cyber-orange);
@@ -226,7 +228,6 @@
         }
         .btn-clear-slots:active { background: var(--cyber-orange); color: #000; }
 
-        /* 右側：完全情報・操作パネルエリア */
         .hud-right {
             grid-column: 2;
             background: #0a0e14;
@@ -284,8 +285,8 @@
             background: rgba(0,0,0,0.5);
             border-radius: 3px;
             overflow: hidden;
-            display: flex !important; /* 3枚並びレイアウトを強制適用 */
-            justify-content: space-around; /* 3枚を均等に配置 */
+            display: flex !important;
+            justify-content: space-around;
             align-items: center;
             border: 1px solid rgba(255,255,255,0.08);
             position: relative;
@@ -294,7 +295,7 @@
             padding: 2px;
         }
         .hud-slot-ans-zone img {
-            width: 31% !important; /* 横に3つ並ぶよう均等サイズに調整 */
+            width: 31% !important;
             height: auto !important;
             max-height: 100% !important;
             object-fit: contain;
@@ -304,7 +305,6 @@
         .hud-slot-ans-zone .no-img-text { font-size: 10px; color: #445566; font-weight: bold; margin: auto; }
         .hud-slot-ans-zone .err-text { font-size: 10px; color: var(--cyber-red); font-weight: bold; margin: auto; }
         
-        /* タップ切り替えが不要になったため、パターンバッジは非表示にします */
         .pattern-badge {
             display: none !important;
         }
@@ -410,19 +410,17 @@
                 <div class="scan-dimmer" id="scan-indicator"></div>
             </div>
 
-            <!-- 左下：操作パネル -->
             <div class="hud-left-bottom-controls">
                 <button class="btn-exit-icon" id="btn-exit-scan">ホームへ</button>
                 <button class="btn-zoom-toggle" id="btn-toggle-lens">1.0/0.5</button>
+                <button class="btn-camera-toggle" id="btn-toggle-facing">外カメ</button>
                 <button class="btn-clear-slots" id="btn-clear-slots">クリア</button>
             </div>
         </div>
 
-        <!-- 右側セクション -->
         <div class="hud-right">
             <div class="hud-panel-title">スクショが表示されます</div>
             
-            <!-- スロット群 -->
             <div class="hud-slot-list">
                 <div class="hud-slot-row" id="row-0">
                     <input type="tel" id="box-0" placeholder="01" maxlength="3">
@@ -458,15 +456,13 @@
         <div class="toast-log" id="toast-log">SCANNING...</div>
     </div>
 
-    <!-- 作業用隠しキャンバス -->
     <canvas id="split-work-canvas" style="display:none;"></canvas>
     <canvas id="capture-canvas" style="display:none;"></canvas>
-
     <script type="module">
         import { initializeApp } from "firebase/app";
         import { getFirestore, doc, setDoc, onSnapshot } from "firebase/firestore";
 
-　　　　const firebaseConfig = {
+        const firebaseConfig = {
             apiKey: "AIzaSyAqjlpWIPNCQVJqVnl_M4Orm3gZrnCULfM",
             authDomain: "tmon-gemini.firebaseapp.com",
             projectId: "tmon-gemini",
@@ -483,6 +479,7 @@
         let unsubscribeRoom = null;
         let presenceInterval = null;
         let isUltraWideMode = true; 
+        let isFrontCamera = false;
 
         let slotPatternIndexes = [0, 0, 0, 0, 0];
 
@@ -505,10 +502,11 @@
         });
 
         function initEventListeners() {
-            document.getElementById('btn-enter-scan').addEventListener('click', () => { isUltraWideMode = true; startCameraEngine(); });
+            document.getElementById('btn-enter-scan').addEventListener('click', () => { isUltraWideMode = true; isFrontCamera = false; updateFacingButtonLabel(); startCameraEngine(); });
             document.getElementById('btn-exit-scan').addEventListener('click', exitScanMode);
             document.getElementById('btn-reset-all').addEventListener('click', resetSystem);
             document.getElementById('btn-toggle-lens').addEventListener('click', toggleCameraLens);
+            document.getElementById('btn-toggle-facing').addEventListener('click', toggleFacingCamera);
             document.getElementById('btn-clear-slots').addEventListener('click', clearAllSlots);
 
             document.getElementById('shutter-target').addEventListener('click', () => processCaptureOCR("target"));
@@ -525,7 +523,6 @@
                 });
             });
 
-            // ゾーンタップ時のイベントは不要（または全枚出力中のリロード用等に現状キープ。バグを避けるため干渉しません）
             ansZones.forEach((zone, idx) => {
                 zone.addEventListener('click', () => {
                     const query = searchBoxes[idx].value.trim();
@@ -555,6 +552,19 @@
             if(localStream) { localStream.getTracks().forEach(track => track.stop()); }
 
             try {
+                if (isFrontCamera) {
+                    const constraints = {
+                        video: { facingMode: { ideal: "user" }, width: { ideal: 1920 }, height: { ideal: 1080 } },
+                        audio: false
+                    };
+                    localStream = await navigator.mediaDevices.getUserMedia(constraints);
+                    document.getElementById('camera-stream').srcObject = localStream;
+                    if (scanPhase.requestFullscreen) { scanPhase.requestFullscreen().catch(() => {}); }
+                    startFirebaseRoomSync();
+                    showToast("LENS: FRONT (内カメ)");
+                    return;
+                }
+
                 const tempStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" }, audio: false });
                 const devices = await navigator.mediaDevices.enumerateDevices();
                 const videoDevices = devices.filter(device => device.kind === 'videoinput');
@@ -608,6 +618,18 @@
             startCameraEngine();
         }
 
+        function toggleFacingCamera() {
+            isFrontCamera = !isFrontCamera;
+            updateFacingButtonLabel();
+            showToast(isFrontCamera ? "SWITCHING TO 内カメ..." : "SWITCHING TO 外カメ...");
+            startCameraEngine();
+        }
+
+        function updateFacingButtonLabel() {
+            const btn = document.getElementById('btn-toggle-facing');
+            if (btn) btn.innerText = isFrontCamera ? "内カメ" : "外カメ";
+        }
+
         function exitScanMode() {
             if(localStream) { localStream.getTracks().forEach(track => track.stop()); localStream = null; }
             if (document.exitFullscreen) { document.exitFullscreen().catch(()=>{}); }
@@ -639,14 +661,12 @@
                 }
                 const data = snapshot.data();
                 
-                // メンバーリスト同期
                 if (data.members) {
                     const now = Date.now();
                     const activeMembers = Object.keys(data.members).filter(name => (now - data.members[name]) < 10000);
                     document.getElementById('member-list-text').innerText = `ONLINE: ${activeMembers.join(', ')}`;
                 }
                 
-                // 検索スロットの数字同期（フォーカスが当たっていない入力欄だけ連動して更新）
                 if (data.currentQueries) {
                     data.currentQueries.forEach((q, idx) => {
                         if (document.activeElement !== searchBoxes[idx]) { 
@@ -655,7 +675,6 @@
                     });
                 }
                 
-                // 保存されている画像データマップの同期
                 if (data.photoMap) {
                     allPhotosMap = data.photoMap;
                     document.getElementById('db-counter').innerText = `STOCKS: ${Object.keys(allPhotosMap).length}`;
@@ -789,14 +808,12 @@
                 cropCanvas.width = 120; cropCanvas.height = 160;
                 const cCtx = cropCanvas.getContext('2d');
 
-                // 📸 パターン1: 標準ベース化
                 const cropX1 = Math.max(0, centerCx - (standardCropW / 2));
                 const cropY1 = Math.max(0, centerCy - (standardCropH / 2));
                 cCtx.clearRect(0,0,120,160);
                 cCtx.drawImage(originalCanvas, cropX1, cropY1, standardCropW, standardCropH, 0, 0, 120, 160);
                 const img1 = cropCanvas.toDataURL('image/jpeg', 0.65);
 
-                // 📸 パターン2: さらに広め
                 const wideCropW = standardCropW * 1.25;
                 const wideCropH = standardCropH * 1.25;
                 const cropX2 = Math.max(0, centerCx - (wideCropW / 2));
@@ -805,7 +822,6 @@
                 cCtx.drawImage(originalCanvas, cropX2, cropY2, wideCropW, wideCropH, 0, 0, 120, 160);
                 const img2 = cropCanvas.toDataURL('image/jpeg', 0.65);
 
-                // 📸 パターン3: ジャストズーム
                 const zoomCropW = standardCropW * 0.75;
                 const zoomCropH = standardCropH * 0.75;
                 const cropX3 = Math.max(0, centerCx - (zoomCropW / 2));
@@ -876,7 +892,6 @@
                     const imgList = foundMatch.croppedImgs || (foundMatch.croppedImg ? [foundMatch.croppedImg] : []);
                     
                     if (imgList.length > 0) {
-                        // 3つのパターン画像をすべて横並びで出力
                         let htmlContent = "";
                         imgList.forEach((imgSrc) => {
                             htmlContent += `<img src="${imgSrc}">`;
