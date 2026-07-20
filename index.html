@@ -545,70 +545,119 @@
             showToast("SLOTS CLEARED");
         }
 
+        // 段階的に制約を緩めてカメラを取得するヘルパー。失敗時は null を返す。
+        async function acquireStream(constraintList) {
+            for (let i = 0; i < constraintList.length; i++) {
+                try {
+                    const stream = await navigator.mediaDevices.getUserMedia(constraintList[i]);
+                    return stream;
+                } catch (err) {
+                    // 次の緩い制約へ
+                }
+            }
+            return null;
+        }
+
         async function startCameraEngine() {
             setupPhase.style.display = 'none';
             scanPhase.style.display = 'grid'; 
 
-            if(localStream) { localStream.getTracks().forEach(track => track.stop()); }
+            // 新しいストリームを先に取得し、成功してから旧ストリームを停止する。
+            // これにより取得失敗時でも現在のカメラが維持され、画面が黒くならない。
+            let newStream = null;
 
-            try {
-                if (isFrontCamera) {
-                    const constraints = {
-                        video: { facingMode: { ideal: "user" }, width: { ideal: 1920 }, height: { ideal: 1080 } },
-                        audio: false
-                    };
-                    localStream = await navigator.mediaDevices.getUserMedia(constraints);
-                    document.getElementById('camera-stream').srcObject = localStream;
-                    if (scanPhase.requestFullscreen) { scanPhase.requestFullscreen().catch(() => {}); }
-                    startFirebaseRoomSync();
-                    showToast("LENS: FRONT (内カメ)");
-                    return;
-                }
+            if (isFrontCamera) {
+                // 内カメ: facingMode と解像度を段階的に緩める。
+                // 一部のiPad/スマホは 1920x1080 や facingMode exact に対応しないため。
+                const constraintList = [
+                    { video: { facingMode: { ideal: "user" }, width: { ideal: 1920 }, height: { ideal: 1080 } }, audio: false },
+                    { video: { facingMode: { ideal: "user" }, width: { ideal: 1280 }, height: { ideal: 720 } }, audio: false },
+                    { video: { facingMode: { ideal: "user" } }, audio: false },
+                    { video: { facingMode: "user" }, audio: false },
+                    { video: true, audio: false }
+                ];
+                newStream = await acquireStream(constraintList);
+            } else {
+                // 外カメ: enumerateDevices でレンズ特定を試み、失敗時は facingMode にフォールバック。
+                try {
+                    const tempStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" }, audio: false });
+                    const devices = await navigator.mediaDevices.enumerateDevices();
+                    const videoDevices = devices.filter(device => device.kind === 'videoinput');
+                    // tempStream は後で停止する（ラベル取得用に一度だけ使う）
 
-                const tempStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" }, audio: false });
-                const devices = await navigator.mediaDevices.enumerateDevices();
-                const videoDevices = devices.filter(device => device.kind === 'videoinput');
-                tempStream.getTracks().forEach(track => track.stop());
+                    let targetDeviceId = null;
+                    const backCameras = videoDevices.filter(d => 
+                        d.label.toLowerCase().includes('back') || d.label.toLowerCase().includes('rear') || 
+                        d.label.toLowerCase().includes('背面') || d.label.toLowerCase().includes('カメラ')
+                    );
 
-                let targetDeviceId = null;
-                const backCameras = videoDevices.filter(d => 
-                    d.label.toLowerCase().includes('back') || d.label.toLowerCase().includes('rear') || 
-                    d.label.toLowerCase().includes('背面') || d.label.toLowerCase().includes('カメラ')
-                );
-
-                if (backCameras.length > 0) {
-                    if (isUltraWideMode) {
-                        const ultraWide = backCameras.find(d => 
-                            d.label.toLowerCase().includes('ultra') || d.label.toLowerCase().includes('0.5') ||
-                            d.label.toLowerCase().includes('super') || d.label.toLowerCase().includes('ウルトラ') ||
-                            d.label.toLowerCase().includes('超広角') || d.label.toLowerCase().includes('3')
-                        );
-                        targetDeviceId = ultraWide ? ultraWide.deviceId : (backCameras[1] ? backCameras[1].deviceId : backCameras[0].deviceId);
-                    } else {
-                        const standardLens = backCameras.find(d => d.label.toLowerCase().includes('main') || d.label.toLowerCase().includes('wide') || d.label.toLowerCase().includes('広角')) || backCameras[0];
-                        targetDeviceId = standardLens ? standardLens.deviceId : backCameras[0].deviceId;
+                    if (backCameras.length > 0) {
+                        if (isUltraWideMode) {
+                            const ultraWide = backCameras.find(d => 
+                                d.label.toLowerCase().includes('ultra') || d.label.toLowerCase().includes('0.5') ||
+                                d.label.toLowerCase().includes('super') || d.label.toLowerCase().includes('ウルトラ') ||
+                                d.label.toLowerCase().includes('超広角') || d.label.toLowerCase().includes('3')
+                            );
+                            targetDeviceId = ultraWide ? ultraWide.deviceId : (backCameras[1] ? backCameras[1].deviceId : backCameras[0].deviceId);
+                        } else {
+                            const standardLens = backCameras.find(d => d.label.toLowerCase().includes('main') || d.label.toLowerCase().includes('wide') || d.label.toLowerCase().includes('広角')) || backCameras[0];
+                            targetDeviceId = standardLens ? standardLens.deviceId : backCameras[0].deviceId;
+                        }
                     }
+
+                    const constraintList = [
+                        {
+                            video: {
+                                deviceId: targetDeviceId ? { exact: targetDeviceId } : undefined,
+                                facingMode: targetDeviceId ? undefined : { ideal: "environment" },
+                                width: { ideal: 1920 },
+                                height: { ideal: 1080 }
+                            },
+                            audio: false
+                        },
+                        {
+                            video: {
+                                deviceId: targetDeviceId ? { ideal: targetDeviceId } : undefined,
+                                facingMode: targetDeviceId ? undefined : { ideal: "environment" }
+                            },
+                            audio: false
+                        },
+                        { video: { facingMode: { ideal: "environment" } }, audio: false },
+                        { video: { facingMode: "environment" }, audio: false },
+                        { video: true, audio: false }
+                    ];
+                    newStream = await acquireStream(constraintList);
+                    // tempStream はもう不要なので停止
+                    tempStream.getTracks().forEach(track => track.stop());
+                } catch (err) {
+                    // enumerateDevices 失敗時は facingMode のみで再試行
+                    const constraintList = [
+                        { video: { facingMode: { ideal: "environment" }, width: { ideal: 1920 }, height: { ideal: 1080 } }, audio: false },
+                        { video: { facingMode: { ideal: "environment" } }, audio: false },
+                        { video: { facingMode: "environment" }, audio: false },
+                        { video: true, audio: false }
+                    ];
+                    newStream = await acquireStream(constraintList);
                 }
+            }
 
-                const constraints = {
-                    video: {
-                        deviceId: targetDeviceId ? { exact: targetDeviceId } : undefined,
-                        facingMode: targetDeviceId ? undefined : { ideal: "environment" },
-                        width: { ideal: 1920 },
-                        height: { ideal: 1080 }
-                    },
-                    audio: false
-                };
-
-                localStream = await navigator.mediaDevices.getUserMedia(constraints);
-                document.getElementById('camera-stream').srcObject = localStream;
-                if (scanPhase.requestFullscreen) { scanPhase.requestFullscreen().catch(() => {}); }
-                
-                startFirebaseRoomSync();
-                showToast(`LENS: ${isUltraWideMode ? '0.5x ULTRA' : '1.0x MAIN'}`);
-
-            } catch (err) {
+            if (!newStream) {
+                // 取得失敗: 旧ストリームを維持したままメッセージ表示
                 showToast("CAMERA INITIALIZE FAILED");
+                return;
+            }
+
+            // 新ストリーム取得成功 -> 旧ストリームを停止して置き換え
+            if (localStream) { localStream.getTracks().forEach(track => track.stop()); }
+            localStream = newStream;
+            document.getElementById('camera-stream').srcObject = localStream;
+            if (scanPhase.requestFullscreen) { scanPhase.requestFullscreen().catch(() => {}); }
+            
+            startFirebaseRoomSync();
+            if (isFrontCamera) {
+                showToast("LENS: FRONT (内カメ)");
+            } else {
+                showToast(`LENS: ${isUltraWideMode ? '0.5x ULTRA' : '1.0x MAIN'}`);
             }
         }
 
