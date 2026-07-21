@@ -801,58 +801,217 @@
             } catch(e) {}
         }
 
-        async function processCaptureOCR(mode) {
-            const videoEl = document.getElementById('camera-stream');
-            const apiKey = document.getElementById('api-key').value.trim();
-            if(!localStream || !apiKey) return;
+async function processCaptureOCR(mode) {
 
-            const indicator = document.getElementById('scan-indicator');
-            indicator.classList.add('active');
-            setTimeout(() => indicator.classList.remove('active'), 120);
-            showToast("HIGH-RES DUAL SCANNING...");
+    const videoEl = document.getElementById('camera-stream');
+    const apiKey = document.getElementById('api-key').value.trim();
 
-            const srcW = videoEl.videoWidth;
-            const srcH = videoEl.videoHeight;
+    if (!localStream || !apiKey) return;
 
-            const workCanvas = document.getElementById('split-work-canvas');
-            workCanvas.width = srcW;
-            workCanvas.height = srcH;
-            const wCtx = workCanvas.getContext('2d');
-            wCtx.drawImage(videoEl, 0, 0, srcW, srcH);
+    const indicator = document.getElementById('scan-indicator');
+    indicator.classList.add('active');
+    setTimeout(() => indicator.classList.remove('active'), 120);
 
-            const finalCanvas = document.getElementById('capture-canvas');
-            const halfW = Math.floor(srcW / 2);
-            
-            finalCanvas.width = halfW;
-            finalCanvas.height = srcH * 2; 
-            const fCtx = finalCanvas.getContext('2d');
+    showToast("HIGH-RES DUAL SCANNING...");
 
-            fCtx.drawImage(workCanvas, 0, 0, halfW, srcH, 0, 0, halfW, srcH);
-            fCtx.drawImage(workCanvas, halfW, 0, halfW, srcH, 0, srcH, halfW, srcH);
+    const srcW = videoEl.videoWidth;
+    const srcH = videoEl.videoHeight;
 
-            const base64Image = finalCanvas.toDataURL('image/jpeg', 0.85).split(',')[1];
-            const url = `https://vision.googleapis.com/v1/images:annotate?key=${apiKey}`;
-            const requestBody = {
-                requests: [{
-                    image: { content: base64Image },
-                    features: [{ type: "TEXT_DETECTION" }]
-                }]
-            };
+    //==========================
+    // 元画像（スクショ用）
+    //==========================
 
-            try {
-                const response = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(requestBody) });
-                const resData = await response.json();
-                if (!resData.responses || !resData.responses[0].textAnnotations) { showToast("NO TEXT DETECTED"); return; }
+    const workCanvas = document.getElementById("split-work-canvas");
+    workCanvas.width = srcW;
+    workCanvas.height = srcH;
 
-                const annotations = resData.responses[0].textAnnotations;
-                
-                if (mode === "target") {
-                    await analyzeTargetModeWithAdvancedMatching(annotations, workCanvas, halfW, srcH);
-                } else {
-                    await analyzeQuestionModeAdvanced(annotations, halfW, srcH);
+    const wCtx = workCanvas.getContext("2d");
+    wCtx.drawImage(videoEl, 0, 0, srcW, srcH);
+
+    //==========================
+    // OCR専用4倍画像
+    //==========================
+
+    const SCALE = 4;
+
+    const ocrCanvas = document.createElement("canvas");
+    ocrCanvas.width = srcW * SCALE;
+    ocrCanvas.height = srcH * SCALE;
+
+    const oCtx = ocrCanvas.getContext("2d");
+
+    oCtx.imageSmoothingEnabled = true;
+    oCtx.imageSmoothingQuality = "high";
+
+    oCtx.drawImage(
+        videoEl,
+        0,
+        0,
+        srcW * SCALE,
+        srcH * SCALE
+    );
+
+    //==========================
+    // 左右結合
+    //==========================
+
+    const finalCanvas = document.getElementById("capture-canvas");
+
+    const halfW = Math.floor(srcW / 2);
+
+    finalCanvas.width = halfW * SCALE;
+    finalCanvas.height = srcH * 2 * SCALE;
+
+    const fCtx = finalCanvas.getContext("2d");
+
+    fCtx.imageSmoothingEnabled = true;
+    fCtx.imageSmoothingQuality = "high";
+
+    // 左側
+
+    fCtx.drawImage(
+        ocrCanvas,
+        0,
+        0,
+        halfW * SCALE,
+        srcH * SCALE,
+        0,
+        0,
+        halfW * SCALE,
+        srcH * SCALE
+    );
+
+    // 右側
+
+    fCtx.drawImage(
+        ocrCanvas,
+        halfW * SCALE,
+        0,
+        halfW * SCALE,
+        srcH * SCALE,
+        0,
+        srcH * SCALE,
+        halfW * SCALE,
+        srcH * SCALE
+    );
+
+    const base64Image =
+        finalCanvas.toDataURL("image/png").split(",")[1];
+
+    const url =
+        `https://vision.googleapis.com/v1/images:annotate?key=${apiKey}`;
+
+    const requestBody = {
+
+        requests: [{
+
+            image: {
+
+                content: base64Image
+
+            },
+
+            features: [
+
+                {
+
+                    type: "DOCUMENT_TEXT_DETECTION"
+
                 }
-            } catch (err) { showToast("API DETECT ERROR"); }
+
+            ]
+
+        }]
+
+    };
+
+    try {
+
+        const response = await fetch(url, {
+
+            method: "POST",
+
+            headers: {
+
+                "Content-Type": "application/json"
+
+            },
+
+            body: JSON.stringify(requestBody)
+
+        });
+
+        const resData = await response.json();
+
+        if (!resData.responses ||
+            !resData.responses[0].textAnnotations) {
+
+            showToast("NO TEXT DETECTED");
+
+            return;
+
         }
+
+        const annotations =
+            resData.responses[0].textAnnotations;
+
+        //★★★★★★★★★★★★★★★★★★★★★★
+        // OCR座標を元画像サイズへ戻す
+        //★★★★★★★★★★★★★★★★★★★★★★
+
+        annotations.forEach(item => {
+
+            if (!item.boundingPoly) return;
+
+            item.boundingPoly.vertices.forEach(v => {
+
+                if (v.x != null) v.x /= SCALE;
+
+                if (v.y != null) v.y /= SCALE;
+
+            });
+
+        });
+
+        if (mode === "target") {
+
+            await analyzeTargetModeWithAdvancedMatching(
+
+                annotations,
+
+                workCanvas,
+
+                halfW,
+
+                srcH
+
+            );
+
+        } else {
+
+            await analyzeQuestionModeAdvanced(
+
+                annotations,
+
+                halfW,
+
+                srcH
+
+            );
+
+        }
+
+    }
+
+    catch (err) {
+
+        console.error(err);
+
+        showToast("API DETECT ERROR");
+
+    }
+
+}
 
         async function analyzeTargetModeWithAdvancedMatching(annotations, originalCanvas, halfW, srcH) {
             const fullList = annotations.slice(1);
