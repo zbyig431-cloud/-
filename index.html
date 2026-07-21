@@ -160,16 +160,20 @@
             background: #05080c;
         }
 
-        .finder-container {
-            width: 100%;
-            flex: 1;
-            position: relative;
-            background: #000;
-            overflow: hidden;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
+.finder-container {
+    width: 100%;
+    flex: 1;
+
+    /* ↓この1行だけ追加 */
+    max-height: 70vh;
+
+    position: relative;
+    background: #000;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
 
         #camera-stream {
             width: 100%;
