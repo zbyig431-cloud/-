@@ -618,9 +618,12 @@
 const data = await response.json();
 const fullText = data.responses[0]?.textAnnotations?.[0]?.description || "";
 
-console.log("===== OCR結果 =====");
-console.log(fullText);
-console.log("===================");
+const data = await response.json();
+const fullText = data.responses[0]?.textAnnotations?.[0]?.description || "";
+
+// ★ OCR結果を候補欄に表示（デバッグ用）
+document.getElementById("suggest-area").innerHTML =
+    `<span style="font-size:0.6rem;color:#00ff66;white-space:pre-wrap;">${fullText}</span>`;
 
 processDetectedText(fullText);
             } catch (e) { 
