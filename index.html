@@ -589,13 +589,13 @@
             // 1. まず facingMode ideal で取得を試みる（多くの端末で成功）
             if (isFrontCamera) {
                 newStream = await acquireStream([
-                    { video: { facingMode: { ideal: "user" }, width: { ideal: 3840 }, height: { ideal: 2160 } }, audio: false },
+                    { video: { facingMode: { ideal: "user" }, width: { ideal: 1920 }, height: { ideal: 1080 } }, audio: false },
                     { video: { facingMode: { ideal: "user" } }, audio: false },
                     { video: { facingMode: "user" }, audio: false }
                 ]);
             } else {
                 newStream = await acquireStream([
-                    { video: { facingMode: { ideal: "environment" }, width: { ideal: 3840 }, height: { ideal: 2160 } }, audio: false },
+                    { video: { facingMode: { ideal: "environment" }, width: { ideal: 1920 }, height: { ideal: 1080 } }, audio: false },
                     { video: { facingMode: { ideal: "environment" } }, audio: false },
                     { video: { facingMode: "environment" }, audio: false }
                 ]);
@@ -820,68 +820,22 @@
             const wCtx = workCanvas.getContext('2d');
             wCtx.drawImage(videoEl, 0, 0, srcW, srcH);
 
-            // OCR専用（高解像度）
-const ocrCanvas = document.createElement("canvas");
-ocrCanvas.width = srcW * 2;
-ocrCanvas.height = srcH * 2;
+            const finalCanvas = document.getElementById('capture-canvas');
+            const halfW = Math.floor(srcW / 2);
+            
+            finalCanvas.width = halfW;
+            finalCanvas.height = srcH * 2; 
+            const fCtx = finalCanvas.getContext('2d');
 
-const oCtx = ocrCanvas.getContext("2d");
-oCtx.drawImage(
-    videoEl,
-    0,
-    0,
-    srcW * 2,
-    srcH * 2
-);
+            fCtx.drawImage(workCanvas, 0, 0, halfW, srcH, 0, 0, halfW, srcH);
+            fCtx.drawImage(workCanvas, halfW, 0, halfW, srcH, 0, srcH, halfW, srcH);
 
-const finalCanvas = document.getElementById('capture-canvas');
-const halfW = Math.floor(srcW / 2);
-
-// ★ OCR専用に2倍解像度へ拡大
-const SCALE = 4;
-
-finalCanvas.width = halfW * SCALE;
-finalCanvas.height = srcH * 2 * SCALE;
-
-const fCtx = finalCanvas.getContext('2d');
-
-// 補間品質を最高にする
-fCtx.imageSmoothingEnabled = true;
-fCtx.imageSmoothingQuality = "high";
-
-// 左半分
-fCtx.drawImage(
-    ocrCanvas,
-    0,
-    0,
-    halfW * 2,
-    srcH * 2,
-    0,
-    0,
-    halfW * SCALE,
-    srcH * SCALE
-);
-
-// 右半分
-fCtx.drawImage(
-    ocrCanvas,
-    halfW * 2,
-    0,
-    halfW * 2,
-    srcH * 2,
-    0,
-    srcH * SCALE,
-    halfW * SCALE,
-    srcH * SCALE
-);
-            const base64Image = finalCanvas.toDataURL('image/png').split(',')[1];
+            const base64Image = finalCanvas.toDataURL('image/jpeg', 0.85).split(',')[1];
             const url = `https://vision.googleapis.com/v1/images:annotate?key=${apiKey}`;
             const requestBody = {
                 requests: [{
                     image: { content: base64Image },
-                    features: [{
-    type: "DOCUMENT_TEXT_DETECTION"
-}]
+                    features: [{ type: "TEXT_DETECTION" }]
                 }]
             };
 
