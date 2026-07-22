@@ -163,10 +163,7 @@
 .finder-container {
     width: 100%;
     flex: 1;
-
-    /* ↓この1行だけ追加 */
     max-height: 75vh;
-
     position: relative;
     background: #000;
     overflow: hidden;
@@ -328,6 +325,7 @@
             grid-template-columns: 1fr 1fr;
             gap: 6px;
         }
+        .shutter-grid button { touch-action: none; }
 
         .btn-shutter-target {
             padding: 10px 0;
@@ -340,6 +338,17 @@
             box-shadow: 0 0 10px rgba(0,229,255,0.2);
         }
         .btn-shutter-target:active { background: var(--cyber-blue); color: #fff; transform: scale(0.95); }
+
+        .btn-shutter-target.scanning-active {
+            background: linear-gradient(180deg, #ff9100 0%, #ff3333 100%);
+            border-color: var(--cyber-orange);
+            color: #fff;
+            animation: scan-pulse 0.9s infinite;
+        }
+        @keyframes scan-pulse {
+            0%, 100% { box-shadow: 0 0 8px rgba(255,145,0,0.5); transform: scale(1); }
+            50% { box-shadow: 0 0 22px rgba(255,145,0,1); transform: scale(0.97); }
+        }
 
         .btn-shutter-quest {
             padding: 10px 0;
@@ -451,7 +460,7 @@
             <div class="hud-control-bottom">
                 <div class="stocks-counter" id="db-counter">STOCKS: 0</div>
                 <div class="shutter-grid">
-                    <button class="btn-shutter-target" id="shutter-target">スキャン</button>
+                    <button class="btn-shutter-target" id="shutter-target">スキャン長押し</button>
                     <button class="btn-shutter-quest" id="shutter-quest">問題撮影</button>
                 </div>
             </div>
@@ -461,7 +470,6 @@
     </div>
 
     <canvas id="split-work-canvas" style="display:none;"></canvas>
-    <canvas id="capture-canvas" style="display:none;"></canvas>
     <script type="module">
         import { initializeApp } from "firebase/app";
         import { getFirestore, doc, setDoc, onSnapshot } from "firebase/firestore";
@@ -486,6 +494,11 @@
         let isFrontCamera = false;
 
         let slotPatternIndexes = [0, 0, 0, 0, 0];
+
+        // 連続スキャン状態
+        let isContinuousScanning = false;
+        let continuousSessionNumbers = new Set();
+        const SCAN_INTERVAL_MS = 1200;
 
         const setupPhase = document.getElementById('setup-phase');
         const scanPhase = document.getElementById('scan-phase');
@@ -513,7 +526,18 @@
             document.getElementById('btn-toggle-facing').addEventListener('click', toggleFacingCamera);
             document.getElementById('btn-clear-slots').addEventListener('click', clearAllSlots);
 
-            document.getElementById('shutter-target').addEventListener('click', () => processCaptureOCR("target"));
+            // スキャン：長押しで連続スキャン。離すと停止。
+            const shutterTarget = document.getElementById('shutter-target');
+            shutterTarget.addEventListener('pointerdown', (e) => {
+                e.preventDefault();
+                try { shutterTarget.setPointerCapture(e.pointerId); } catch (_) {}
+                startContinuousScan();
+            });
+            shutterTarget.addEventListener('pointerup', stopContinuousScan);
+            shutterTarget.addEventListener('pointercancel', stopContinuousScan);
+            shutterTarget.addEventListener('contextmenu', (e) => e.preventDefault());
+
+            // 問題撮影：タップで1回撮影
             document.getElementById('shutter-quest').addEventListener('click', () => processCaptureOCR("question"));
 
             ['room-id', 'user-name', 'api-key'].forEach(id => {
@@ -539,6 +563,38 @@
                     executeSearch();
                 });
             });
+        }
+
+        function startContinuousScan() {
+            if (isContinuousScanning) return;
+            if (!localStream || !document.getElementById('api-key').value.trim()) {
+                showToast("CAMERA OR KEY MISSING");
+                return;
+            }
+            isContinuousScanning = true;
+            continuousSessionNumbers = new Set();
+            const btn = document.getElementById('shutter-target');
+            btn.classList.add('scanning-active');
+            btn.innerText = "スキャン中";
+            showToast("連続スキャン開始 (長押し中)");
+            continuousScanLoop();
+        }
+
+        async function continuousScanLoop() {
+            while (isContinuousScanning) {
+                await processCaptureOCR("target", true);
+                if (!isContinuousScanning) break;
+                await new Promise(r => setTimeout(r, SCAN_INTERVAL_MS));
+            }
+        }
+
+        function stopContinuousScan() {
+            if (!isContinuousScanning) return;
+            isContinuousScanning = false;
+            const btn = document.getElementById('shutter-target');
+            btn.classList.remove('scanning-active');
+            btn.innerText = "スキャン長押し";
+            showToast("連続スキャン停止");
         }
 
         function clearAllSlots() {
@@ -738,6 +794,7 @@
         }
 
         function exitScanMode() {
+            stopContinuousScan();
             if(localStream) { localStream.getTracks().forEach(track => track.stop()); localStream = null; }
             if (document.exitFullscreen) { document.exitFullscreen().catch(()=>{}); }
             if(unsubscribeRoom) { unsubscribeRoom(); unsubscribeRoom = null; }
@@ -801,18 +858,24 @@
             } catch(e) {}
         }
 
-        async function processCaptureOCR(mode) {
+        // 画面全体をそのまま1枚の画像としてVision APIへ送る。
+        // 以前の「半分に割って上下に並べる」手法は、数字が中央で分断されたり
+        // アスペクト比が崩れて認識率が下がる原因になっていたため廃止。
+        async function processCaptureOCR(mode, isContinuous = false) {
             const videoEl = document.getElementById('camera-stream');
             const apiKey = document.getElementById('api-key').value.trim();
             if(!localStream || !apiKey) return;
 
-            const indicator = document.getElementById('scan-indicator');
-            indicator.classList.add('active');
-            setTimeout(() => indicator.classList.remove('active'), 120);
-            showToast("HIGH-RES DUAL SCANNING...");
+            if (!isContinuous) {
+                const indicator = document.getElementById('scan-indicator');
+                indicator.classList.add('active');
+                setTimeout(() => indicator.classList.remove('active'), 120);
+                showToast("SCANNING...");
+            }
 
             const srcW = videoEl.videoWidth;
             const srcH = videoEl.videoHeight;
+            if (!srcW || !srcH) return;
 
             const workCanvas = document.getElementById('split-work-canvas');
             workCanvas.width = srcW;
@@ -820,17 +883,7 @@
             const wCtx = workCanvas.getContext('2d');
             wCtx.drawImage(videoEl, 0, 0, srcW, srcH);
 
-            const finalCanvas = document.getElementById('capture-canvas');
-            const halfW = Math.floor(srcW / 2);
-            
-            finalCanvas.width = halfW;
-            finalCanvas.height = srcH * 2; 
-            const fCtx = finalCanvas.getContext('2d');
-
-            fCtx.drawImage(workCanvas, 0, 0, halfW, srcH, 0, 0, halfW, srcH);
-            fCtx.drawImage(workCanvas, halfW, 0, halfW, srcH, 0, srcH, halfW, srcH);
-
-            const base64Image = finalCanvas.toDataURL('image/jpeg', 0.85).split(',')[1];
+            const base64Image = workCanvas.toDataURL('image/jpeg', 0.9).split(',')[1];
             const url = `https://vision.googleapis.com/v1/images:annotate?key=${apiKey}`;
             const requestBody = {
                 requests: [{
@@ -842,19 +895,24 @@
             try {
                 const response = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(requestBody) });
                 const resData = await response.json();
-                if (!resData.responses || !resData.responses[0].textAnnotations) { showToast("NO TEXT DETECTED"); return; }
+                if (!resData.responses || !resData.responses[0] || !resData.responses[0].textAnnotations) {
+                    if (!isContinuous) showToast("NO TEXT DETECTED");
+                    return;
+                }
 
                 const annotations = resData.responses[0].textAnnotations;
                 
                 if (mode === "target") {
-                    await analyzeTargetModeWithAdvancedMatching(annotations, workCanvas, halfW, srcH);
+                    await analyzeTargetModeWithAdvancedMatching(annotations, workCanvas, isContinuous);
                 } else {
-                    await analyzeQuestionModeAdvanced(annotations, halfW, srcH);
+                    await analyzeQuestionModeAdvanced(annotations);
                 }
-            } catch (err) { showToast("API DETECT ERROR"); }
+            } catch (err) {
+                if (!isContinuous) showToast("API DETECT ERROR");
+            }
         }
 
-        async function analyzeTargetModeWithAdvancedMatching(annotations, originalCanvas, halfW, srcH) {
+        async function analyzeTargetModeWithAdvancedMatching(annotations, originalCanvas, isContinuous) {
             const fullList = annotations.slice(1);
             const numbersList = [];
             const genericBlocks = [];
@@ -864,16 +922,13 @@
                 const box = item.boundingPoly.vertices;
                 if (!box || box.length < 4) return;
 
-                let cx = ((box[0]?.x ?? 0) + (box[1]?.x ?? 0) + (box[2]?.x ?? 0) + (box[3]?.x ?? 0)) / 4;
-                let cy = ((box[0]?.y ?? 0) + (box[1]?.y ?? 0) + (box[2]?.y ?? 0) + (box[3]?.y ?? 0)) / 4;
+                // 座標はキャプチャ画像(workCanvas)と同じ全画面座標系なので、
+                // 上下分割の座標補正は不要。
+                const cx = ((box[0]?.x ?? 0) + (box[1]?.x ?? 0) + (box[2]?.x ?? 0) + (box[3]?.x ?? 0)) / 4;
+                const cy = ((box[0]?.y ?? 0) + (box[1]?.y ?? 0) + (box[2]?.y ?? 0) + (box[3]?.y ?? 0)) / 4;
 
                 const h = Math.max(box[0]?.y ?? 0, box[1]?.y ?? 0, box[2]?.y ?? 0, box[3]?.y ?? 0) - Math.min(box[0]?.y ?? 0, box[1]?.y ?? 0, box[2]?.y ?? 0, box[3]?.y ?? 0);
                 const w = Math.max(box[0]?.x ?? 0, box[1]?.x ?? 0, box[2]?.x ?? 0, box[3]?.x ?? 0) - Math.min(box[0]?.x ?? 0, box[1]?.x ?? 0, box[2]?.x ?? 0, box[3]?.x ?? 0);
-
-                if (cy >= srcH) {
-                    cx = cx + halfW;
-                    cy = cy - srcH; 
-                }
 
                 const info = { text, cx, cy, w, h };
 
@@ -884,10 +939,13 @@
                 }
             });
 
-            if (numbersList.length === 0) { showToast("NO 3-DIGIT TARGETS"); return; }
+            if (numbersList.length === 0) {
+                if (!isContinuous) showToast("NO 3-DIGIT TARGETS");
+                return;
+            }
 
             const updates = {};
-            let matchCount = 0;
+            const newNumbers = [];
 
             numbersList.forEach(numObj => {
                 const verticalCandidates = genericBlocks.filter(b => {
@@ -937,25 +995,46 @@
                 cCtx.drawImage(originalCanvas, cropX3, cropY3, zoomCropW, zoomCropH, 0, 0, 120, 160);
                 const img3 = cropCanvas.toDataURL('image/jpeg', 0.65);
 
-                updates[numObj.text] = {
+                const entry = {
                     croppedImgs: [img1, img2, img3],
                     timestamp: Date.now()
                 };
-                matchCount++;
+
+                if (isContinuous) {
+                    // 同一長押しセッション内で未検出の数字だけを新規ストック。
+                    // 既出の数字は再書き込みせず、API/Firestoreの無駄な消費を防ぐ。
+                    if (continuousSessionNumbers.has(numObj.text)) return;
+                    continuousSessionNumbers.add(numObj.text);
+                    updates[numObj.text] = entry;
+                    newNumbers.push(numObj.text);
+                } else {
+                    updates[numObj.text] = entry;
+                }
             });
 
+            const matchCount = Object.keys(updates).length;
             if (matchCount > 0) {
                 const roomId = document.getElementById('room-id').value.trim() || 'default_room';
                 const mergedMap = { ...allPhotosMap };
                 Object.keys(updates).forEach(num => { mergedMap[num] = updates[num]; });
                 try {
                     await setDoc(doc(db, "rooms", roomId), { photoMap: mergedMap }, { merge: true });
-                    showToast(`STOCKED: ${matchCount} UNITS`);
-                } catch (e) { showToast("SYNC ERROR"); }
-            } else { showToast("MATCHING CRITERIA FAILED"); }
+                    if (isContinuous) {
+                        if (newNumbers.length > 0) {
+                            showToast(`+${newNumbers.length} 新規: ${newNumbers.join(", ")}`);
+                        }
+                    } else {
+                        showToast(`STOCKED: ${matchCount} UNITS`);
+                    }
+                } catch (e) {
+                    if (!isContinuous) showToast("SYNC ERROR");
+                }
+            } else {
+                if (!isContinuous) showToast("MATCHING CRITERIA FAILED");
+            }
         }
 
-        async function analyzeQuestionModeAdvanced(annotations, halfW, srcH) {
+        async function analyzeQuestionModeAdvanced(annotations) {
             const fullList = annotations.slice(1);
             const foundNumbers = [];
             
@@ -963,10 +1042,7 @@
                 const text = item.description.trim();
                 if (/^\d{3}$/.test(text)) {
                     const box = item.boundingPoly.vertices;
-                    let cx = ((box[0]?.x ?? 0) + (box[2]?.x ?? 0)) / 2;
-                    let cy = ((box[0]?.y ?? 0) + (box[2]?.y ?? 0)) / 2;
-                    
-                    if (cy >= srcH) { cx = cx + halfW; }
+                    const cx = ((box[0]?.x ?? 0) + (box[2]?.x ?? 0)) / 2;
                     foundNumbers.push({ text, x: cx });
                 }
             });
