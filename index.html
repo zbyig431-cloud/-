@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>N.MトワもんGemini</title>
+    <title>N トワもんGemini</title>
     <!-- Firebase SDK (v10) -->
     <script type="importmap">
       {
@@ -78,12 +78,14 @@
         }
 
         h1 {
-            font-size: 20px;
+            font-size: 34px;
+            font-weight: 800;
             text-align: center;
             color: var(--cyber-blue);
-            text-shadow: 0 0 10px rgba(0,229,255,0.5);
-            padding: 10px 0;
+            text-shadow: 0 0 14px rgba(0,229,255,0.65), 0 0 28px rgba(0,229,255,0.3);
+            padding: 14px 0;
             border-bottom: 2px dashed var(--panel-border);
+            letter-spacing: 2px;
         }
 
         .member-status-bar {
@@ -96,12 +98,38 @@
             gap: 10px;
             font-size: 12px;
         }
+
+        .hud-member-status {
+            flex: 1 1 auto;
+            min-width: 0;
+            height: 80%;
+            min-height: 28px;
+            background: rgba(57, 255, 20, 0.06);
+            border: 1px solid rgba(57, 255, 20, 0.25);
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 0 10px;
+            font-size: 11px;
+            color: var(--cyber-green);
+            overflow: hidden;
+            white-space: nowrap;
+            text-overflow: ellipsis;
+        }
+        .hud-member-status .online-dot {
+            flex-shrink: 0;
+        }
+        .hud-member-status #member-list-text {
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
         .online-dot {
-            width: 8px;
-            height: 8px;
+            width: 6px;
+            height: 6px;
             background-color: var(--cyber-green);
             border-radius: 50%;
-            box-shadow: 0 0 8px var(--cyber-green);
+            box-shadow: 0 0 6px var(--cyber-green);
         }
 
         .config-box {
@@ -142,62 +170,122 @@
             font-size: 13px;
         }
 
-        /* PHASE 2: 横画面HUD */
+        .usage-guide {
+            background: var(--panel-bg);
+            border: 1px solid var(--panel-border);
+            border-radius: 6px;
+            padding: 14px 16px;
+            flex: 1;
+            min-height: 0;
+            overflow-y: auto;
+        }
+        .usage-guide h2 {
+            font-size: 13px;
+            color: var(--cyber-blue);
+            margin-bottom: 10px;
+            padding-bottom: 6px;
+            border-bottom: 1px solid rgba(0,229,255,0.2);
+            letter-spacing: 1px;
+        }
+        .usage-guide h3 {
+            font-size: 12px;
+            color: var(--cyber-green);
+            margin-top: 12px;
+            margin-bottom: 6px;
+        }
+        .usage-guide h3:first-of-type { margin-top: 0; }
+        .usage-guide ul {
+            list-style: none;
+            padding: 0;
+            margin: 0 0 8px 0;
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+        .usage-guide li {
+            font-size: 13.5px;
+            line-height: 1.5;
+            color: #aabbcc;
+            padding-left: 14px;
+            position: relative;
+        }
+        .usage-guide li::before {
+            content: "›";
+            position: absolute;
+            left: 0;
+            color: var(--cyber-blue);
+            font-weight: bold;
+        }
+        .usage-guide .warn li::before { color: var(--cyber-orange); }
+        .usage-guide .warn li { color: #ccbbaa; }
+
+        /* PHASE 2: 横画面HUD
+           上段(5/6高さ): 左=カメラ(3/5幅) 右=スロット(2/5幅)
+           下段(1/6高さ): 全幅ボタンバー */
         #scan-phase {
             position: fixed;
             top: 0; left: 0; width: 100vw; height: 100vh;
             background: var(--bg-dark);
             display: none;
             z-index: 1000;
-            grid-template-columns: 1fr 300px;
+            grid-template-columns: 3fr 2fr;
+            grid-template-rows: 5fr 1fr;
         }
 
         .hud-left {
             grid-column: 1;
+            grid-row: 1;
             display: flex;
             flex-direction: column;
             height: 100%;
             background: #05080c;
+            overflow: hidden;
         }
 
-.finder-container {
-    width: 100%;
-    flex: 1;
-    max-height: 75vh;
-    position: relative;
-    background: #000;
-    overflow: hidden;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
+        .finder-container {
+            width: 100%;
+            flex: 1;
+            position: relative;
+            background: #000;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
 
-#camera-stream {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-}
+        #camera-stream {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
 
         .hud-left-bottom-controls {
-            height: 60px;
+            grid-column: 1;
+            grid-row: 2;
             background: rgba(10, 14, 20, 0.95);
             border-top: 1px solid rgba(0, 229, 255, 0.3);
             display: flex;
             align-items: center;
-            padding: 0 15px;
+            justify-content: space-between;
+            padding: 0 10px;
             gap: 10px;
+            overflow-x: auto;
+            overflow-y: hidden;
         }
 
         .btn-exit-icon, .btn-zoom-toggle, .btn-camera-toggle, .btn-clear-slots {
-            height: 42px;
-            padding: 0 15px;
-            border-radius: 6px;
-            font-size: 13px;
+            height: 80%;
+            min-height: 30px;
+            padding: 0 16px;
+            border-radius: 4px;
+            font-size: 12px;
             font-weight: bold;
             display: flex;
             align-items: center;
             justify-content: center;
-            box-shadow: 0 0 10px rgba(0,0,0,0.5);
+            box-shadow: 0 0 8px rgba(0,0,0,0.5);
+            white-space: nowrap;
+            flex-shrink: 0;
         }
 
         .btn-exit-icon {
@@ -225,18 +313,18 @@
             background: rgba(255, 145, 0, 0.1);
             border: 1px solid var(--cyber-orange);
             color: var(--cyber-orange);
-            margin-left: auto;
         }
         .btn-clear-slots:active { background: var(--cyber-orange); color: #000; }
 
         .hud-right {
             grid-column: 2;
+            grid-row: 1 / -1;
             background: #0a0e14;
             border-left: 2px solid rgba(0, 229, 255, 0.3);
             display: flex;
             flex-direction: column;
-            padding: 6px;
-            gap: 6px;
+            padding: 4px;
+            gap: 3px;
             height: 100%;
             overflow: hidden;
         }
@@ -249,29 +337,34 @@
             padding-bottom: 2px;
             font-weight: bold;
             letter-spacing: 1px;
+            flex-shrink: 0;
         }
 
         .hud-slot-list {
             display: flex;
             flex-direction: column;
-            gap: 4px;
+            gap: 3px;
+            flex: 1;
+            min-height: 0;
         }
         .hud-slot-row {
             display: flex;
             align-items: center;
             background: rgba(20, 30, 45, 0.6);
             border: 1px solid rgba(140, 200, 255, 0.2);
-            border-radius: 4px;
-            padding: 3px;
-            gap: 6px;
-            height: 52px;
+            border-radius: 3px;
+            padding: 2px;
+            gap: 4px;
+            flex: 0.78;
+            min-height: 0;
         }
         .hud-slot-row.has-error { border-color: rgba(255, 51, 51, 0.4); background: rgba(255,0,0,0.05); }
         
         .hud-slot-row input {
-            width: 44px;
-            height: 32px;
-            padding: 2px;
+            width: 36px;
+            min-width: 36px;
+            height: 100%;
+            padding: 1px;
             font-size: 15px;
             font-weight: bold;
             text-align: center;
@@ -296,12 +389,12 @@
             padding: 2px;
         }
         .hud-slot-ans-zone img {
-            width: 31% !important;
-            height: auto !important;
-            max-height: 100% !important;
+            width: 26% !important;
+            height: 88% !important;
             object-fit: contain;
             border: 1px solid rgba(0, 229, 255, 0.4);
-            border-radius: 3px;
+            border-radius: 2px;
+            background: #000;
         }
         .hud-slot-ans-zone .no-img-text { font-size: 10px; color: #445566; font-weight: bold; margin: auto; }
         .hud-slot-ans-zone .err-text { font-size: 10px; color: var(--cyber-red); font-weight: bold; margin: auto; }
@@ -311,29 +404,29 @@
         }
 
         .hud-control-bottom {
-            margin-top: auto;
             display: flex;
             flex-direction: column;
-            gap: 4px;
-            padding-top: 4px;
+            gap: 3px;
+            padding-top: 3px;
             border-top: 1px solid rgba(255,255,255,0.1);
+            flex-shrink: 0;
         }
-        .stocks-counter { font-size: 9px; color: #8cc8ff; font-weight: bold; text-align: center; }
+        .stocks-counter { font-size: 10px; color: #8cc8ff; font-weight: bold; text-align: center; }
 
         .shutter-grid {
             display: grid;
             grid-template-columns: 1fr 1fr;
-            gap: 6px;
+            gap: 4px;
         }
         .shutter-grid button { touch-action: none; }
 
         .btn-shutter-target {
-            padding: 10px 0;
-            border-radius: 6px;
+            padding: 22px 0;
+            border-radius: 5px;
             background: linear-gradient(180deg, #ffffff 0%, #b5e9ff 100%);
             border: 2px solid var(--cyber-blue);
             color: #050b14;
-            font-size: 12px;
+            font-size: 13px;
             font-weight: 900;
             box-shadow: 0 0 10px rgba(0,229,255,0.2);
         }
@@ -351,12 +444,12 @@
         }
 
         .btn-shutter-quest {
-            padding: 10px 0;
-            border-radius: 6px;
+            padding: 22px 0;
+            border-radius: 5px;
             background: linear-gradient(180deg, #ffffff 0%, #e2c6ff 100%);
             border: 2px solid var(--cyber-purple);
             color: #050b14;
-            font-size: 12px;
+            font-size: 13px;
             font-weight: 900;
             box-shadow: 0 0 10px rgba(181,124,255,0.2);
         }
@@ -383,17 +476,54 @@
         .camera-crosshair::before, .camera-crosshair::after { content: ''; position: absolute; background: white; }
         .camera-crosshair::before { top: 14px; left: 0; width: 30px; height: 2px; }
         .camera-crosshair::after { left: 14px; top: 0; width: 2px; height: 30px; }
+
+        /* スマホ横画面（画面高さが小さい）専用：下段ボタンをさらに縮小 */
+        @media (max-height: 500px) {
+            .hud-left-bottom-controls {
+                padding: 0 4px;
+                gap: 4px;
+            }
+            .btn-exit-icon, .btn-zoom-toggle, .btn-camera-toggle, .btn-clear-slots {
+                height: 26px;
+                min-height: 26px;
+                padding: 0 6px;
+                font-size: 10px;
+            }
+            .hud-member-status {
+                height: 26px;
+                min-height: 26px;
+                font-size: 9px;
+                padding: 0 6px;
+            }
+            .online-dot { width: 5px; height: 5px; }
+            .hud-right { padding: 3px; gap: 2px; }
+            .hud-panel-title { font-size: 8px; padding-bottom: 1px; }
+            .hud-slot-list { gap: 2px; }
+            .hud-slot-row { padding: 1px; gap: 3px; }
+            .hud-slot-row input { width: 28px; min-width: 28px; font-size: 12px; }
+            .hud-slot-ans-zone { padding: 1px; gap: 1px; }
+            .hud-slot-ans-zone .no-img-text,
+            .hud-slot-ans-zone .err-text { font-size: 8px; }
+            .hud-control-bottom { gap: 2px; padding-top: 2px; }
+            .stocks-counter { font-size: 8px; }
+            .shutter-grid { gap: 3px; }
+            .btn-shutter-target, .btn-shutter-quest {
+                padding: 16px 0;
+                font-size: 10px;
+                border-width: 1px;
+            }
+            .toast-log { bottom: 60px; padding: 4px 8px; font-size: 9px; }
+        }
     </style>
+  <meta property="og:image" content="https://bolt.new/static/og_default.png">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:image" content="https://bolt.new/static/og_default.png">
 </head>
 <body>
 
     <!-- PHASE 1: 設定画面 -->
     <div id="setup-phase">
         <h1>トワもんGemini</h1>
-        <div class="member-status-bar">
-            <span class="online-dot"></span>
-            <span id="member-list-text">ONLINE: 待機中...</span>
-        </div>
         <div class="config-box">
             <div>
                 <label>ROOM ID:</label>
@@ -412,6 +542,29 @@
             <button class="btn-start-scan" id="btn-enter-scan">スキャンモード</button>
             <button class="btn-reset-system" id="btn-reset-all">ルームリセット</button>
         </div>
+        <div class="usage-guide">
+            <h2>使い方と注意点</h2>
+            <h3>使い方</h3>
+            <ul>
+                <li>ROOM ID・PLAYER NAME・PASS WORD を入力し「スキャンモード」を押すと撮影画面に移動します</li>
+                <li>「問題撮影」ボタンをタップすると問題文を撮影し、読み取った数字はスロット内に自動入力されます</li>
+                <li>再度問題文の撮影を行うと、スロット内の数字が上書きされます</li>
+                <li>「クリア」ボタンでスロットを全消去できます</li>
+                <li>「1.0/0.5」でズーム切替、「外カメ」でカメラの表/裏を切り替えられます</li>
+                <li>同じ ROOM ID のメンバーと数字・画像をリアルタイム共有します</li>
+            </ul>
+            <h3>注意点</h3>
+            <ul class="warn">
+                <li>パスワードを正しく入力しないと機能しません</li>
+                <li>カメラへのアクセス許可が必要です。ブラウザの設定で許可してください</li>
+                <li>スキャン中は手ブレやピンボケると認識精度が下がります。安定した状態で撮影してください</li>
+                <li>「ルームリセット」を押すと共有中のデータがすべて消去されます。メンバー全員に影響します</li>
+                <li>通信環境が悪いと共有に遅延が出ます。安定したネットワークでご利用ください</li>
+                <li>問題を撮影する際は、問題となる数字だけを映すようにしてください</li>
+                <li>小さすぎる数字、ぼやけた数字はうまく認識できない場合があります。必要に応じて倍率の変更を行ってください</li>
+                <li>無許可での共有、使用はしないようお願いします。バグや不具合はトワもんにご連絡ください</li>
+            </ul>
+        </div>
     </div>
 
     <!-- PHASE 2: 横画面スキャンHUD -->
@@ -421,13 +574,6 @@
                 <video id="camera-stream" autoplay playsinline muted></video>
                 <div class="camera-crosshair"></div>
                 <div class="scan-dimmer" id="scan-indicator"></div>
-            </div>
-
-            <div class="hud-left-bottom-controls">
-                <button class="btn-exit-icon" id="btn-exit-scan">ホームへ</button>
-                <button class="btn-zoom-toggle" id="btn-toggle-lens">1.0/0.5</button>
-                <button class="btn-camera-toggle" id="btn-toggle-facing">外カメ</button>
-                <button class="btn-clear-slots" id="btn-clear-slots">クリア</button>
             </div>
         </div>
 
@@ -460,10 +606,21 @@
             <div class="hud-control-bottom">
                 <div class="stocks-counter" id="db-counter">STOCKS: 0</div>
                 <div class="shutter-grid">
-                    <button class="btn-shutter-target" id="shutter-target">スキャン長押し</button>
+                    <button class="btn-shutter-target" id="shutter-target">スキャン連射</button>
                     <button class="btn-shutter-quest" id="shutter-quest">問題撮影</button>
                 </div>
             </div>
+        </div>
+
+        <div class="hud-left-bottom-controls">
+            <button class="btn-exit-icon" id="btn-exit-scan">ホームへ</button>
+            <button class="btn-zoom-toggle" id="btn-toggle-lens">1.0/0.5</button>
+            <button class="btn-camera-toggle" id="btn-toggle-facing">外カメ</button>
+            <div class="hud-member-status">
+                <span class="online-dot"></span>
+                <span id="member-list-text">ONLINE: 待機中...</span>
+            </div>
+            <button class="btn-clear-slots" id="btn-clear-slots">クリア</button>
         </div>
 
         <div class="toast-log" id="toast-log">SCANNING...</div>
@@ -497,8 +654,23 @@
 
         // 連続スキャン状態
         let isContinuousScanning = false;
-        let continuousSessionNumbers = new Set();
-        const SCAN_INTERVAL_MS = 1200;
+        let continuousSessionSeen = []; // [{text, cx, cy}] 直前の認識結果（重複判定用）
+        const SCAN_INTERVAL_MS = 800;
+        // 重複判定しきい値はキャプチャ幅に対する比率で算出（4Kでも手ブレで過剰ストックしない）
+        const POS_DUP_FRAC = 0.05;
+        const MAX_CANDIDATES = 3; // 同一数字あたりの候補スクショは常に3枚
+
+        // タイル分割設定
+        const TILE_COLS = 4;
+        const TILE_ROWS = 2;
+        const TILE_OVERLAP = 0.15;
+
+        // 画質向上: APIへ送るJPEGの品質
+        const FULL_JPEG_QUALITY = 0.92;
+        const TILE_JPEG_QUALITY = 0.92;
+        const CROP_JPEG_QUALITY = 0.88;
+        // 画質維持: カメラは4Kのまま、AIへ送る画像だけ最大辺1280pxに縮小（APIタイムアウト/拒否/規制制限防止）
+        const API_MAX_DIM = 1280;
 
         const setupPhase = document.getElementById('setup-phase');
         const scanPhase = document.getElementById('scan-phase');
@@ -526,19 +698,23 @@
             document.getElementById('btn-toggle-facing').addEventListener('click', toggleFacingCamera);
             document.getElementById('btn-clear-slots').addEventListener('click', clearAllSlots);
 
-            // スキャン：長押しで連続スキャン。離すと停止。
+            // スキャン：タップで連射ON/OFF切替
             const shutterTarget = document.getElementById('shutter-target');
-            shutterTarget.addEventListener('pointerdown', (e) => {
-                e.preventDefault();
-                try { shutterTarget.setPointerCapture(e.pointerId); } catch (_) {}
-                startContinuousScan();
+            shutterTarget.addEventListener('click', () => {
+                if (isContinuousScanning) {
+                    stopContinuousScan();
+                } else {
+                    startContinuousScan();
+                }
             });
-            shutterTarget.addEventListener('pointerup', stopContinuousScan);
-            shutterTarget.addEventListener('pointercancel', stopContinuousScan);
             shutterTarget.addEventListener('contextmenu', (e) => e.preventDefault());
 
             // 問題撮影：タップで1回撮影
-            document.getElementById('shutter-quest').addEventListener('click', () => processCaptureOCR("question"));
+            document.getElementById('shutter-quest').addEventListener('click', () => {
+                processCaptureOCR("question").catch(err => {
+                    showToast("撮影エラー: " + (err.message || "").slice(0, 30));
+                });
+            });
 
             ['room-id', 'user-name', 'api-key'].forEach(id => {
                 document.getElementById(id).addEventListener('input', saveConfig);
@@ -572,17 +748,26 @@
                 return;
             }
             isContinuousScanning = true;
-            continuousSessionNumbers = new Set();
+            continuousSessionSeen = [];
             const btn = document.getElementById('shutter-target');
             btn.classList.add('scanning-active');
-            btn.innerText = "スキャン中";
-            showToast("連続スキャン開始 (長押し中)");
+            btn.innerText = "スキャン中 (タップで停止)";
+            showToast("連射スキャン開始");
             continuousScanLoop();
         }
 
+        let continuousErrorCount = 0;
         async function continuousScanLoop() {
             while (isContinuousScanning) {
-                await processCaptureOCR("target", true);
+                try {
+                    await processCaptureOCR("target", true);
+                    continuousErrorCount = 0;
+                } catch (err) {
+                    continuousErrorCount++;
+                    if (continuousErrorCount <= 2) {
+                        showToast("スキャンエラー リトライ中...");
+                    }
+                }
                 if (!isContinuousScanning) break;
                 await new Promise(r => setTimeout(r, SCAN_INTERVAL_MS));
             }
@@ -593,8 +778,8 @@
             isContinuousScanning = false;
             const btn = document.getElementById('shutter-target');
             btn.classList.remove('scanning-active');
-            btn.innerText = "スキャン長押し";
-            showToast("連続スキャン停止");
+            btn.innerText = "スキャン連射";
+            showToast("連射スキャン停止");
         }
 
         function clearAllSlots() {
@@ -616,6 +801,37 @@
                 }
             }
             return null;
+        }
+
+        // 画質向上: 取得したトラックに高解像度・オートフォーカス・自動露出・手ブレ補正を適用
+        async function enhanceTrack(track) {
+            if (!track) return;
+            const capabilities = track.getCapabilities ? track.getCapabilities() : {};
+            const constraints = {};
+            // 可能なら最高解像度を要求
+            if (capabilities.width && capabilities.height) {
+                constraints.width = { ideal: capabilities.width.max };
+                constraints.height = { ideal: capabilities.height.max };
+            }
+            // 連続オートフォーカス（ぼやけ防止）
+            if (capabilities.focusMode && capabilities.focusMode.includes('continuous')) {
+                constraints.focusMode = 'continuous';
+            } else if (capabilities.focusDistance !== undefined) {
+                constraints.focusDistance = { ideal: 0 };
+            }
+            // 連続自動露出（明るすぎ/暗すぎ防止）
+            if (capabilities.exposureMode && capabilities.exposureMode.includes('continuous')) {
+                constraints.exposureMode = 'continuous';
+            }
+            // 手ブレ補正
+            if (capabilities.imageStabilization !== undefined) {
+                constraints.imageStabilization = true;
+            }
+            try {
+                if (Object.keys(constraints).length > 0) {
+                    await track.applyConstraints(constraints);
+                }
+            } catch (e) {}
         }
 
         // facingMode が信頼できない端末向けに、取得したトラックの設定から
@@ -642,15 +858,17 @@
 
             let newStream = null;
 
-            // 1. まず facingMode ideal で取得を試みる（多くの端末で成功）
+            // 画質向上: 4K優先 → 1920x1080 → 制約なし の順で高解像度を狙う
             if (isFrontCamera) {
                 newStream = await acquireStream([
+                    { video: { facingMode: { ideal: "user" }, width: { ideal: 3840 }, height: { ideal: 2160 } }, audio: false },
                     { video: { facingMode: { ideal: "user" }, width: { ideal: 1920 }, height: { ideal: 1080 } }, audio: false },
                     { video: { facingMode: { ideal: "user" } }, audio: false },
                     { video: { facingMode: "user" }, audio: false }
                 ]);
             } else {
                 newStream = await acquireStream([
+                    { video: { facingMode: { ideal: "environment" }, width: { ideal: 3840 }, height: { ideal: 2160 } }, audio: false },
                     { video: { facingMode: { ideal: "environment" }, width: { ideal: 1920 }, height: { ideal: 1080 } }, audio: false },
                     { video: { facingMode: { ideal: "environment" } }, audio: false },
                     { video: { facingMode: "environment" }, audio: false }
@@ -668,9 +886,7 @@
             }
 
             // 3. facingMode 方式で失敗/不一致の場合、deviceId ベースで全カメラを順次試行。
-            //    一部のiPad/スマホは facingMode 制約を無視するため、これが確実な方法。
             if (!newStream) {
-                // パーミッション取得＆ラベル有効化のため一度 { video: true }
                 const permStream = await acquireStream([{ video: true, audio: false }]);
                 if (permStream) {
                     let videoDevices = [];
@@ -681,7 +897,6 @@
                     permStream.getTracks().forEach(t => t.stop());
 
                     const wantFace = isFrontCamera ? 'user' : 'environment';
-                    // 外カメ候補をラベルで優先ソート（ラベルに back/rear を含むものを先頭へ）
                     const sorted = [...videoDevices].sort((a, b) => {
                         const aBack = /back|rear|environment|背面|外/i.test(a.label) ? 0 : 1;
                         const bBack = /back|rear|environment|背面|外/i.test(b.label) ? 0 : 1;
@@ -691,19 +906,23 @@
 
                     for (const dev of sorted) {
                         try {
-                            const s = await navigator.mediaDevices.getUserMedia({
-                                video: { deviceId: { exact: dev.deviceId } }, audio: false
-                            });
-                            const track = s.getVideoTracks()[0];
-                            if (track && isTrackFacing(track, wantFace)) {
-                                newStream = s;
-                                break;
+                            // 画質向上: deviceId方式でも4K優先
+                            const s = await acquireStream([
+                                { video: { deviceId: { exact: dev.deviceId }, width: { ideal: 3840 }, height: { ideal: 2160 } }, audio: false },
+                                { video: { deviceId: { exact: dev.deviceId }, width: { ideal: 1920 }, height: { ideal: 1080 } }, audio: false },
+                                { video: { deviceId: { exact: dev.deviceId } }, audio: false }
+                            ]);
+                            if (s) {
+                                const track = s.getVideoTracks()[0];
+                                if (track && isTrackFacing(track, wantFace)) {
+                                    newStream = s;
+                                    break;
+                                }
+                                s.getTracks().forEach(t => t.stop());
                             }
-                            s.getTracks().forEach(t => t.stop());
                         } catch (e) {}
                     }
 
-                    // 4. facingMode 判定でも特定できなかった場合、ラベルだけで選択
                     if (!newStream && sorted.length > 0) {
                         const labelMatch = isFrontCamera
                             ? sorted.find(d => /front|user|前面|内|face/i.test(d.label))
@@ -711,6 +930,8 @@
                         const fallbackDev = labelMatch || sorted[0];
                         if (fallbackDev) {
                             newStream = await acquireStream([
+                                { video: { deviceId: { exact: fallbackDev.deviceId }, width: { ideal: 3840 }, height: { ideal: 2160 } }, audio: false },
+                                { video: { deviceId: { exact: fallbackDev.deviceId }, width: { ideal: 1920 }, height: { ideal: 1080 } }, audio: false },
                                 { video: { deviceId: { exact: fallbackDev.deviceId } }, audio: false },
                                 { video: { deviceId: { ideal: fallbackDev.deviceId } }, audio: false }
                             ]);
@@ -742,6 +963,9 @@
 
                     if (targetId) {
                         const lensStream = await acquireStream([
+                            // 画質向上: レンズ切替でも4K優先
+                            { video: { deviceId: { exact: targetId }, width: { ideal: 3840 }, height: { ideal: 2160 } }, audio: false },
+                            { video: { deviceId: { exact: targetId }, width: { ideal: 1920 }, height: { ideal: 1080 } }, audio: false },
                             { video: { deviceId: { exact: targetId } }, audio: false },
                             { video: { deviceId: { ideal: targetId } }, audio: false }
                         ]);
@@ -762,6 +986,9 @@
                 }
                 return;
             }
+
+            // 画質向上: 最終ストリームのトラックにフォーカス・露出・手ブレ補正を適用
+            await enhanceTrack(newStream.getVideoTracks()[0]);
 
             // 7. 新ストリームに切り替え
             if (localStream) { localStream.getTracks().forEach(track => track.stop()); }
@@ -839,11 +1066,19 @@
                     });
                 }
                 
-                if (data.photoMap) {
-                    allPhotosMap = data.photoMap;
+                if (data.photoMap && Object.keys(data.photoMap).length > 0) {
+                    const incoming = data.photoMap;
+                    const merged = { ...incoming };
+                    for (const k of Object.keys(allPhotosMap)) {
+                        const local = allPhotosMap[k];
+                        if (!merged[k] || (local && local.timestamp && (!merged[k].timestamp || local.timestamp > merged[k].timestamp))) {
+                            merged[k] = local;
+                        }
+                    }
+                    allPhotosMap = merged;
                     document.getElementById('db-counter').innerText = `STOCKS: ${Object.keys(allPhotosMap).length}`;
-                } else {
-                    allPhotosMap = {}; 
+                } else if (data.photoMap && Object.keys(data.photoMap).length === 0) {
+                    allPhotosMap = {};
                     document.getElementById('db-counter').innerText = "STOCKS: 0";
                 }
                 executeSearch();
@@ -858,32 +1093,56 @@
             } catch(e) {}
         }
 
-        // 画面全体をそのまま1枚の画像としてVision APIへ送る。
-        // 以前の「半分に割って上下に並べる」手法は、数字が中央で分断されたり
-        // アスペクト比が崩れて認識率が下がる原因になっていたため廃止。
-        async function processCaptureOCR(mode, isContinuous = false) {
+        // ─── タイル画像生成 ───
+        function buildTiles(srcW, srcH) {
+            const stepX = srcW / TILE_COLS;
+            const stepY = srcH / TILE_ROWS;
+            const tileW = Math.floor(stepX * (1 + TILE_OVERLAP));
+            const tileH = Math.floor(stepY * (1 + TILE_OVERLAP));
+
+            const srcCanvas = document.getElementById('split-work-canvas');
+            srcCanvas.width = srcW;
+            srcCanvas.height = srcH;
+            const sCtx = srcCanvas.getContext('2d');
             const videoEl = document.getElementById('camera-stream');
-            const apiKey = document.getElementById('api-key').value.trim();
-            if(!localStream || !apiKey) return;
+            sCtx.drawImage(videoEl, 0, 0, srcW, srcH);
 
-            if (!isContinuous) {
-                const indicator = document.getElementById('scan-indicator');
-                indicator.classList.add('active');
-                setTimeout(() => indicator.classList.remove('active'), 120);
-                showToast("SCANNING...");
+            const tiles = [];
+            for (let r = 0; r < TILE_ROWS; r++) {
+                for (let c = 0; c < TILE_COLS; c++) {
+                    const cx = Math.floor(c * stepX + stepX / 2 - tileW / 2);
+                    const cy = Math.floor(r * stepY + stepY / 2 - tileH / 2);
+                    const ox = Math.max(0, Math.min(cx, srcW - tileW));
+                    const oy = Math.max(0, Math.min(cy, srcH - tileH));
+
+                    const tc = document.createElement('canvas');
+                    tc.width = tileW;
+                    tc.height = tileH;
+                    tc.getContext('2d').drawImage(srcCanvas, ox, oy, tileW, tileH, 0, 0, tileW, tileH);
+                    tiles.push({ canvas: tc, offsetX: ox, offsetY: oy, tileW, tileH });
+                }
             }
+            return tiles;
+        }
 
-            const srcW = videoEl.videoWidth;
-            const srcH = videoEl.videoHeight;
-            if (!srcW || !srcH) return;
+        // API送信用に巨大キャンバスを最大辺maxDimへ縮小。元の4K座標へ戻すための倍率も返す。
+        function downscaleForAPI(srcCanvas, maxDim) {
+            const w = srcCanvas.width, h = srcCanvas.height;
+            if (w <= maxDim && h <= maxDim) {
+                return { canvas: srcCanvas, scaleX: 1, scaleY: 1 };
+            }
+            const scale = Math.min(maxDim / w, maxDim / h);
+            const nw = Math.max(1, Math.round(w * scale));
+            const nh = Math.max(1, Math.round(h * scale));
+            const dc = document.createElement('canvas');
+            dc.width = nw; dc.height = nh;
+            dc.getContext('2d').drawImage(srcCanvas, 0, 0, nw, nh);
+            return { canvas: dc, scaleX: w / nw, scaleY: h / nh };
+        }
 
-            const workCanvas = document.getElementById('split-work-canvas');
-            workCanvas.width = srcW;
-            workCanvas.height = srcH;
-            const wCtx = workCanvas.getContext('2d');
-            wCtx.drawImage(videoEl, 0, 0, srcW, srcH);
-
-            const base64Image = workCanvas.toDataURL('image/jpeg', 0.9).split(',')[1];
+        // ─── Vision API 呼び出し ───
+        const API_TIMEOUT_MS = 20000; // 20秒でタイムアウト（永远に待たない）
+        async function callVisionAPI(apiKey, base64Image) {
             const url = `https://vision.googleapis.com/v1/images:annotate?key=${apiKey}`;
             const requestBody = {
                 requests: [{
@@ -891,28 +1150,34 @@
                     features: [{ type: "TEXT_DETECTION" }]
                 }]
             };
-
+            const controller = new AbortController();
+            const timer = setTimeout(() => controller.abort(), API_TIMEOUT_MS);
             try {
-                const response = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(requestBody) });
+                const response = await fetch(url, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(requestBody),
+                    signal: controller.signal
+                });
+                if (!response.ok) {
+                    let detail = response.status.toString();
+                    try { const ej = await response.json(); if (ej.error && ej.error.message) detail = ej.error.message.slice(0, 60); } catch (_) {}
+                    throw new Error(`API ${response.status}: ${detail}`);
+                }
                 const resData = await response.json();
-                if (!resData.responses || !resData.responses[0] || !resData.responses[0].textAnnotations) {
-                    if (!isContinuous) showToast("NO TEXT DETECTED");
-                    return;
+                if (!resData.responses || !resData.responses[0]) return [];
+                if (resData.responses[0].error) {
+                    throw new Error(resData.responses[0].error.message.slice(0, 60));
                 }
-
-                const annotations = resData.responses[0].textAnnotations;
-                
-                if (mode === "target") {
-                    await analyzeTargetModeWithAdvancedMatching(annotations, workCanvas, isContinuous);
-                } else {
-                    await analyzeQuestionModeAdvanced(annotations);
-                }
-            } catch (err) {
-                if (!isContinuous) showToast("API DETECT ERROR");
+                if (!resData.responses[0].textAnnotations) return [];
+                return resData.responses[0].textAnnotations;
+            } finally {
+                clearTimeout(timer);
             }
         }
 
-        async function analyzeTargetModeWithAdvancedMatching(annotations, originalCanvas, isContinuous) {
+        // annotations から3桁数字と汎用ブロックを抽出。
+        function extractAnnotations(annotations, offsetX, offsetY, scaleX = 1, scaleY = 1) {
             const fullList = annotations.slice(1);
             const numbersList = [];
             const genericBlocks = [];
@@ -922,13 +1187,14 @@
                 const box = item.boundingPoly.vertices;
                 if (!box || box.length < 4) return;
 
-                // 座標はキャプチャ画像(workCanvas)と同じ全画面座標系なので、
-                // 上下分割の座標補正は不要。
-                const cx = ((box[0]?.x ?? 0) + (box[1]?.x ?? 0) + (box[2]?.x ?? 0) + (box[3]?.x ?? 0)) / 4;
-                const cy = ((box[0]?.y ?? 0) + (box[1]?.y ?? 0) + (box[2]?.y ?? 0) + (box[3]?.y ?? 0)) / 4;
+                const localCx = ((box[0]?.x ?? 0) + (box[1]?.x ?? 0) + (box[2]?.x ?? 0) + (box[3]?.x ?? 0)) / 4;
+                const localCy = ((box[0]?.y ?? 0) + (box[1]?.y ?? 0) + (box[2]?.y ?? 0) + (box[3]?.y ?? 0)) / 4;
+                // 縮小画像の座標を元の4K座標へ戻してからオフセットを加える
+                const cx = (localCx * scaleX) + offsetX;
+                const cy = (localCy * scaleY) + offsetY;
 
-                const h = Math.max(box[0]?.y ?? 0, box[1]?.y ?? 0, box[2]?.y ?? 0, box[3]?.y ?? 0) - Math.min(box[0]?.y ?? 0, box[1]?.y ?? 0, box[2]?.y ?? 0, box[3]?.y ?? 0);
-                const w = Math.max(box[0]?.x ?? 0, box[1]?.x ?? 0, box[2]?.x ?? 0, box[3]?.x ?? 0) - Math.min(box[0]?.x ?? 0, box[1]?.x ?? 0, box[2]?.x ?? 0, box[3]?.x ?? 0);
+                const h = (Math.max(box[0]?.y ?? 0, box[1]?.y ?? 0, box[2]?.y ?? 0, box[3]?.y ?? 0) - Math.min(box[0]?.y ?? 0, box[1]?.y ?? 0, box[2]?.y ?? 0, box[3]?.y ?? 0)) * scaleY;
+                const w = (Math.max(box[0]?.x ?? 0, box[1]?.x ?? 0, box[2]?.x ?? 0, box[3]?.x ?? 0) - Math.min(box[0]?.x ?? 0, box[1]?.x ?? 0, box[2]?.x ?? 0, box[3]?.x ?? 0)) * scaleX;
 
                 const info = { text, cx, cy, w, h };
 
@@ -939,84 +1205,242 @@
                 }
             });
 
-            if (numbersList.length === 0) {
-                if (!isContinuous) showToast("NO 3-DIGIT TARGETS");
+            return { numbersList, genericBlocks };
+        }
+
+        // 同じ数字テキストで位置が近いものはマージして1つにまとめる。
+        function dedupNumbers(allNumbers, posDupPx) {
+            const merged = [];
+            allNumbers.forEach(num => {
+                const existing = merged.find(m =>
+                    m.text === num.text &&
+                    Math.abs(m.cx - num.cx) < posDupPx &&
+                    Math.abs(m.cy - num.cy) < posDupPx
+                );
+                if (existing) {
+                    if (num.w * num.h > existing.w * existing.h) {
+                        existing.cx = num.cx; existing.cy = num.cy;
+                        existing.w = num.w; existing.h = num.h;
+                    }
+                } else {
+                    merged.push({ ...num });
+                }
+            });
+            return merged;
+        }
+
+        // ─── メイン撮影・OCR ───
+        async function processCaptureOCR(mode, isContinuous = false) {
+            const videoEl = document.getElementById('camera-stream');
+            const apiKey = document.getElementById('api-key').value.trim();
+            if (!localStream || !apiKey) {
+                if (!isContinuous) showToast("CAMERA OR KEY MISSING");
                 return;
             }
 
+            const srcW = videoEl.videoWidth;
+            const srcH = videoEl.videoHeight;
+            if (!srcW || !srcH) {
+                if (!isContinuous) showToast("CAMERA NOT READY");
+                return;
+            }
+
+            if (!isContinuous) {
+                const indicator = document.getElementById('scan-indicator');
+                indicator.classList.add('active');
+                setTimeout(() => indicator.classList.remove('active'), 120);
+                showToast("SCANNING...");
+            }
+
+            // 全画面キャプチャ (4K維持: クロップ品質のため)。AI送信は別途ダウンスケール。
+            const fullCanvas = document.getElementById('split-work-canvas');
+            fullCanvas.width = srcW;
+            fullCanvas.height = srcH;
+            fullCanvas.getContext('2d').drawImage(videoEl, 0, 0, srcW, srcH);
+
+            // AI送信用ダウンスケール (4Kのまま送るとAPIがタイムアウト/拒否して認識0になる原因)
+            const fullForAPI = downscaleForAPI(fullCanvas, API_MAX_DIM);
+            const fullBase64 = fullForAPI.canvas.toDataURL('image/jpeg', FULL_JPEG_QUALITY).split(',')[1];
+            const fullScaleX = fullForAPI.scaleX, fullScaleY = fullForAPI.scaleY;
+
+            if (mode === "question") {
+                try {
+                    const annotations = await callVisionAPI(apiKey, fullBase64);
+                    await analyzeQuestionModeAdvanced(annotations);
+                } catch (err) {
+                    if (!isContinuous) showToast("API DETECT ERROR");
+                }
+                return;
+            }
+
+            // ── target モード ──
+            // まず画面全体を1枚だけAIへ送り、3桁数字を認識する。
+            // （従来は全体1枚＋タイル8枚の計9枚を同時送信していたが、
+            //   これがAPIの並列制限に引っかかってすべて失敗しスキャンできなかった原因。
+            //   まず全体1枚で確実に認識し、数字が1つも見つからなかった場合だけ
+            //   タイル分割で再スキャンするフォールバックに変更。）
+            let allNumbers = [];
+            let allGeneric = [];
+
+            try {
+                const fullAnnotations = await callVisionAPI(apiKey, fullBase64);
+                const r = extractAnnotations(fullAnnotations, 0, 0, fullScaleX, fullScaleY);
+                allNumbers = allNumbers.concat(r.numbersList);
+                allGeneric = allGeneric.concat(r.genericBlocks);
+            } catch (err) {
+                // 全体取得すら失敗した場合はタイルも試さずエラー
+                const msg = "APIエラー: " + (err.message || "").slice(0, 40);
+                if (!isContinuous) showToast(msg);
+                throw err;
+            }
+
+            // 全体で3桁数字が1つも見つからなかった場合だけ、タイル分割で再スキャン
+            if (allNumbers.length === 0) {
+                const tiles = buildTiles(srcW, srcH);
+                const tileAPIData = tiles.map(t => {
+                    const d = downscaleForAPI(t.canvas, API_MAX_DIM);
+                    return {
+                        base64: d.canvas.toDataURL('image/jpeg', TILE_JPEG_QUALITY).split(',')[1],
+                        scaleX: d.scaleX, scaleY: d.scaleY,
+                        offsetX: t.offsetX, offsetY: t.offsetY
+                    };
+                });
+                const tilePromises = tileAPIData.map(t => callVisionAPI(apiKey, t.base64));
+                const settledResults = await Promise.allSettled(tilePromises);
+                for (let i = 0; i < tileAPIData.length; i++) {
+                    const res = settledResults[i];
+                    if (res.status !== 'fulfilled') continue;
+                    const t = tileAPIData[i];
+                    const r = extractAnnotations(res.value, t.offsetX, t.offsetY, t.scaleX, t.scaleY);
+                    allNumbers = allNumbers.concat(r.numbersList);
+                    allGeneric = allGeneric.concat(r.genericBlocks);
+                }
+            }
+
+            const posDupPx = Math.max(60, srcW * POS_DUP_FRAC);
+            const mergedNumbers = dedupNumbers(allNumbers, posDupPx);
+
+            if (mergedNumbers.length === 0) {
+                // 連続スキャン中でも「数字が見つからない」ことを通知（無反応に見えるのを防ぐ）
+                showToast("NO 3-DIGIT TARGETS");
+                return;
+            }
+
+            await analyzeTargetModeWithAdvancedMatching(mergedNumbers, allGeneric, fullCanvas, isContinuous, posDupPx);
+        }
+
+        // 3パターンのスクショを生成してストック。数字が画面上部にくるようクロップする。
+        async function analyzeTargetModeWithAdvancedMatching(numbersList, genericBlocks, originalCanvas, isContinuous, posDupPx) {
             const updates = {};
             const newNumbers = [];
 
             numbersList.forEach(numObj => {
+                if (isContinuous) {
+                    const wasSeen = continuousSessionSeen.some(s =>
+                        s.text === numObj.text &&
+                        Math.abs(s.cx - numObj.cx) < posDupPx &&
+                        Math.abs(s.cy - numObj.cy) < posDupPx
+                    );
+                    if (wasSeen) return;
+                }
+
                 const verticalCandidates = genericBlocks.filter(b => {
                     const xDiff = Math.abs(numObj.cx - b.cx);
                     const yDiff = b.cy - numObj.cy;
                     return (xDiff < numObj.w * 0.5) && (yDiff > 0) && (yDiff < numObj.h * 5);
                 });
 
-                let centerCx = numObj.cx;
-                let centerCy = numObj.cy + (numObj.h * 1.8);
-                let baseCropW = numObj.w * 1.7;
+                // 数字をクロップ上部に配置し、下の正方形も映るようにする
+                let cropCx = numObj.cx;
+                let cropTopY = numObj.cy - numObj.h * 0.5; // 数字の上端あたりから切り出し
+                let baseCropW = numObj.w * 2.8;
+                let baseCropH = numObj.h * 5.2; // 数字+下の正方形を含む高さ（やや広め）
 
                 if (verticalCandidates.length > 0) {
                     verticalCandidates.sort((a, b) => Math.abs(numObj.cx - a.cx) - Math.abs(numObj.cx - b.cx));
                     const bestBlock = verticalCandidates[0];
-                    centerCx = (numObj.cx + bestBlock.cx) / 2;
-                    centerCy = (numObj.cy + bestBlock.cy) / 2;
-                    baseCropW = Math.max(numObj.w, bestBlock.w, bestBlock.h) * 1.5;
+                    cropCx = (numObj.cx + bestBlock.cx) / 2;
+                    // 正方形の下端まで含める
+                    const blockBottom = bestBlock.cy + bestBlock.h * 0.5;
+                    baseCropH = Math.max(baseCropH, (blockBottom - cropTopY) * 1.1);
+                    baseCropW = Math.max(baseCropW, bestBlock.w * 2.0, bestBlock.h * 2.0);
                 }
-
-                const standardCropW = baseCropW * 1.35;
-                const standardCropH = standardCropW * (160 / 120);
 
                 const cropCanvas = document.createElement('canvas');
                 cropCanvas.width = 120; cropCanvas.height = 160;
                 const cCtx = cropCanvas.getContext('2d');
 
-                const cropX1 = Math.max(0, centerCx - (standardCropW / 2));
-                const cropY1 = Math.max(0, centerCy - (standardCropH / 2));
-                cCtx.clearRect(0,0,120,160);
-                cCtx.drawImage(originalCanvas, cropX1, cropY1, standardCropW, standardCropH, 0, 0, 120, 160);
-                const img1 = cropCanvas.toDataURL('image/jpeg', 0.65);
+                // パターン1: 標準（数字上部＋正方形）
+                const cropX1 = Math.max(0, cropCx - (baseCropW / 2));
+                const cropY1 = Math.max(0, cropTopY);
+                cCtx.clearRect(0, 0, 120, 160);
+                cCtx.drawImage(originalCanvas, cropX1, cropY1, baseCropW, baseCropH, 0, 0, 120, 160);
+                const img1 = cropCanvas.toDataURL('image/jpeg', CROP_JPEG_QUALITY);
 
-                const wideCropW = standardCropW * 1.25;
-                const wideCropH = standardCropH * 1.25;
-                const cropX2 = Math.max(0, centerCx - (wideCropW / 2));
-                const cropY2 = Math.max(0, centerCy - (wideCropH / 2));
-                cCtx.clearRect(0,0,120,160);
+                // パターン2: ワイド（広めに切り出し）
+                const wideCropW = baseCropW * 1.3;
+                const wideCropH = baseCropH * 1.15;
+                const cropX2 = Math.max(0, cropCx - (wideCropW / 2));
+                const cropY2 = Math.max(0, cropTopY - baseCropH * 0.05);
+                cCtx.clearRect(0, 0, 120, 160);
                 cCtx.drawImage(originalCanvas, cropX2, cropY2, wideCropW, wideCropH, 0, 0, 120, 160);
-                const img2 = cropCanvas.toDataURL('image/jpeg', 0.65);
+                const img2 = cropCanvas.toDataURL('image/jpeg', CROP_JPEG_QUALITY);
 
-                const zoomCropW = standardCropW * 0.75;
-                const zoomCropH = standardCropH * 0.75;
-                const cropX3 = Math.max(0, centerCx - (zoomCropW / 2));
-                const cropY3 = Math.max(0, centerCy - (zoomCropH / 2));
-                cCtx.clearRect(0,0,120,160);
+                // パターン3: ズーム（やや寄る）
+                const zoomCropW = baseCropW * 0.8;
+                const zoomCropH = baseCropH * 0.85;
+                const cropX3 = Math.max(0, cropCx - (zoomCropW / 2));
+                const cropY3 = Math.max(0, cropTopY + baseCropH * 0.03);
+                cCtx.clearRect(0, 0, 120, 160);
                 cCtx.drawImage(originalCanvas, cropX3, cropY3, zoomCropW, zoomCropH, 0, 0, 120, 160);
-                const img3 = cropCanvas.toDataURL('image/jpeg', 0.65);
+                const img3 = cropCanvas.toDataURL('image/jpeg', CROP_JPEG_QUALITY);
 
-                const entry = {
-                    croppedImgs: [img1, img2, img3],
-                    timestamp: Date.now()
-                };
+                // 常に3枚のみ保持。連続スキャンで別位置の同じ数字は3枚のいずれかを差し替え。
+                if (!updates[numObj.text]) {
+                    updates[numObj.text] = { croppedImgs: [], timestamp: Date.now() };
+                }
+                updates[numObj.text].croppedImgs.push(img1, img2, img3);
 
                 if (isContinuous) {
-                    // 同一長押しセッション内で未検出の数字だけを新規ストック。
-                    // 既出の数字は再書き込みせず、API/Firestoreの無駄な消費を防ぐ。
-                    if (continuousSessionNumbers.has(numObj.text)) return;
-                    continuousSessionNumbers.add(numObj.text);
-                    updates[numObj.text] = entry;
                     newNumbers.push(numObj.text);
-                } else {
-                    updates[numObj.text] = entry;
                 }
             });
+
+            if (isContinuous) {
+                // セッション全体で蓄積: 同じ場所は再ストックせず、新しい場所だけ記憶に追加
+                numbersList.forEach(n => {
+                    const already = continuousSessionSeen.some(s =>
+                        s.text === n.text &&
+                        Math.abs(s.cx - n.cx) < posDupPx &&
+                        Math.abs(s.cy - n.cy) < posDupPx
+                    );
+                    if (!already) {
+                        continuousSessionSeen.push({ text: n.text, cx: n.cx, cy: n.cy });
+                    }
+                });
+            }
 
             const matchCount = Object.keys(updates).length;
             if (matchCount > 0) {
                 const roomId = document.getElementById('room-id').value.trim() || 'default_room';
                 const mergedMap = { ...allPhotosMap };
-                Object.keys(updates).forEach(num => { mergedMap[num] = updates[num]; });
+                Object.keys(updates).forEach(num => {
+                    const newImgs = updates[num].croppedImgs.slice(0, MAX_CANDIDATES);
+                    if (isContinuous && mergedMap[num] && Array.isArray(mergedMap[num].croppedImgs)) {
+                        // 既存3枚のいずれかを新しい3枚で差し替え（追加ではなく置換）
+                        // 新しい3枚で完全に置き換えることで常に3枚のみ保持
+                        mergedMap[num] = {
+                            croppedImgs: newImgs,
+                            timestamp: Date.now()
+                        };
+                    } else {
+                        mergedMap[num] = {
+                            croppedImgs: newImgs,
+                            timestamp: Date.now()
+                        };
+                    }
+                });
+                allPhotosMap = mergedMap;
                 try {
                     await setDoc(doc(db, "rooms", roomId), { photoMap: mergedMap }, { merge: true });
                     if (isContinuous) {
@@ -1050,7 +1474,7 @@
 
             if (foundNumbers.length >= 1) {
                 const limit = Math.min(foundNumbers.length, 5);
-                for(let i = 0; i < limit; i++) { searchBoxes[i].value = foundNumbers[i].text; }
+                for (let i = 0; i < limit; i++) { searchBoxes[i].value = foundNumbers[i].text; }
                 showToast(`QUEST AUTOFILL: ${limit} SLOTS`);
                 syncInputsToFirebase();
                 executeSearch();
