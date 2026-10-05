@@ -22,14 +22,83 @@
             -webkit-user-select: none;
         }
 
+        /* --- ホーム画面 --- */
+        .home-screen {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            min-height: 100dvh;
+            padding: clamp(24px, 6vw, 64px);
+            gap: clamp(20px, 3vh, 32px);
+            background: radial-gradient(ellipse at center, #1a0d2e 0%, #0c0714 100%);
+        }
+        .home-title {
+            font-size: clamp(2rem, 5vw, 3.4rem);
+            font-weight: bold;
+            color: #b57cff;
+            letter-spacing: 2px;
+            text-shadow: 0 0 12px rgba(181, 124, 255, 0.4);
+        }
+        .home-subtitle {
+            font-size: clamp(0.85rem, 2vw, 1.15rem);
+            color: #8a6db5;
+            text-align: center;
+            line-height: 1.4;
+        }
+        .home-input-group {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            width: min(100%, 520px);
+        }
+        .home-input-group label {
+            font-size: clamp(0.9rem, 2vw, 1.1rem);
+            color: #b57cff;
+            font-weight: bold;
+        }
+        .home-input-group input {
+            width: 100%;
+            background: #140d21;
+            border: 3px solid #b57cff;
+            color: #00ff66;
+            padding: 14px 18px;
+            font-size: clamp(1rem, 2.5vw, 1.35rem);
+            border-radius: 10px;
+            height: clamp(54px, 8vh, 72px);
+        }
+        .btn-goto-scan {
+            width: min(100%, 520px);
+            height: clamp(60px, 9vh, 80px);
+            background: linear-gradient(135deg, #5500aa, #220055);
+            color: #ebd6ff;
+            border: 3px solid #b57cff;
+            font-size: 1.1rem;
+            font-weight: bold;
+            border-radius: 12px;
+            cursor: pointer;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            box-shadow: 0 0 16px rgba(181, 124, 255, 0.4);
+        }
+        .btn-goto-scan:active { background: #00ff64; color: #000; }
+        .home-saved-key {
+            font-size: clamp(0.75rem, 1.8vw, 1rem);
+            color: #8a6db5;
+        }
+
         .app-wrapper {
             padding: 6px;
-            display: flex;
+            display: none;
             flex-direction: column;
             height: 100vh;
             height: 100dvh;
             gap: 6px;
+            overflow: hidden;
         }
+        .app-wrapper.active { display: flex; }
 
         /* トップバー */
         .top-bar {
@@ -46,34 +115,33 @@
             color: #b57cff;
             letter-spacing: 1px;
         }
-        .config-box {
-            display: flex;
-            align-items: center;
-            gap: 6px;
-        }
-        .config-box label { font-size: 0.7rem; color: #b57cff; font-weight: bold; }
-        .config-box input {
-            background: #140d21;
-            border: 1px solid #b57cff;
-            color: #00ff66;
-            padding: 2px 6px;
+        .btn-home {
+            background: #1a0d2e;
+            color: #b57cff;
+            border: 1px solid rgba(181, 124, 255, 0.5);
             font-size: 0.75rem;
-            border-radius: 4px;
-            width: 140px;
+            padding: 4px 12px;
+            border-radius: 6px;
+            cursor: pointer;
             height: 24px;
         }
+        .btn-home:active { background: #b57cff; color: #000; }
 
         /* メインレイアウト */
         .main-layout {
             display: flex;
-            flex: 1;
+            flex: 1 1 auto;
             gap: 8px;
             min-height: 0;
+            overflow-y: auto;
+            overflow-x: hidden;
+            -webkit-overflow-scrolling: touch;
+            align-items: flex-start;
         }
 
-        /* --- 左カラム: カメラ & スキャン & 電卓 --- */
+        /* --- 左カラム: カメラ --- */
         .left-column {
-            flex: 40;
+            flex: 40 0 0;
             display: flex;
             flex-direction: column;
             gap: 8px;
@@ -82,122 +150,26 @@
         }
         .camera-container {
             width: 100%;
-            flex: 1;
-            min-height: 0;
+            aspect-ratio: 9 / 20;
+            max-height: 45vh;
             background: #000;
             border: 2px solid #b57cff;
             position: relative;
             border-radius: 6px;
             overflow: hidden;
+            flex-shrink: 0;
+            margin: 0 auto;
         }
         #camera-stream { width: 100%; height: 100%; object-fit: cover; }
 
-        .left-bottom-controls {
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-            flex-shrink: 0;
-        }
-
-        .btn-shutter {
-            height: 52px;
-            background: linear-gradient(135deg, #5500aa, #220055);
-            color: #ebd6ff;
-            border: 2px solid #b57cff;
-            font-size: 1.1rem;
-            font-weight: bold;
-            border-radius: 8px;
-            cursor: pointer;
-        }
-        .btn-shutter:active { background: #00ff64; color: #000; }
-
-        .btn-calc-toggle {
-            height: 46px;
-            background: #1a0d2e;
-            color: #b57cff;
-            border: 2px solid rgba(181, 124, 255, 0.6);
-            font-size: 0.95rem;
-            font-weight: bold;
-            border-radius: 8px;
-            cursor: pointer;
-        }
-        .btn-calc-toggle:active { background: #b57cff; color: #000; }
-
-        /* 電卓パネル */
-        .calc-panel-overlay {
-            display: none;
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(12, 7, 20, 0.98);
-            border-radius: 6px;
-            z-index: 30;
-            flex-direction: column;
-            padding: 8px;
-            gap: 6px;
-        }
-        .calc-panel-overlay.active { display: flex; }
-        .calc-display {
-            background: #06030a;
-            border: 1px solid #b57cff;
-            border-radius: 6px;
-            padding: 8px 12px;
-            text-align: right;
-            font-size: 1.6rem;
-            font-weight: bold;
-            color: #00ff64;
-            min-height: 48px;
-            margin-bottom: 4px;
-            overflow: hidden;
-            white-space: nowrap;
-        }
-        .calc-keypad {
-            display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            gap: 6px;
-            flex: 1;
-            min-height: 0;
-        }
-        .btn-calc-key {
-            background: #1d0e30;
-            border: 1px solid #b57cff;
-            color: #ebd6ff;
-            font-size: 1.2rem;
-            font-weight: bold;
-            border-radius: 6px;
-            cursor: pointer;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-        }
-        .btn-calc-key:active { background: #b57cff; color: #000; }
-        .btn-calc-key.op { background: #2b124c; border-color: #ff007f; color: #ff007f; }
-        .btn-calc-key.op:active { background: #ff007f; color: #000; }
-        .btn-calc-key.eq { background: #3a1525; border-color: #ff3388; color: #ff99cc; }
-        .btn-calc-key.eq:active { background: #ff3388; color: #fff; }
-        .btn-calc-key.cl { background: #3a1525; border-color: #ff3388; color: #ff99cc; font-size: 1rem; }
-        .btn-calc-key.cl:active { background: #ff3388; color: #fff; }
-        .btn-calc-close {
-            background: #333;
-            border: none;
-            color: #aaa;
-            padding: 8px;
-            font-size: 0.8rem;
-            border-radius: 6px;
-            cursor: pointer;
-            flex-shrink: 0;
-        }
-        .btn-calc-close:active { background: #555; color: #fff; }
-
         /* --- 右カラム --- */
         .right-column {
-            flex: 60;
+            flex: 60 0 0;
             display: flex;
             flex-direction: column;
             gap: 8px;
             min-width: 0;
+            position: relative;
         }
 
         .section-title {
@@ -249,201 +221,162 @@
         }
 
         /* サジェスト */
-        .suggest-container {
-            background: rgba(0, 0, 0, 0.4);
-            border: 1px dashed rgba(181, 124, 255, 0.3);
-            padding: 6px 8px;
-            border-radius: 8px;
-            min-height: 40px;
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            flex-shrink: 0;
-        }
-        .suggest-title { font-size: 0.7rem; color: #aaa; white-space: nowrap; }
-        .suggest-buttons { display: flex; flex-wrap: wrap; gap: 6px; flex: 1; }
-        .btn-suggest {
-            background: #25163a;
-            border: 1px solid #b57cff;
-            color: #ebd6ff;
-            padding: 6px 10px;
-            font-size: 0.85rem;
-            border-radius: 6px;
-            cursor: pointer;
-        }
-        .btn-suggest:active { background: #00ff64; color: #000; }
-
-        /* 手入力 */
-        .manual-search-container {
-            background: rgba(26, 11, 46, 0.4);
-            border: 1px solid rgba(181, 124, 255, 0.3);
-            padding: 6px 8px;
-            border-radius: 8px;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            flex-shrink: 0;
-        }
-        .manual-search-input {
-            flex: 1;
-            background: #140d21;
-            border: 1px solid #b57cff;
-            color: #ffffff;
-            padding: 4px;
-            font-size: 0.95rem;
-            border-radius: 6px;
-            text-align: center;
-            font-weight: bold;
-            height: 38px;
-        }
-        .btn-manual-submit {
-            background: #4a1c6d;
-            border: 1px solid #b57cff;
-            color: #ebd6ff;
-            padding: 0 18px;
-            font-size: 0.95rem;
-            font-weight: bold;
-            border-radius: 6px;
-            cursor: pointer;
-            height: 38px;
-        }
-        .btn-manual-submit:active { background: #00ff64; color: #000; }
-
-        /* --- 計算コントロールセンター --- */
-        .calc-panel {
-            background: rgba(27, 15, 46, 0.6);
-            border: 1px solid rgba(181, 124, 255, 0.3);
-            border-radius: 8px;
-            padding: 8px;
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            justify-content: space-between;
-            position: relative;
-            min-height: 0;
-            gap: 8px;
-        }
-        .calc-main-row {
-            display: flex;
-            gap: 8px;
-            align-items: stretch;
-            flex: 1;
-            min-height: 0;
-        }
-
-        .result-display {
-            flex: 0 0 auto;
-            width: 80px;
-            background: #06030a;
-            border: 2px solid #b57cff;
-            border-radius: 8px;
-            padding: 4px;
-            text-align: center;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-        }
-        .result-display .res-title {
-            font-size: 0.6rem;
-            color: #b57cff;
-            line-height: 0.8rem;
-        }
-        .result-display .res-num {
-            font-size: 1.5rem;
-            font-weight: bold;
-            color: #ff007f;
-            text-shadow: 0 0 6px #ff007f;
-            line-height: 1.4rem;
-        }
-
-        .calc-buttons {
-            flex: 1;
+        /* 認識しにくい漢字 */
+        .fallback-kanji-container {
             display: grid;
-            grid-template-columns: repeat(5, 1fr);
-            gap: 6px;
-            min-width: 0;
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+            gap: 8px;
+            flex-shrink: 0;
         }
-        .btn-calc {
-            background: #2b124c;
-            border: 2px solid #ff007f;
-            color: #ff007f;
-            font-size: 0.85rem;
-            font-weight: bold;
+        .btn-fallback-kanji {
+            min-height: 76px;
+            padding: 8px 4px;
+            background: #25163a;
+            border: 2px solid #b57cff;
+            color: #ebd6ff;
             border-radius: 8px;
             cursor: pointer;
             display: flex;
+            flex-direction: column;
             justify-content: center;
             align-items: center;
-            min-height: 48px;
+            gap: 4px;
         }
-        .btn-calc:active { background: #ff007f; color: #000; }
+        .btn-fallback-kanji .kanji {
+            font-size: clamp(1.6rem, 4vw, 2.4rem);
+            line-height: 1;
+            font-weight: bold;
+        }
+        .btn-fallback-kanji .page {
+            color: #00ff64;
+            font-size: clamp(0.8rem, 2vw, 1rem);
+            font-weight: bold;
+        }
+        .btn-fallback-kanji:active { background: #00ff64; color: #000; }
+        .btn-fallback-kanji:active .page { color: #000; }
 
+        /* クリアボタン */
         .reset-container {
             display: grid;
-            grid-template-columns: 1fr 1fr;
+            grid-template-columns: 1fr;
             gap: 8px;
             flex-shrink: 0;
         }
         .btn-reset-half {
+            width: 100%;
             background: #3a1525;
             border: 2px solid #ff3388;
             color: #ff99cc;
-            font-size: 0.9rem;
+            font-size: clamp(1.15rem, 3vw, 1.8rem);
             font-weight: bold;
             border-radius: 8px;
             cursor: pointer;
             display: flex;
             justify-content: center;
             align-items: center;
-            height: 44px;
+            aspect-ratio: 3 / 1;
         }
         .btn-reset-half:active { background: #ff3388; color: #fff; }
 
-        /* 余りセレクターオーバーレイ */
-        .mod-selector-overlay {
-            display: none;
-            position: absolute;
-            top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(12, 7, 20, 0.96);
-            border-radius: 8px;
-            z-index: 20;
-            flex-direction: column;
+        /* スキャン丸ボタン */
+        .scan-button-area {
+            display: flex;
             justify-content: center;
             align-items: center;
-            padding: 8px;
-            gap: 8px;
+            flex: 0 0 auto;
+            padding: 4px 0 2px;
         }
-        .mod-selector-title {
-            font-size: 0.85rem;
-            color: #ff007f;
-            font-weight: bold;
-        }
-        .mod-grid {
-            display: grid;
-            grid-template-columns: repeat(5, 1fr);
-            gap: 6px;
+        .btn-scan-circle {
             width: 100%;
-        }
-        .btn-mod-num {
-            background: #1d0e30;
-            border: 2px solid #b57cff;
-            color: #00ff66;
-            font-size: 1.1rem;
+            height: 64px;
+            border-radius: 12px;
+            background: linear-gradient(135deg, #5500aa, #220055);
+            color: #ebd6ff;
+            border: 3px solid #b57cff;
+            font-size: 1.3rem;
             font-weight: bold;
-            border-radius: 8px;
             cursor: pointer;
-            padding: 10px 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-shrink: 0;
+            box-shadow: 0 0 12px rgba(181, 124, 255, 0.4);
         }
-        .btn-mod-num:active { background: #00ff66; color: #000; }
-        .btn-mod-cancel {
-            grid-column: span 5;
-            background: #333;
-            border: none;
-            color: #fff;
-            padding: 8px;
-            font-size: 0.85rem;
-            border-radius: 8px;
+        .btn-scan-circle:active { background: #00ff64; color: #000; }
+
+        /* --- 横向き画面 --- */
+        @media (orientation: landscape) and (min-width: 721px) {
+            .app-wrapper { gap: 4px; padding: 4px; }
+            .top-bar { height: 24px; }
+            .main-layout {
+                flex: 1 1 0;
+                min-height: 0;
+                gap: 6px;
+                overflow: hidden;
+                height: auto;
+                align-items: stretch;
+            }
+            .left-column, .right-column {
+                gap: 5px;
+                height: 100%;
+                min-height: 0;
+                display: flex;
+                flex-direction: column;
+            }
+            .camera-container { aspect-ratio: auto; max-height: 30vh; height: 30vh; flex: 0 0 auto; }
+            .result-display {
+                flex: 1 1 auto;
+                min-height: 120px;
+                padding: 12px 10px;
+                gap: 8px;
+            }
+            .result-display .res-title { font-size: clamp(0.9rem, 2vw, 1.2rem); }
+            .result-display .res-num { font-size: clamp(3.2rem, 8vw, 6rem); }
+            .slot-box { min-height: 52px; padding: 4px 3px; }
+            .slot-box .kanji-display { font-size: 1.45rem; line-height: 1.5rem; min-height: 1.5rem; }
+            .slot-box .page-output { font-size: 0.8rem; }
+            .fallback-kanji-container { gap: 5px; }
+            .btn-fallback-kanji { min-height: 64px; padding: 4px 2px; }
+            .btn-reset-half { font-size: clamp(0.95rem, 2.5vw, 1.35rem); }
+            .btn-scan-circle { height: 52px; font-size: 1.05rem; }
+            .scan-button-area { padding: 2px 0; }
+            .slot-box { min-height: 60px; }
+            .btn-fallback-kanji { min-height: 72px; }
+        }
+
+        /* --- 短い画面向けレスポンシブ調整 --- */
+        @media (max-width: 720px) {
+            .app-wrapper { overflow: hidden; }
+            .main-layout {
+                flex-direction: column;
+                overflow-y: auto;
+                overflow-x: hidden;
+            }
+            .left-column,
+            .right-column {
+                width: 100%;
+                flex: 0 0 auto;
+            }
+            .camera-container {
+                aspect-ratio: 16 / 9;
+                max-height: 42vh;
+            }
+            .fallback-kanji-container { gap: 6px; }
+            .btn-fallback-kanji { min-height: 72px; }
+        }
+
+        @media (max-height: 1000px) and (min-width: 721px) and (orientation: landscape) {
+            .camera-container { max-height: 26vh; height: 26vh; }
+            .result-display {
+                flex: 1 1 auto;
+                min-height: 120px;
+            }
+            .result-display .res-num { font-size: clamp(3.2rem, 8vw, 6rem); }
+            .slot-box { min-height: 56px; padding: 4px 3px; }
+            .slot-box .kanji-display { font-size: 1.5rem; line-height: 1.6rem; min-height: 1.6rem; }
+            .slot-box .page-output { font-size: 0.85rem; }
+            .fallback-kanji-container { gap: 5px; }
+            .btn-fallback-kanji { min-height: 60px; }
         }
 
         .loading-dimmer {
@@ -453,6 +386,17 @@
         }
         .loading-dimmer::after { content: "SCANNING KANJI..."; animation: blink 0.5s infinite alternate; }
         @keyframes blink { from { opacity: 0.3; } to { opacity: 1; } }
+
+        .btn-calc-toggle,
+        .calc-panel-overlay,
+        .calc-buttons,
+        .btn-calc,
+        .btn-calc-key,
+        .calc-display,
+        .calc-keypad,
+        .result-display,
+        .mod-selector-overlay,
+        #btn-clear-result { display: none !important; }
     </style>
   <meta property="og:image" content="https://bolt.new/static/og_default.png">
     <meta name="twitter:card" content="summary_large_image">
@@ -460,56 +404,41 @@
 </head>
 <body>
 
-    <div class="app-wrapper">
+    <div class="home-screen" id="home-screen">
+        <div class="home-title">Q 辞書ツール</div>
+        <div class="home-subtitle">漢字をスキャンしてページ番号を検索</div>
+        <div class="home-input-group">
+            <label for="api-key">API PASS</label>
+            <input type="password" id="api-key" placeholder="AIzaSy...">
+        </div>
+        <button class="btn-goto-scan" id="btn-goto-scan">スキャン画面へ</button>
+        <div class="home-saved-key" id="home-saved-key"></div>
+    </div>
+
+    <div class="app-wrapper" id="app-wrapper">
 
         <!-- トップバー -->
         <div class="top-bar">
             <h1>Q 辞書ツール</h1>
-            <div class="config-box">
-                <label>API PASS:</label>
-                <input type="password" id="api-key" placeholder="AIzaSy...">
-            </div>
+            <button class="btn-home" id="btn-home">ホーム</button>
         </div>
 
         <div class="main-layout">
 
-            <!-- 左カラム -->
+            <!-- 左カラム: カメラ -->
             <div class="left-column">
                 <div class="camera-container">
                     <video id="camera-stream" autoplay playsinline muted></video>
                     <div class="loading-dimmer" id="scan-indicator"></div>
                 </div>
-                <div class="left-bottom-controls">
-                    <button class="btn-shutter" id="shutter-trigger">スキャン</button>
-                    <button class="btn-calc-toggle" id="calc-toggle-btn">電卓</button>
-                </div>
 
-                <!-- 電卓パネル -->
-                <div class="calc-panel-overlay" id="calc-panel-overlay">
-                    <div class="calc-display" id="calc-display">0</div>
-                    <div class="calc-keypad">
-                        <button class="btn-calc-key cl" onclick="calcKey('C')">C</button>
-                        <button class="btn-calc-key op" onclick="calcKey('÷')">÷</button>
-                        <button class="btn-calc-key op" onclick="calcKey('×')">×</button>
-                        <button class="btn-calc-key op" onclick="calcKey('−')">−</button>
-                        <button class="btn-calc-key" onclick="calcKey('7')">7</button>
-                        <button class="btn-calc-key" onclick="calcKey('8')">8</button>
-                        <button class="btn-calc-key" onclick="calcKey('9')">9</button>
-                        <button class="btn-calc-key op" onclick="calcKey('+')">+</button>
-                        <button class="btn-calc-key" onclick="calcKey('4')">4</button>
-                        <button class="btn-calc-key" onclick="calcKey('5')">5</button>
-                        <button class="btn-calc-key" onclick="calcKey('6')">6</button>
-                        <button class="btn-calc-key eq" onclick="calcKey('=')" style="grid-row: span 4;">＝</button>
-                        <button class="btn-calc-key" onclick="calcKey('1')">1</button>
-                        <button class="btn-calc-key" onclick="calcKey('2')">2</button>
-                        <button class="btn-calc-key" onclick="calcKey('3')">3</button>
-                        <button class="btn-calc-key" onclick="calcKey('0')" style="grid-column: span 2;">0</button>
-                    </div>
-                    <button class="btn-calc-close" onclick="closeCalcPanel()">閉じる</button>
+                <!-- スキャン丸ボタン -->
+                <div class="scan-button-area">
+                    <button class="btn-scan-circle" id="shutter-trigger">スキャン</button>
                 </div>
             </div>
 
-            <!-- 右カラム -->
+            <!-- 右カラム: スロット + サジェスト + クリア -->
             <div class="right-column">
 
                 <!-- スロット -->
@@ -539,56 +468,25 @@
                     </div>
                 </div>
 
-                <!-- サジェスト -->
-                <div class="suggest-container">
-                    <div class="suggest-title">候補:</div>
-                    <div class="suggest-buttons" id="suggest-area">
-                        <span style="color:rgba(181,124,255,0.3); font-size:0.7rem;">ここに並びます</span>
-                    </div>
+                <!-- 認識しにくい漢字 -->
+                <div class="fallback-kanji-container" aria-label="認識しにくい漢字">
+                    <button class="btn-fallback-kanji" onclick="addKanjiToSlot('開')">
+                        <span class="kanji">開</span><span class="page">1226p</span>
+                    </button>
+                    <button class="btn-fallback-kanji" onclick="addKanjiToSlot('黶')">
+                        <span class="kanji">黶</span><span class="page">1334p</span>
+                    </button>
+                    <button class="btn-fallback-kanji" onclick="addKanjiToSlot('謦')">
+                        <span class="kanji">謦</span><span class="page">1109p</span>
+                    </button>
+                    <button class="btn-fallback-kanji" onclick="addKanjiToSlot('羸')">
+                        <span class="kanji">羸</span><span class="page">963p</span>
+                    </button>
                 </div>
 
-                <!-- 手入力 -->
-                <div class="manual-search-container">
-                    <input type="text" class="manual-search-input" id="manual-kanji-input" maxlength="1" placeholder="未認識時の手入力">
-                    <button class="btn-manual-submit" onclick="submitManualKanji()">登録</button>
-                </div>
-
-                <!-- 計算パネル -->
-                <div class="calc-panel">
-                    <div class="mod-selector-overlay" id="mod-overlay">
-                        <div class="mod-selector-title">最大ページ数を何で割る？</div>
-                        <div class="mod-grid">
-                            <button class="btn-mod-num" onclick="execModCalculated(1)">1</button>
-                            <button class="btn-mod-num" onclick="execModCalculated(2)">2</button>
-                            <button class="btn-mod-num" onclick="execModCalculated(3)">3</button>
-                            <button class="btn-mod-num" onclick="execModCalculated(4)">4</button>
-                            <button class="btn-mod-num" onclick="execModCalculated(5)">5</button>
-                            <button class="btn-mod-num" onclick="execModCalculated(6)">6</button>
-                            <button class="btn-mod-num" onclick="execModCalculated(7)">7</button>
-                            <button class="btn-mod-num" onclick="execModCalculated(8)">8</button>
-                            <button class="btn-mod-num" onclick="execModCalculated(9)">9</button>
-                            <button class="btn-mod-cancel" onclick="closeModOverlay()">戻る</button>
-                        </div>
-                    </div>
-
-                    <div class="calc-main-row">
-                        <div class="result-display">
-                            <div class="res-title">ANS</div>
-                            <div class="res-num" id="calc-result">000</div>
-                        </div>
-                        <div class="calc-buttons">
-                            <button class="btn-calc" onclick="calculate('add')">➕ 足</button>
-                            <button class="btn-calc" onclick="calculate('sub')">➖ 引</button>
-                            <button class="btn-calc" onclick="calculate('double')">✖2 倍</button>
-                            <button class="btn-calc" onclick="calculate('rem')">剰 余</button>
-                            <button class="btn-calc" onclick="calculate('sort_digits')">🔁 替</button>
-                        </div>
-                    </div>
-
-                    <div class="reset-container">
-                        <button class="btn-reset-half" id="btn-clear-slots">スロットクリア</button>
-                        <button class="btn-reset-half" id="btn-clear-result">結果クリア</button>
-                    </div>
+                <!-- クリアボタン -->
+                <div class="reset-container">
+                    <button class="btn-reset-half" id="btn-clear-slots">スロットクリア</button>
                 </div>
 
             </div>
@@ -648,18 +546,38 @@
         ];
 
         window.addEventListener('DOMContentLoaded', () => {
+            document.querySelectorAll('.btn-calc-toggle, .calc-panel-overlay, .calc-buttons, .btn-calc, .btn-calc-key, .calc-display, .calc-keypad, .result-display, .mod-selector-overlay, #btn-clear-result').forEach(element => element.remove());
+            document.querySelectorAll('button').forEach(button => {
+                if (button.textContent.trim() === '電卓') button.remove();
+            });
+
             const savedKey = localStorage.getItem('page_ocr_api_key');
-            if (savedKey) document.getElementById('api-key').value = savedKey;
+            if (savedKey) {
+                document.getElementById('api-key').value = savedKey;
+                document.getElementById('home-saved-key').innerText = 'PASS設定済み';
+            }
 
             initCameraStream();
 
             document.getElementById('shutter-trigger').addEventListener('click', captureAndScan);
             document.getElementById('btn-clear-slots').addEventListener('click', clearSlotsOnly);
-            document.getElementById('btn-clear-result').addEventListener('click', clearResultOnly);
-            document.getElementById('calc-toggle-btn').addEventListener('click', toggleCalcPanel);
+            document.getElementById('btn-goto-scan').addEventListener('click', () => {
+                const key = document.getElementById('api-key').value.trim();
+                if (!key) { alert('PASSを入力してください'); return; }
+                localStorage.setItem('page_ocr_api_key', key);
+                document.getElementById('home-saved-key').innerText = 'PASS設定済み';
+                document.getElementById('home-screen').style.display = 'none';
+                document.getElementById('app-wrapper').classList.add('active');
+            });
+
+            document.getElementById('btn-home').addEventListener('click', () => {
+                document.getElementById('home-screen').style.display = 'flex';
+                document.getElementById('app-wrapper').classList.remove('active');
+            });
 
             document.getElementById('api-key').addEventListener('change', () => {
                 localStorage.setItem('page_ocr_api_key', document.getElementById('api-key').value);
+                document.getElementById('home-saved-key').innerText = 'PASS設定済み';
             });
         });
 
@@ -667,15 +585,15 @@
             const video = document.getElementById('camera-stream');
             try {
                 const constraints = {
-                    video: { facingMode: { exact: "environment" }, width: { ideal: 1920 }, height: { ideal: 1080 } },
+                    video: { facingMode: { exact: "environment" }, width: { ideal: 1280 }, height: { ideal: 720 } },
                     audio: false
                 };
                 streamObject = await navigator.mediaDevices.getUserMedia(constraints)
                     .catch(() => navigator.mediaDevices.getUserMedia({
-                        video: { facingMode: { ideal: "environment" }, width: { ideal: 1920 }, height: { ideal: 1080 } },
+                        video: { facingMode: { ideal: "environment" }, width: { ideal: 1280 }, height: { ideal: 720 } },
                         audio: false
                     }))
-                    .catch(() => navigator.mediaDevices.getUserMedia({ video: { width: { ideal: 1920 }, height: { ideal: 1080 } }, audio: false }))
+                    .catch(() => navigator.mediaDevices.getUserMedia({ video: { width: { ideal: 1280 }, height: { ideal: 720 } }, audio: false }))
                     .catch(() => navigator.mediaDevices.getUserMedia({ video: true, audio: false }));
                 video.srcObject = streamObject;
             } catch (err) { alert("カメラ起動失敗: " + err.message); }
@@ -696,52 +614,16 @@
             containers.forEach(c => c.classList.remove('selected'));
         }
 
-        window.submitManualKanji = function() {
-            const inputEl = document.getElementById('manual-kanji-input');
-            const kanji = inputEl.value.trim();
-
-            if (!kanji) return;
-
-            let targetIdx = -1;
-            for (let i = 0; i < 4; i++) {
-                if (!selectedSlots.has(i) && (displays[i].innerText === "-" || !displays[i].innerText)) {
-                    targetIdx = i;
-                    break;
-                }
-            }
-            if (targetIdx === -1) {
-                for (let i = 0; i < 4; i++) {
-                    if (!selectedSlots.has(i)) { targetIdx = i; break; }
-                }
-            }
-            if (targetIdx === -1) {
-                alert("全てホールドされています");
-                return;
-            }
-
-            displays[targetIdx].innerText = kanji;
-            if (KANJI_DICTIONARY[kanji]) {
-                outputs[targetIdx].innerText = KANJI_DICTIONARY[kanji];
-            } else {
-                outputs[targetIdx].innerText = "未登録";
-            }
-
-            inputEl.value = "";
-            inputEl.blur();
-        }
-
         function preprocessCapture(video) {
             const canvas = document.getElementById('capture-canvas');
 
-            const vw = video.videoWidth || 1920;
-            const vh = video.videoHeight || 1080;
+            const vw = video.videoWidth || 1280;
+            const vh = video.videoHeight || 720;
 
-            const UPSCALE = 2;
-            canvas.width = vw * UPSCALE;
-            canvas.height = vh * UPSCALE;
+            canvas.width = vw;
+            canvas.height = vh;
 
             const ctx = canvas.getContext('2d', { willReadFrequently: true });
-
             ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
 
             const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
@@ -765,43 +647,7 @@
             }
             ctx.putImageData(imgData, 0, 0);
 
-            const blurred = ctx.getImageData(0, 0, canvas.width, canvas.height);
-            const bData = blurred.data;
-            const w = canvas.width;
-            const h = canvas.height;
-            const copy = new Uint8ClampedArray(bData);
-
-            const kernel = [1, 2, 1, 2, 4, 2, 1, 2, 1];
-            const kSum = 16;
-            for (let y = 1; y < h - 1; y++) {
-                for (let x = 1; x < w - 1; x++) {
-                    const idx = (y * w + x) * 4;
-                    for (let c = 0; c < 3; c++) {
-                        let val = 0;
-                        let ki = 0;
-                        for (let dy = -1; dy <= 1; dy++) {
-                            for (let dx = -1; dx <= 1; dx++) {
-                                const nIdx = ((y + dy) * w + (x + dx)) * 4 + c;
-                                val += copy[nIdx] * kernel[ki++];
-                            }
-                        }
-                        bData[idx + c] = val / kSum;
-                    }
-                }
-            }
-
-            const amount = 1.5;
-            const orig = ctx.getImageData(0, 0, canvas.width, canvas.height);
-            const oData = orig.data;
-            for (let i = 0; i < oData.length; i += 4) {
-                for (let c = 0; c < 3; c++) {
-                    const sharp = oData[i + c] + amount * (oData[i + c] - bData[i + c]);
-                    oData[i + c] = Math.min(255, Math.max(0, sharp));
-                }
-            }
-            ctx.putImageData(orig, 0, 0);
-
-            return canvas.toDataURL('image/jpeg', 0.92).replace(/^data:image\/jpeg;base64,/, "");
+            return canvas.toDataURL('image/jpeg', 0.85).replace(/^data:image\/jpeg;base64,/, "");
         }
 
         async function captureAndScan() {
@@ -824,7 +670,7 @@
                         requests: [{
                             image: { content: base64Image },
                             features: [
-                                { type: "TEXT_DETECTION", model: "builtin/stable" }
+                                { type: "TEXT_DETECTION", maxResults: 10 }
                             ],
                             imageContext: {
                                 languageHints: ["ja", "ja-t-i0-handwrit"]
@@ -928,252 +774,55 @@
                 }
             });
 
-            generateSuggestions(text, symbolChars, forceSuggestShita, forceSuggestHiraki);
-        }
+            const newKanji = new Set();
 
-        function generateSuggestions(targetText, symbolChars, forceSuggestShita, forceSuggestHiraki) {
-            const suggestArea = document.getElementById('suggest-area');
-            suggestArea.innerHTML = "";
+            processedMatches.forEach(char => {
+                if (!KANJI_DICTIONARY[char]) return;
 
-            let uniqueCandidates = [];
-
-            if (forceSuggestShita && KANJI_DICTIONARY["下"]) uniqueCandidates.push("下");
-            if (forceSuggestHiraki && KANJI_DICTIONARY["開"]) uniqueCandidates.push("開");
-
-            if (symbolChars) {
-                for (let ch of symbolChars) {
-                    if (KANJI_DICTIONARY[ch] && !uniqueCandidates.includes(ch)) {
-                        let inSlot = false;
-                        for (let i = 0; i < 4; i++) {
-                            if (displays[i].innerText === ch) { inSlot = true; break; }
-                        }
-                        if (!inSlot) uniqueCandidates.push(ch);
-                    }
-                    if (uniqueCandidates.length >= 4) break;
+                let isDuplicate = false;
+                for (let i = 0; i < 4; i++) {
+                    if (displays[i].innerText === char) { isDuplicate = true; break; }
                 }
-            }
+                if (isDuplicate) return;
 
-            const dictionaryKanjiList = Object.keys(KANJI_DICTIONARY);
-            let candidates = [];
-
-            let allSourceChars = [];
-            for (let ch of targetText) allSourceChars.push(ch);
-            if (symbolChars) for (let ch of symbolChars) allSourceChars.push(ch);
-
-            dictionaryKanjiList.forEach(dictK => {
-                if (dictK === "下" && forceSuggestShita) return;
-                if (dictK === "開" && forceSuggestHiraki) return;
-                if (uniqueCandidates.includes(dictK)) return;
-
-                for (let rawChar of allSourceChars) {
-                    const codeDiff = Math.abs(dictK.charCodeAt(0) - rawChar.charCodeAt(0));
-                    if (codeDiff === 0) continue;
-
-                    let score = 0;
-                    if (codeDiff < 100) score += 40;
-                    else if (codeDiff < 500) score += 20;
-
-                    if (score > 0) {
-                        candidates.push({ kanji: dictK, score: score + (1000 / (codeDiff + 1)) });
+                let targetIdx = -1;
+                for (let i = 0; i < 4; i++) {
+                    if (!selectedSlots.has(i) && (displays[i].innerText === "-" || !displays[i].innerText)) {
+                        targetIdx = i;
+                        break;
                     }
+                }
+
+                if (targetIdx !== -1) {
+                    displays[targetIdx].innerText = char;
+                    outputs[targetIdx].innerText = KANJI_DICTIONARY[char];
+                    newKanji.add(char);
                 }
             });
 
-            candidates.sort((a, b) => b.score - a.score);
 
-            for (let c of candidates) {
-                if (!uniqueCandidates.includes(c.kanji)) {
-                    uniqueCandidates.push(c.kanji);
-                }
-                if (uniqueCandidates.length >= 4) break;
-            }
-
-            if (uniqueCandidates.length < 4 && !uniqueCandidates.includes("謦")) uniqueCandidates.push("謦");
-
-            const finalCandidates = uniqueCandidates.slice(0, 4);
-
-            finalCandidates.forEach(kanji => {
-                if (!KANJI_DICTIONARY[kanji]) return;
-                const btn = document.createElement('button');
-                btn.className = 'btn-suggest';
-                btn.innerText = `${kanji}(${KANJI_DICTIONARY[kanji]}p)`;
-                btn.onclick = () => {
-                    let targetIdx = 0;
-                    for (let i = 0; i < 4; i++) {
-                        if (!selectedSlots.has(i) && (displays[i].innerText === "-" || !displays[i].innerText)) {
-                            targetIdx = i;
-                            break;
-                        }
-                    }
-                    displays[targetIdx].innerText = kanji;
-                    outputs[targetIdx].innerText = KANJI_DICTIONARY[kanji];
-                };
-                suggestArea.appendChild(btn);
-            });
-
-            if (finalCandidates.length === 0) {
-                suggestArea.innerHTML = '<span style="color:rgba(181,124,255,0.3); font-size:0.7rem;">候補なし</span>';
-            }
         }
 
-        window.calculate = function(type) {
-            let allPages = [];
+        window.addKanjiToSlot = function(kanji) {
+            if (!KANJI_DICTIONARY[kanji]) return;
+
             for (let i = 0; i < 4; i++) {
-                const pVal = parseInt(outputs[i].innerText);
-                if (!isNaN(pVal)) allPages.push(pVal);
+                if (displays[i].innerText === kanji) return;
             }
 
-            if (type === 'double') {
-                if (allPages.length === 0) { document.getElementById('calc-result').innerText = "ERR"; return; }
-                const maxNum = Math.max(...allPages);
-                document.getElementById('calc-result').innerText = maxNum * 2;
-                clearAllSelections();
-                return;
-            }
-
-            if (type === 'sort_digits') {
-                if (allPages.length === 0) { document.getElementById('calc-result').innerText = "ERR"; return; }
-                allPages.sort((a, b) => b - a);
-                let combinedResult = "";
-                allPages.forEach(p => { combinedResult += (p % 10).toString(); });
-                document.getElementById('calc-result').innerText = combinedResult;
-                clearAllSelections();
-                return;
-            }
-
-            if (type === 'sub') {
-                if (allPages.length < 1) { document.getElementById('calc-result').innerText = "ERR"; return; }
-                const maxNum = Math.max(...allPages);
-                const minNum = Math.min(...allPages);
-                document.getElementById('calc-result').innerText = maxNum - minNum;
-                clearAllSelections();
-                return;
-            }
-
-            if (type === 'rem') {
-                if (allPages.length === 0) { alert("数値がありません"); return; }
-                document.getElementById('mod-overlay').style.display = 'flex';
-                return;
-            }
-
-            let pages = [];
-            selectedSlots.forEach(idx => {
-                const pVal = parseInt(outputs[idx].innerText);
-                if (!isNaN(pVal)) pages.push(pVal);
-            });
-
-            if (pages.length === 0 && type === 'add') pages = [...allPages];
-            if (pages.length === 0) { document.getElementById('calc-result').innerText = "ERR"; return; }
-
-            let result = 0;
-            if (type === 'add') result = pages.reduce((a, b) => a + b, 0);
-
-            document.getElementById('calc-result').innerText = result;
-            clearAllSelections();
-        }
-
-        window.execModCalculated = function(divisor) {
-            let allPages = [];
             for (let i = 0; i < 4; i++) {
-                const pVal = parseInt(outputs[i].innerText);
-                if (!isNaN(pVal)) allPages.push(pVal);
+                if (!selectedSlots.has(i) && (displays[i].innerText === "-" || !displays[i].innerText)) {
+                    displays[i].innerText = kanji;
+                    outputs[i].innerText = KANJI_DICTIONARY[kanji];
+                    return;
+                }
             }
-            if (allPages.length === 0) { closeModOverlay(); return; }
-
-            const maxPage = Math.max(...allPages);
-            document.getElementById('calc-result').innerText = maxPage % divisor;
-            closeModOverlay();
-            clearAllSelections();
-        }
-
-        window.closeModOverlay = function() {
-            document.getElementById('mod-overlay').style.display = 'none';
         }
 
         function clearSlotsOnly() {
             displays.forEach(disp => disp.innerText = "-");
             outputs.forEach(out => out.innerText = "---");
             clearAllSelections();
-            document.getElementById('suggest-area').innerHTML = '<span style="color:rgba(181,124,255,0.3); font-size:0.7rem;">クリアしました</span>';
-        }
-
-        function clearResultOnly() {
-            document.getElementById('calc-result').innerText = "000";
-            closeModOverlay();
-        }
-
-        /* --- 電卓機能 --- */
-        let calcCurrent = "0";
-        let calcPrevious = null;
-        let calcOperator = null;
-        let calcShouldReset = false;
-
-        function toggleCalcPanel() {
-            const panel = document.getElementById('calc-panel-overlay');
-            panel.classList.toggle('active');
-        }
-
-        window.closeCalcPanel = function() {
-            document.getElementById('calc-panel-overlay').classList.remove('active');
-        }
-
-        window.calcKey = function(key) {
-            const display = document.getElementById('calc-display');
-
-            if (key === 'C') {
-                calcCurrent = "0";
-                calcPrevious = null;
-                calcOperator = null;
-                calcShouldReset = false;
-                display.innerText = "0";
-                return;
-            }
-
-            if (key === '=') {
-                if (calcOperator !== null && calcPrevious !== null) {
-                    const a = parseFloat(calcPrevious);
-                    const b = parseFloat(calcCurrent);
-                    let result = 0;
-                    if (calcOperator === '+') result = a + b;
-                    else if (calcOperator === '−') result = a - b;
-                    else if (calcOperator === '×') result = a * b;
-                    else if (calcOperator === '÷') result = b !== 0 ? a / b : 0;
-                    calcCurrent = String(result);
-                    calcPrevious = null;
-                    calcOperator = null;
-                    calcShouldReset = true;
-                    display.innerText = calcCurrent;
-                }
-                return;
-            }
-
-            if (key === '+' || key === '−' || key === '×' || key === '÷') {
-                if (calcOperator !== null && calcPrevious !== null && !calcShouldReset) {
-                    const a = parseFloat(calcPrevious);
-                    const b = parseFloat(calcCurrent);
-                    let result = 0;
-                    if (calcOperator === '+') result = a + b;
-                    else if (calcOperator === '−') result = a - b;
-                    else if (calcOperator === '×') result = a * b;
-                    else if (calcOperator === '÷') result = b !== 0 ? a / b : 0;
-                    calcCurrent = String(result);
-                }
-                calcPrevious = calcCurrent;
-                calcOperator = key;
-                calcShouldReset = true;
-                display.innerText = calcCurrent;
-                return;
-            }
-
-            if (/[0-9]/.test(key)) {
-                if (calcCurrent === "0" || calcShouldReset) {
-                    calcCurrent = key;
-                    calcShouldReset = false;
-                } else {
-                    calcCurrent += key;
-                }
-                display.innerText = calcCurrent;
-            }
         }
     </script>
 </body>
