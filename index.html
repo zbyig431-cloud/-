@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>N トワもんGemini</title>
+    <title>N トワもんGemini2</title>
     <!-- Firebase SDK (v10) -->
     <script type="importmap">
       {
@@ -359,7 +359,7 @@
             min-height: 0;
         }
         .hud-slot-row.has-error { border-color: rgba(255, 51, 51, 0.4); background: rgba(255,0,0,0.05); }
-        
+
         .hud-slot-row input {
             width: 36px;
             min-width: 36px;
@@ -372,7 +372,7 @@
             border-color: rgba(0,229,255,0.4);
             color: var(--cyber-blue);
         }
-        
+
         .hud-slot-ans-zone {
             flex: 1;
             height: 100%;
@@ -398,7 +398,7 @@
         }
         .hud-slot-ans-zone .no-img-text { font-size: 10px; color: #445566; font-weight: bold; margin: auto; }
         .hud-slot-ans-zone .err-text { font-size: 10px; color: var(--cyber-red); font-weight: bold; margin: auto; }
-        
+
         .pattern-badge {
             display: none !important;
         }
@@ -454,7 +454,7 @@
             box-shadow: 0 0 10px rgba(181,124,255,0.2);
         }
         .btn-shutter-quest:active { background: var(--cyber-purple); color: #fff; transform: scale(0.95); }
-        
+
         .scan-dimmer {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
             background: rgba(0, 229, 255, 0.2); opacity: 0; pointer-events: none; z-index: 5;
@@ -579,7 +579,7 @@
 
         <div class="hud-right">
             <div class="hud-panel-title">スクショが表示されます</div>
-            
+
             <div class="hud-slot-list">
                 <div class="hud-slot-row" id="row-0">
                     <input type="tel" id="box-0" placeholder="01" maxlength="3">
@@ -629,7 +629,7 @@
     <canvas id="split-work-canvas" style="display:none;"></canvas>
     <script type="module">
         import { initializeApp } from "firebase/app";
-        import { getFirestore, doc, setDoc, onSnapshot } from "firebase/firestore";
+        import { getFirestore, doc, setDoc, onSnapshot, collection, writeBatch, getDocs, deleteDoc } from "firebase/firestore";
 
         const firebaseConfig = {
             apiKey: "AIzaSyAqjlpWIPNCQVJqVnl_M4Orm3gZrnCULfM",
@@ -644,10 +644,11 @@
         const db = getFirestore(app);
 
         let localStream = null;
-        let allPhotosMap = {}; 
+        let allPhotosMap = {};
         let unsubscribeRoom = null;
+        let unsubscribePhotos = null;
         let presenceInterval = null;
-        let isUltraWideMode = true; 
+        let isUltraWideMode = true;
         let isFrontCamera = false;
 
         let slotPatternIndexes = [0, 0, 0, 0, 0];
@@ -671,6 +672,21 @@
         const CROP_JPEG_QUALITY = 0.80;
         // 負荷軽減: APIへ送る画像を最大辺1024pxに縮小（データ量削減で応答高速化）
         const API_MAX_DIM = 1024;
+
+        // ストックはリセットされるまで端末内にも保存し、再入場・再読み込み後も復元できるようにする
+        let roomResetAt = 0;
+        function stocksKey(roomId) { return `cyber_stocks_${roomId}`; }
+        function persistStocks() {
+            const roomId = document.getElementById('room-id').value.trim() || 'default_room';
+            try { localStorage.setItem(stocksKey(roomId), JSON.stringify(allPhotosMap)); } catch(e) {}
+        }
+        function restoreStocks(roomId) {
+            try {
+                const raw = localStorage.getItem(stocksKey(roomId));
+                if (raw) { const m = JSON.parse(raw); if (m && typeof m === 'object') return m; }
+            } catch(e) {}
+            return {};
+        }
 
         const setupPhase = document.getElementById('setup-phase');
         const scanPhase = document.getElementById('scan-phase');
@@ -731,7 +747,7 @@
                 zone.addEventListener('click', () => {
                     const query = searchBoxes[idx].value.trim();
                     if (!query || !allPhotosMap[query]) return;
-                    
+
                     const imgList = allPhotosMap[query].croppedImgs || [];
                     if (imgList.length <= 1) return;
 
@@ -1033,6 +1049,7 @@
             if(localStream) { localStream.getTracks().forEach(track => track.stop()); localStream = null; }
             if (document.exitFullscreen) { document.exitFullscreen().catch(()=>{}); }
             if(unsubscribeRoom) { unsubscribeRoom(); unsubscribeRoom = null; }
+            if(unsubscribePhotos) { unsubscribePhotos(); unsubscribePhotos = null; }
             clearInterval(presenceInterval);
             scanPhase.style.display = 'none';
             setupPhase.style.display = 'flex';
@@ -1041,6 +1058,13 @@
         function startFirebaseRoomSync() {
             const roomId = document.getElementById('room-id').value.trim() || 'default_room';
             const user = document.getElementById('user-name').value.trim() || 'Unknown';
+
+            // 端末内に保存済みのストックを復元（リセットするまで消えない）
+            const storedStocks = restoreStocks(roomId);
+            for (const k of Object.keys(storedStocks)) {
+                if (!allPhotosMap[k]) allPhotosMap[k] = storedStocks[k];
+            }
+            document.getElementById('db-counter').innerText = `STOCKS: ${Object.keys(allPhotosMap).length}`;
 
             if(presenceInterval) clearInterval(presenceInterval);
             const reportPresence = async () => {
@@ -1051,48 +1075,56 @@
             reportPresence();
             presenceInterval = setInterval(reportPresence, 4000);
 
+            if (unsubscribeRoom) { unsubscribeRoom(); unsubscribeRoom = null; }
             unsubscribeRoom = onSnapshot(doc(db, "rooms", roomId), (snapshot) => {
-                if (!snapshot.exists()) {
-                    allPhotosMap = {}; 
-                    document.getElementById('db-counter').innerText = "STOCKS: 0"; 
-                    executeSearch(); 
-                    return;
-                }
+                if (!snapshot.exists()) return;
                 const data = snapshot.data();
-                
+
                 if (data.members) {
                     const now = Date.now();
                     const activeMembers = Object.keys(data.members).filter(name => (now - data.members[name]) < 10000);
                     document.getElementById('member-list-text').innerText = `ONLINE: ${activeMembers.join(', ')}`;
                 }
-                
+
+                if (typeof data.resetAt === 'number') {
+                    roomResetAt = data.resetAt;
+                }
+
                 if (data.currentQueries) {
                     data.currentQueries.forEach((q, idx) => {
-                        if (document.activeElement !== searchBoxes[idx]) { 
-                            searchBoxes[idx].value = q || ""; 
+                        if (document.activeElement !== searchBoxes[idx]) {
+                            searchBoxes[idx].value = q || "";
                         }
                     });
                 }
-                
-                if (data.photoMap && Object.keys(data.photoMap).length > 0) {
-                    if (Date.now() < resetGuardUntil) {
-                        executeSearch();
-                        return;
+                executeSearch();
+            });
+
+            // スクショは「1数字=1ドキュメント」のサブコレクションで共有する。
+            // （従来は全数字を1ドキュメントにまとめて保存しており、STOCKが増えると
+            //   Firestoreの1MB制限を超えて書き込みが失敗し、共有が途切れる原因だった）
+            if (unsubscribePhotos) { unsubscribePhotos(); unsubscribePhotos = null; }
+            unsubscribePhotos = onSnapshot(collection(db, "rooms", roomId, "photos"), (snap) => {
+                const map = {};
+                snap.forEach(d => {
+                    const v = d.data();
+                    if (v && Array.isArray(v.croppedImgs) && v.croppedImgs.length > 0) {
+                        map[d.id] = { croppedImgs: v.croppedImgs, timestamp: v.timestamp || 0 };
                     }
-                    const incoming = data.photoMap;
-                    const merged = { ...incoming };
+                });
+                if (Date.now() >= resetGuardUntil) {
                     for (const k of Object.keys(allPhotosMap)) {
                         const local = allPhotosMap[k];
-                        if (!merged[k] || (local && local.timestamp && (!merged[k].timestamp || local.timestamp > merged[k].timestamp))) {
-                            merged[k] = local;
+                        // リセット以前の古いストックは復活させない
+                        if (!local || (local.timestamp || 0) <= roomResetAt) continue;
+                        if (!map[k] || (local.timestamp && (!map[k].timestamp || local.timestamp > map[k].timestamp))) {
+                            map[k] = local;
                         }
                     }
-                    allPhotosMap = merged;
-                    document.getElementById('db-counter').innerText = `STOCKS: ${Object.keys(allPhotosMap).length}`;
-                } else if (data.photoMap && Object.keys(data.photoMap).length === 0) {
-                    allPhotosMap = {};
-                    document.getElementById('db-counter').innerText = "STOCKS: 0";
                 }
+                allPhotosMap = map;
+                document.getElementById('db-counter').innerText = `STOCKS: ${Object.keys(map).length}`;
+                persistStocks();
                 executeSearch();
             });
         }
@@ -1100,8 +1132,8 @@
         async function syncInputsToFirebase() {
             const roomId = document.getElementById('room-id').value.trim() || 'default_room';
             const queries = searchBoxes.map(b => b.value.trim());
-            try { 
-                await setDoc(doc(db, "rooms", roomId), { currentQueries: queries }, { merge: true }); 
+            try {
+                await setDoc(doc(db, "rooms", roomId), { currentQueries: queries }, { merge: true });
             } catch(e) {}
         }
 
@@ -1435,34 +1467,32 @@
             const matchCount = Object.keys(updates).length;
             if (matchCount > 0 && Date.now() >= resetGuardUntil) {
                 const roomId = document.getElementById('room-id').value.trim() || 'default_room';
-                const mergedMap = { ...allPhotosMap };
                 Object.keys(updates).forEach(num => {
-                    const newImgs = updates[num].croppedImgs.slice(0, MAX_CANDIDATES);
-                    if (isContinuous && mergedMap[num] && Array.isArray(mergedMap[num].croppedImgs)) {
-                        // 既存3枚のいずれかを新しい3枚で差し替え（追加ではなく置換）
-                        // 新しい3枚で完全に置き換えることで常に3枚のみ保持
-                        mergedMap[num] = {
-                            croppedImgs: newImgs,
-                            timestamp: Date.now()
-                        };
-                    } else {
-                        mergedMap[num] = {
-                            croppedImgs: newImgs,
-                            timestamp: Date.now()
-                        };
-                    }
+                    allPhotosMap[num] = {
+                        croppedImgs: updates[num].croppedImgs.slice(0, MAX_CANDIDATES),
+                        timestamp: Date.now()
+                    };
                 });
-                allPhotosMap = mergedMap;
                 document.getElementById('db-counter').innerText = `STOCKS: ${Object.keys(allPhotosMap).length}`;
+                persistStocks();
                 executeSearch();
+
+                // 数字ごとに個別ドキュメントとして書き込む（1MB制限対策）
+                const batch = writeBatch(db);
+                Object.keys(updates).forEach(num => {
+                    batch.set(doc(db, "rooms", roomId, "photos", num), {
+                        croppedImgs: updates[num].croppedImgs.slice(0, MAX_CANDIDATES),
+                        timestamp: Date.now()
+                    }, { merge: true });
+                });
                 if (isContinuous) {
                     if (newNumbers.length > 0) {
                         showToast(`+${newNumbers.length} 新規: ${newNumbers.join(", ")}`);
                     }
-                    setDoc(doc(db, "rooms", roomId), { photoMap: mergedMap }, { merge: true }).catch(() => {});
+                    batch.commit().catch(() => {});
                 } else {
                     try {
-                        await setDoc(doc(db, "rooms", roomId), { photoMap: mergedMap }, { merge: true });
+                        await batch.commit();
                         showToast(`STOCKED: ${matchCount} UNITS`);
                     } catch (e) {
                         showToast("SYNC ERROR");
@@ -1476,7 +1506,7 @@
         async function analyzeQuestionModeAdvanced(annotations) {
             const fullList = annotations.slice(1);
             const foundNumbers = [];
-            
+
             fullList.forEach(item => {
                 const text = item.description.trim();
                 if (/^\d{3}$/.test(text)) {
@@ -1509,16 +1539,16 @@
                 }
 
                 const foundMatch = allPhotosMap[query];
-                
+
                 if (foundMatch) {
                     const imgList = foundMatch.croppedImgs || (foundMatch.croppedImg ? [foundMatch.croppedImg] : []);
-                    
+
                     if (imgList.length > 0) {
                         let htmlContent = "";
                         imgList.forEach((imgSrc) => {
                             htmlContent += `<img src="${imgSrc}">`;
                         });
-                        
+
                         zone.innerHTML = htmlContent;
                         rowDiv.classList.remove('has-error');
                     } else {
@@ -1547,10 +1577,27 @@
                 executeSearch();
 
                 resetGuardUntil = Date.now() + 3000;
-                await setDoc(doc(db, "rooms", roomId), {
-                    currentQueries: ["", "", "", "", ""],
-                    photoMap: {}
-                }, { merge: true });
+                roomResetAt = Date.now();
+                try { localStorage.removeItem(stocksKey(roomId)); } catch(e) {}
+                // 全メンバーのスクショ（サブコレクション）を削除（500件ずつ分割で確実に）
+                try {
+                    const snap = await getDocs(collection(db, "rooms", roomId, "photos"));
+                    const refs = [];
+                    snap.forEach(d => refs.push(d.ref));
+                    for (let i = 0; i < refs.length; i += 450) {
+                        const batch = writeBatch(db);
+                        refs.slice(i, i + 450).forEach(ref => batch.delete(ref));
+                        await batch.commit();
+                    }
+                } catch(e) {}
+                // ルーム本体も一度削除して作り直す（旧方式の巨大データが残っていても確実にリセットする）
+                try { await deleteDoc(doc(db, "rooms", roomId)); } catch(e) {}
+                try {
+                    await setDoc(doc(db, "rooms", roomId), {
+                        currentQueries: ["", "", "", "", ""],
+                        resetAt: roomResetAt
+                    }, { merge: true });
+                } catch(e) {}
 
                 showToast("ROOM & SLOTS RESET COMPLETE");
             } catch(e) {
