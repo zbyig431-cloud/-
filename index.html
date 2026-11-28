@@ -647,6 +647,9 @@
         let allPhotosMap = {};
         let unsubscribeRoom = null;
         let unsubscribePhotos = null;
+        let cloudPhotosMap = {};   // サブコレクションから取得したストック
+        let legacyPhotosMap = {};  // ルーム文書photoMapから取得したストック（旧形式・代替経路）
+        let photosListenError = false; // サブコレクションが使えない環境での代替経路切替フラグ
         let presenceInterval = null;
         let isUltraWideMode = true;
         let isFrontCamera = false;
@@ -1090,6 +1093,20 @@
                     roomResetAt = data.resetAt;
                 }
 
+                // ルーム文書のphotoMap（旧形式・代替共有経路）も取り込んで共有する
+                const pm = data.photoMap;
+                const legacy = {};
+                if (pm && typeof pm === 'object') {
+                    for (const k of Object.keys(pm)) {
+                        const v = pm[k];
+                        if (v && Array.isArray(v.croppedImgs) && v.croppedImgs.length > 0) {
+                            legacy[k] = { croppedImgs: v.croppedImgs, timestamp: v.timestamp || 0 };
+                        }
+                    }
+                }
+                legacyPhotosMap = legacy;
+                rebuildPhotosMap();
+
                 if (data.currentQueries) {
                     data.currentQueries.forEach((q, idx) => {
                         if (document.activeElement !== searchBoxes[idx]) {
@@ -1100,33 +1117,51 @@
                 executeSearch();
             });
 
-            // スクショは「1数字=1ドキュメント」のサブコレクションで共有する。
-            // （従来は全数字を1ドキュメントにまとめて保存しており、STOCKが増えると
-            //   Firestoreの1MB制限を超えて書き込みが失敗し、共有が途切れる原因だった）
+            // ストックの共有は2経路:
+            //   メイン: 「1数字=1ドキュメント」のサブコレクション（1MB制限対策）
+            //   代替:   ルーム文書のphotoMap（サブコレクションへの書き込み/監視が
+            //           失敗する環境でも共有が続くようにする予備経路）
             if (unsubscribePhotos) { unsubscribePhotos(); unsubscribePhotos = null; }
             unsubscribePhotos = onSnapshot(collection(db, "rooms", roomId, "photos"), (snap) => {
-                const map = {};
+                const m = {};
                 snap.forEach(d => {
                     const v = d.data();
                     if (v && Array.isArray(v.croppedImgs) && v.croppedImgs.length > 0) {
-                        map[d.id] = { croppedImgs: v.croppedImgs, timestamp: v.timestamp || 0 };
+                        m[d.id] = { croppedImgs: v.croppedImgs, timestamp: v.timestamp || 0 };
                     }
                 });
-                if (Date.now() >= resetGuardUntil) {
-                    for (const k of Object.keys(allPhotosMap)) {
-                        const local = allPhotosMap[k];
-                        // リセット以前の古いストックは復活させない
-                        if (!local || (local.timestamp || 0) <= roomResetAt) continue;
-                        if (!map[k] || (local.timestamp && (!map[k].timestamp || local.timestamp > map[k].timestamp))) {
-                            map[k] = local;
-                        }
-                    }
-                }
-                allPhotosMap = map;
-                document.getElementById('db-counter').innerText = `STOCKS: ${Object.keys(map).length}`;
-                persistStocks();
-                executeSearch();
+                cloudPhotosMap = m;
+                rebuildPhotosMap();
+            }, (err) => {
+                // サブコレクションの監視に失敗した場合はphotoMap経路へ切り替える
+                photosListenError = true;
+                showToast("共有経路を切替");
             });
+        }
+
+        // 2つの共有経路＋自端末の未反映ストックを統合して画面と保存に反映する
+        function rebuildPhotosMap() {
+            const map = {};
+            [legacyPhotosMap, cloudPhotosMap].forEach(src => {
+                for (const k of Object.keys(src)) {
+                    const v = src[k];
+                    const cur = map[k];
+                    if (!cur || (v.timestamp || 0) > (cur.timestamp || 0)) map[k] = v;
+                }
+            });
+            if (Date.now() >= resetGuardUntil) {
+                for (const k of Object.keys(allPhotosMap)) {
+                    const local = allPhotosMap[k];
+                    // リセット以前の古いストックは復活させない
+                    if (!local || (local.timestamp || 0) <= roomResetAt) continue;
+                    const cur = map[k];
+                    if (!cur || (local.timestamp || 0) > (cur.timestamp || 0)) map[k] = local;
+                }
+            }
+            allPhotosMap = map;
+            document.getElementById('db-counter').innerText = `STOCKS: ${Object.keys(map).length}`;
+            persistStocks();
+            executeSearch();
         }
 
         async function syncInputsToFirebase() {
@@ -1477,25 +1512,56 @@
                 persistStocks();
                 executeSearch();
 
-                // 数字ごとに個別ドキュメントとして書き込む（1MB制限対策）
-                const batch = writeBatch(db);
-                Object.keys(updates).forEach(num => {
-                    batch.set(doc(db, "rooms", roomId, "photos", num), {
-                        croppedImgs: updates[num].croppedImgs.slice(0, MAX_CANDIDATES),
-                        timestamp: Date.now()
-                    }, { merge: true });
-                });
+                // 共有書き込み: メインはサブコレクション、失敗時はルーム文書のphotoMapに代替
+                const fallbackWrite = async () => {
+                    try {
+                        const photoMap = {};
+                        for (const k of Object.keys(allPhotosMap)) {
+                            const local = allPhotosMap[k];
+                            if (!local || (local.timestamp || 0) <= roomResetAt) continue;
+                            photoMap[k] = { croppedImgs: local.croppedImgs, timestamp: local.timestamp };
+                        }
+                        if (JSON.stringify(photoMap).length > 900000) {
+                            showToast("ストック数が多すぎます");
+                            return;
+                        }
+                        await setDoc(doc(db, "rooms", roomId), { photoMap }, { merge: true });
+                    } catch (e) {
+                        showToast("SYNC ERROR");
+                    }
+                };
+                const commitMain = async () => {
+                    const batch = writeBatch(db);
+                    Object.keys(updates).forEach(num => {
+                        batch.set(doc(db, "rooms", roomId, "photos", num), {
+                            croppedImgs: updates[num].croppedImgs.slice(0, MAX_CANDIDATES),
+                            timestamp: Date.now()
+                        }, { merge: true });
+                    });
+                    await batch.commit();
+                };
                 if (isContinuous) {
                     if (newNumbers.length > 0) {
                         showToast(`+${newNumbers.length} 新規: ${newNumbers.join(", ")}`);
                     }
-                    batch.commit().catch(() => {});
+                    (async () => {
+                        try {
+                            if (!photosListenError) await commitMain();
+                            else await fallbackWrite();
+                        } catch (e) {
+                            photosListenError = true;
+                            await fallbackWrite();
+                        }
+                    })();
                 } else {
                     try {
-                        await batch.commit();
+                        if (!photosListenError) await commitMain();
+                        else await fallbackWrite();
                         showToast(`STOCKED: ${matchCount} UNITS`);
                     } catch (e) {
-                        showToast("SYNC ERROR");
+                        photosListenError = true;
+                        await fallbackWrite();
+                        showToast(`STOCKED: ${matchCount} UNITS`);
                     }
                 }
             } else {
@@ -1573,6 +1639,9 @@
                 searchBoxes.forEach(box => box.value = "");
                 slotPatternIndexes = [0, 0, 0, 0, 0];
                 allPhotosMap = {};
+                cloudPhotosMap = {};
+                legacyPhotosMap = {};
+                photosListenError = false;
                 document.getElementById('db-counter').innerText = "STOCKS: 0";
                 executeSearch();
 
