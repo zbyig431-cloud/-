@@ -1,1695 +1,1230 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>N トワもんGemini2</title>
-    <!-- Firebase SDK (v10) -->
-    <script type="importmap">
-      {
-        "imports": {
-          "firebase/app": "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js",
-          "firebase/firestore": "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js"
-        }
-      }
-    </script>
-    <style>
-        :root {
-            --bg-dark: #0a0e14;
-            --cyber-blue: #00e5ff;
-            --cyber-green: #39ff14;
-            --cyber-purple: #b57cff;
-            --cyber-red: #ff3333;
-            --cyber-orange: #ff9100;
-            --panel-bg: rgba(16, 23, 33, 0.95);
-            --panel-border: rgba(0, 229, 255, 0.2);
-        }
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>N トワもんGemini2</title>
+<script type="importmap">
+{
+  "imports": {
+    "firebase/app": "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js",
+    "firebase/firestore": "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js"
+  }
+}
+</script>
+<style>
+:root{--bg-dark:#0a0e14;--cyber-blue:#00e5ff;--cyber-green:#39ff14;--cyber-purple:#b57cff;--cyber-red:#ff3333;--cyber-orange:#ff9100;--panel-bg:rgba(16,23,33,0.95);--panel-border:rgba(0,229,255,0.2);}
+*{box-sizing:border-box;margin:0;padding:0;font-family:'Courier New',Courier,monospace,"Helvetica Neue",Arial,sans-serif;-webkit-user-select:none;user-select:none;}
+body,html{width:100%;height:100%;background-color:var(--bg-dark);color:#e0e6ed;overflow:hidden;}
+input[type="text"],input[type="password"],input[type="tel"]{background:rgba(7,13,22,0.9);border:1px solid var(--panel-border);color:#fff;padding:10px;border-radius:4px;font-size:14px;width:100%;outline:none;}
+input:focus{border-color:var(--cyber-blue);}
+button{cursor:pointer;border:none;border-radius:4px;font-weight:bold;transition:all 0.2s;text-transform:uppercase;letter-spacing:1px;}
 
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-            font-family: 'Courier New', Courier, monospace, "Helvetica Neue", Arial, sans-serif;
-            -webkit-user-select: none;
-            user-select: none;
-        }
+#setup-phase{width:100%;height:100%;overflow-y:auto;padding:20px;display:flex;flex-direction:column;gap:20px;}
+h1{font-size:34px;font-weight:800;text-align:center;color:var(--cyber-blue);text-shadow:0 0 14px rgba(0,229,255,0.65),0 0 28px rgba(0,229,255,0.3);padding:14px 0;border-bottom:2px dashed var(--panel-border);letter-spacing:2px;}
+.config-box{background:var(--panel-bg);border:1px solid var(--panel-border);padding:15px;border-radius:6px;display:flex;flex-direction:column;gap:12px;}
+.config-box label{font-size:12px;color:#8cc8ff;display:block;margin-bottom:4px;}
+.action-grid{display:grid;grid-template-columns:1fr;gap:12px;}
+.btn-start-scan{background:linear-gradient(135deg,#0077ff,var(--cyber-blue));color:#fff;padding:16px;font-size:18px;box-shadow:0 0 15px rgba(0,229,255,0.4);}
+.btn-reset-system{background:rgba(255,51,51,0.1);border:1px solid var(--cyber-red);color:var(--cyber-red);padding:12px;font-size:13px;}
 
-        body, html {
-            width: 100%;
-            height: 100%;
-            background-color: var(--bg-dark);
-            color: #e0e6ed;
-            overflow: hidden;
-        }
+.usage-guide{background:var(--panel-bg);border:1px solid var(--panel-border);border-radius:6px;padding:14px 16px;flex:1;min-height:0;overflow-y:auto;}
+.usage-guide h2{font-size:13px;color:var(--cyber-blue);margin-bottom:10px;padding-bottom:6px;border-bottom:1px solid rgba(0,229,255,0.2);letter-spacing:1px;}
+.usage-guide h3{font-size:12px;color:var(--cyber-green);margin-top:12px;margin-bottom:6px;}
+.usage-guide h3:first-of-type{margin-top:0;}
+.usage-guide ul{list-style:none;padding:0;margin:0 0 8px 0;display:flex;flex-direction:column;gap:5px;}
+.usage-guide li{font-size:13.5px;line-height:1.5;color:#aabbcc;padding-left:14px;position:relative;}
+.usage-guide li::before{content:"›";position:absolute;left:0;color:var(--cyber-blue);font-weight:bold;}
+.usage-guide .warn li::before{color:var(--cyber-orange);}
+.usage-guide .warn li{color:#ccbbaa;}
 
-        input[type="text"], input[type="password"], input[type="tel"] {
-            background: rgba(7, 13, 22, 0.9);
-            border: 1px solid var(--panel-border);
-            color: #fff;
-            padding: 10px;
-            border-radius: 4px;
-            font-size: 14px;
-            width: 100%;
-            outline: none;
-        }
-        input:focus {
-            border-color: var(--cyber-blue);
-        }
+#scan-phase{position:fixed;top:0;left:0;width:100vw;height:100vh;background:var(--bg-dark);display:none;z-index:1000;grid-template-columns:3fr 2fr;grid-template-rows:5fr 1fr;}
+.hud-left{grid-column:1;grid-row:1;display:flex;flex-direction:column;height:100%;background:#05080c;overflow:hidden;}
+.finder-container{width:100%;flex:1;position:relative;background:#000;overflow:hidden;display:flex;align-items:center;justify-content:center;}
+#camera-stream{width:100%;height:100%;object-fit:cover;}
+.hud-left-bottom-controls{grid-column:1;grid-row:2;background:rgba(10,14,20,0.95);border-top:1px solid rgba(0,229,255,0.3);display:flex;align-items:center;justify-content:space-between;padding:0 10px;gap:10px;overflow-x:auto;overflow-y:hidden;}
+.btn-exit-icon,.btn-zoom-toggle,.btn-clear-slots{height:80%;min-height:30px;padding:0 16px;border-radius:4px;font-size:12px;font-weight:bold;display:flex;align-items:center;justify-content:center;box-shadow:0 0 8px rgba(0,0,0,0.5);white-space:nowrap;flex-shrink:0;}
+.btn-exit-icon{background:rgba(255,51,51,0.1);border:1px solid var(--cyber-red);color:var(--cyber-red);}
+.btn-exit-icon:active{background:var(--cyber-red);color:#fff;}
+.btn-zoom-toggle{background:rgba(0,229,255,0.1);border:1px solid var(--cyber-blue);color:var(--cyber-blue);}
+.btn-zoom-toggle:active{background:var(--cyber-blue);color:#000;}
+.btn-clear-slots{background:rgba(255,145,0,0.1);border:1px solid var(--cyber-orange);color:var(--cyber-orange);}
+.btn-clear-slots:active{background:var(--cyber-orange);color:#000;}
 
-        button {
-            cursor: pointer;
-            border: none;
-            border-radius: 4px;
-            font-weight: bold;
-            transition: all 0.2s;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-        }
+.hud-right{grid-column:2;grid-row:1 / -1;background:#0a0e14;border-left:2px solid rgba(0,229,255,0.3);display:flex;flex-direction:column;padding:4px;gap:3px;height:100%;overflow:hidden;}
+.hud-panel-title{font-size:10px;color:#8cc8ff;text-align:center;border-bottom:1px solid rgba(255,255,255,0.1);padding-bottom:2px;font-weight:bold;letter-spacing:1px;flex-shrink:0;}
+.hud-slot-list{display:flex;flex-direction:column;gap:3px;flex:1;min-height:0;}
+.hud-slot-row{display:flex;align-items:center;background:rgba(20,30,45,0.6);border:1px solid rgba(140,200,255,0.2);border-radius:3px;padding:2px;gap:4px;flex:0.78;min-height:0;}
+.hud-slot-row.has-error{border-color:rgba(255,51,51,0.4);background:rgba(255,0,0,0.05);}
+.hud-slot-row input{width:36px;min-width:36px;height:100%;padding:1px;font-size:15px;font-weight:bold;text-align:center;background:#000;border-color:rgba(0,229,255,0.4);color:var(--cyber-blue);}
+.hud-slot-ans-zone{flex:1;height:100%;background:rgba(0,0,0,0.5);border-radius:3px;overflow:hidden;display:flex !important;justify-content:space-around;align-items:center;border:1px solid rgba(255,255,255,0.08);position:relative;cursor:pointer;gap:3px;padding:2px;}
+.hud-slot-ans-zone img{width:26% !important;height:88% !important;object-fit:contain;border:1px solid rgba(0,229,255,0.4);border-radius:2px;background:#000;}
+.hud-slot-ans-zone .no-img-text{font-size:10px;color:#445566;font-weight:bold;margin:auto;}
+.hud-slot-ans-zone .err-text{font-size:10px;color:var(--cyber-red);font-weight:bold;margin:auto;}
+.hud-control-bottom{display:flex;flex-direction:column;gap:3px;padding-top:3px;border-top:1px solid rgba(255,255,255,0.1);flex-shrink:0;}
+.stocks-counter{font-size:10px;color:#8cc8ff;font-weight:bold;text-align:center;}
+.shutter-grid{display:grid;grid-template-columns:1fr 1fr;gap:4px;}
+.shutter-grid button{touch-action:none;}
+.btn-shutter-target{padding:22px 0;border-radius:5px;background:linear-gradient(180deg,#ffffff 0%,#b5e9ff 100%);border:2px solid var(--cyber-blue);color:#050b14;font-size:13px;font-weight:900;box-shadow:0 0 10px rgba(0,229,255,0.2);}
+.btn-shutter-target:active{background:var(--cyber-blue);color:#fff;transform:scale(0.95);}
+.btn-shutter-target.scanning-active{background:linear-gradient(180deg,#ff9100 0%,#ff3333 100%);border-color:var(--cyber-orange);color:#fff;animation:scan-pulse 0.9s infinite;}
+@keyframes scan-pulse{0%,100%{box-shadow:0 0 8px rgba(255,145,0,0.5);transform:scale(1);}50%{box-shadow:0 0 22px rgba(255,145,0,1);transform:scale(0.97);}}
+.btn-shutter-quest{padding:22px 0;border-radius:5px;background:linear-gradient(180deg,#ffffff 0%,#e2c6ff 100%);border:2px solid var(--cyber-purple);color:#050b14;font-size:13px;font-weight:900;box-shadow:0 0 10px rgba(181,124,255,0.2);}
+.btn-shutter-quest:active{background:var(--cyber-purple);color:#fff;transform:scale(0.95);}
+.scan-dimmer{position:absolute;top:0;left:0;width:100%;height:100%;background:rgba(0,229,255,0.2);opacity:0;pointer-events:none;z-index:5;transition:opacity 0.1s;}
+.scan-dimmer.active{opacity:1;}
+.toast-log{position:absolute;left:20px;bottom:80px;background:rgba(0,0,0,0.85);border-left:3px solid var(--cyber-blue);padding:8px 14px;font-size:11px;z-index:20;pointer-events:none;opacity:0;transition:all 0.2s;}
+.toast-log.show{opacity:1;}
+.t-red{color:#ff3333;font-weight:bold;}
+.camera-crosshair{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:30px;height:30px;pointer-events:none;opacity:0.3;}
+.camera-crosshair::before,.camera-crosshair::after{content:'';position:absolute;background:white;}
+.camera-crosshair::before{top:14px;left:0;width:30px;height:2px;}
+.camera-crosshair::after{left:14px;top:0;width:2px;height:30px;}
 
-        /* PHASE 1: 設定画面 */
-        #setup-phase {
-            width: 100%;
-            height: 100%;
-            overflow-y: auto;
-            padding: 20px;
-            display: flex;
-            flex-direction: column;
-            gap: 20px;
-        }
-
-        h1 {
-            font-size: 34px;
-            font-weight: 800;
-            text-align: center;
-            color: var(--cyber-blue);
-            text-shadow: 0 0 14px rgba(0,229,255,0.65), 0 0 28px rgba(0,229,255,0.3);
-            padding: 14px 0;
-            border-bottom: 2px dashed var(--panel-border);
-            letter-spacing: 2px;
-        }
-
-        .member-status-bar {
-            background: rgba(0, 229, 255, 0.05);
-            border: 1px solid var(--panel-border);
-            padding: 10px;
-            border-radius: 4px;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            font-size: 12px;
-        }
-
-        .hud-member-status {
-            flex: 1 1 auto;
-            min-width: 0;
-            height: 80%;
-            min-height: 28px;
-            background: rgba(57, 255, 20, 0.06);
-            border: 1px solid rgba(57, 255, 20, 0.25);
-            border-radius: 4px;
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            padding: 0 10px;
-            font-size: 11px;
-            color: var(--cyber-green);
-            overflow: hidden;
-            white-space: nowrap;
-            text-overflow: ellipsis;
-        }
-        .hud-member-status .online-dot {
-            flex-shrink: 0;
-        }
-        .hud-member-status #member-list-text {
-            overflow: hidden;
-            text-overflow: ellipsis;
-        }
-        .online-dot {
-            width: 6px;
-            height: 6px;
-            background-color: var(--cyber-green);
-            border-radius: 50%;
-            box-shadow: 0 0 6px var(--cyber-green);
-        }
-
-        .config-box {
-            background: var(--panel-bg);
-            border: 1px solid var(--panel-border);
-            padding: 15px;
-            border-radius: 6px;
-            display: flex;
-            flex-direction: column;
-            gap: 12px;
-        }
-        .config-box label {
-            font-size: 12px;
-            color: #8cc8ff;
-            display: block;
-            margin-bottom: 4px;
-        }
-
-        .action-grid {
-            display: grid;
-            grid-template-columns: 1fr;
-            gap: 12px;
-        }
-
-        .btn-start-scan {
-            background: linear-gradient(135deg, #0077ff, var(--cyber-blue));
-            color: #fff;
-            padding: 16px;
-            font-size: 18px;
-            box-shadow: 0 0 15px rgba(0,229,255,0.4);
-        }
-
-        .btn-reset-system {
-            background: rgba(255, 51, 51, 0.1);
-            border: 1px solid var(--cyber-red);
-            color: var(--cyber-red);
-            padding: 12px;
-            font-size: 13px;
-        }
-
-        .usage-guide {
-            background: var(--panel-bg);
-            border: 1px solid var(--panel-border);
-            border-radius: 6px;
-            padding: 14px 16px;
-            flex: 1;
-            min-height: 0;
-            overflow-y: auto;
-        }
-        .usage-guide h2 {
-            font-size: 13px;
-            color: var(--cyber-blue);
-            margin-bottom: 10px;
-            padding-bottom: 6px;
-            border-bottom: 1px solid rgba(0,229,255,0.2);
-            letter-spacing: 1px;
-        }
-        .usage-guide h3 {
-            font-size: 12px;
-            color: var(--cyber-green);
-            margin-top: 12px;
-            margin-bottom: 6px;
-        }
-        .usage-guide h3:first-of-type { margin-top: 0; }
-        .usage-guide ul {
-            list-style: none;
-            padding: 0;
-            margin: 0 0 8px 0;
-            display: flex;
-            flex-direction: column;
-            gap: 5px;
-        }
-        .usage-guide li {
-            font-size: 13.5px;
-            line-height: 1.5;
-            color: #aabbcc;
-            padding-left: 14px;
-            position: relative;
-        }
-        .usage-guide li::before {
-            content: "›";
-            position: absolute;
-            left: 0;
-            color: var(--cyber-blue);
-            font-weight: bold;
-        }
-        .usage-guide .warn li::before { color: var(--cyber-orange); }
-        .usage-guide .warn li { color: #ccbbaa; }
-
-        /* PHASE 2: 横画面HUD
-           上段(5/6高さ): 左=カメラ(3/5幅) 右=スロット(2/5幅)
-           下段(1/6高さ): 全幅ボタンバー */
-        #scan-phase {
-            position: fixed;
-            top: 0; left: 0; width: 100vw; height: 100vh;
-            background: var(--bg-dark);
-            display: none;
-            z-index: 1000;
-            grid-template-columns: 3fr 2fr;
-            grid-template-rows: 5fr 1fr;
-        }
-
-        .hud-left {
-            grid-column: 1;
-            grid-row: 1;
-            display: flex;
-            flex-direction: column;
-            height: 100%;
-            background: #05080c;
-            overflow: hidden;
-        }
-
-        .finder-container {
-            width: 100%;
-            flex: 1;
-            position: relative;
-            background: #000;
-            overflow: hidden;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-        #camera-stream {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-        }
-
-        .hud-left-bottom-controls {
-            grid-column: 1;
-            grid-row: 2;
-            background: rgba(10, 14, 20, 0.95);
-            border-top: 1px solid rgba(0, 229, 255, 0.3);
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding: 0 10px;
-            gap: 10px;
-            overflow-x: auto;
-            overflow-y: hidden;
-        }
-
-        .btn-exit-icon, .btn-zoom-toggle, .btn-camera-toggle, .btn-clear-slots {
-            height: 80%;
-            min-height: 30px;
-            padding: 0 16px;
-            border-radius: 4px;
-            font-size: 12px;
-            font-weight: bold;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            box-shadow: 0 0 8px rgba(0,0,0,0.5);
-            white-space: nowrap;
-            flex-shrink: 0;
-        }
-
-        .btn-exit-icon {
-            background: rgba(255, 51, 51, 0.1);
-            border: 1px solid var(--cyber-red);
-            color: var(--cyber-red);
-        }
-        .btn-exit-icon:active { background: var(--cyber-red); color: #fff; }
-
-        .btn-zoom-toggle {
-            background: rgba(0, 229, 255, 0.1);
-            border: 1px solid var(--cyber-blue);
-            color: var(--cyber-blue);
-        }
-        .btn-zoom-toggle:active { background: var(--cyber-blue); color: #000; }
-
-        .btn-camera-toggle {
-            background: rgba(181, 124, 255, 0.1);
-            border: 1px solid var(--cyber-purple);
-            color: var(--cyber-purple);
-        }
-        .btn-camera-toggle:active { background: var(--cyber-purple); color: #000; }
-
-        .btn-clear-slots {
-            background: rgba(255, 145, 0, 0.1);
-            border: 1px solid var(--cyber-orange);
-            color: var(--cyber-orange);
-        }
-        .btn-clear-slots:active { background: var(--cyber-orange); color: #000; }
-
-        .hud-right {
-            grid-column: 2;
-            grid-row: 1 / -1;
-            background: #0a0e14;
-            border-left: 2px solid rgba(0, 229, 255, 0.3);
-            display: flex;
-            flex-direction: column;
-            padding: 4px;
-            gap: 3px;
-            height: 100%;
-            overflow: hidden;
-        }
-
-        .hud-panel-title {
-            font-size: 10px;
-            color: #8cc8ff;
-            text-align: center;
-            border-bottom: 1px solid rgba(255,255,255,0.1);
-            padding-bottom: 2px;
-            font-weight: bold;
-            letter-spacing: 1px;
-            flex-shrink: 0;
-        }
-
-        .hud-slot-list {
-            display: flex;
-            flex-direction: column;
-            gap: 3px;
-            flex: 1;
-            min-height: 0;
-        }
-        .hud-slot-row {
-            display: flex;
-            align-items: center;
-            background: rgba(20, 30, 45, 0.6);
-            border: 1px solid rgba(140, 200, 255, 0.2);
-            border-radius: 3px;
-            padding: 2px;
-            gap: 4px;
-            flex: 0.78;
-            min-height: 0;
-        }
-        .hud-slot-row.has-error { border-color: rgba(255, 51, 51, 0.4); background: rgba(255,0,0,0.05); }
-
-        .hud-slot-row input {
-            width: 36px;
-            min-width: 36px;
-            height: 100%;
-            padding: 1px;
-            font-size: 15px;
-            font-weight: bold;
-            text-align: center;
-            background: #000;
-            border-color: rgba(0,229,255,0.4);
-            color: var(--cyber-blue);
-        }
-
-        .hud-slot-ans-zone {
-            flex: 1;
-            height: 100%;
-            background: rgba(0,0,0,0.5);
-            border-radius: 3px;
-            overflow: hidden;
-            display: flex !important;
-            justify-content: space-around;
-            align-items: center;
-            border: 1px solid rgba(255,255,255,0.08);
-            position: relative;
-            cursor: pointer;
-            gap: 3px;
-            padding: 2px;
-        }
-        .hud-slot-ans-zone img {
-            width: 26% !important;
-            height: 88% !important;
-            object-fit: contain;
-            border: 1px solid rgba(0, 229, 255, 0.4);
-            border-radius: 2px;
-            background: #000;
-        }
-        .hud-slot-ans-zone .no-img-text { font-size: 10px; color: #445566; font-weight: bold; margin: auto; }
-        .hud-slot-ans-zone .err-text { font-size: 10px; color: var(--cyber-red); font-weight: bold; margin: auto; }
-
-        .pattern-badge {
-            display: none !important;
-        }
-
-        .hud-control-bottom {
-            display: flex;
-            flex-direction: column;
-            gap: 3px;
-            padding-top: 3px;
-            border-top: 1px solid rgba(255,255,255,0.1);
-            flex-shrink: 0;
-        }
-        .stocks-counter { font-size: 10px; color: #8cc8ff; font-weight: bold; text-align: center; }
-
-        .shutter-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 4px;
-        }
-        .shutter-grid button { touch-action: none; }
-
-        .btn-shutter-target {
-            padding: 22px 0;
-            border-radius: 5px;
-            background: linear-gradient(180deg, #ffffff 0%, #b5e9ff 100%);
-            border: 2px solid var(--cyber-blue);
-            color: #050b14;
-            font-size: 13px;
-            font-weight: 900;
-            box-shadow: 0 0 10px rgba(0,229,255,0.2);
-        }
-        .btn-shutter-target:active { background: var(--cyber-blue); color: #fff; transform: scale(0.95); }
-
-        .btn-shutter-target.scanning-active {
-            background: linear-gradient(180deg, #ff9100 0%, #ff3333 100%);
-            border-color: var(--cyber-orange);
-            color: #fff;
-            animation: scan-pulse 0.9s infinite;
-        }
-        @keyframes scan-pulse {
-            0%, 100% { box-shadow: 0 0 8px rgba(255,145,0,0.5); transform: scale(1); }
-            50% { box-shadow: 0 0 22px rgba(255,145,0,1); transform: scale(0.97); }
-        }
-
-        .btn-shutter-quest {
-            padding: 22px 0;
-            border-radius: 5px;
-            background: linear-gradient(180deg, #ffffff 0%, #e2c6ff 100%);
-            border: 2px solid var(--cyber-purple);
-            color: #050b14;
-            font-size: 13px;
-            font-weight: 900;
-            box-shadow: 0 0 10px rgba(181,124,255,0.2);
-        }
-        .btn-shutter-quest:active { background: var(--cyber-purple); color: #fff; transform: scale(0.95); }
-
-        .scan-dimmer {
-            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0, 229, 255, 0.2); opacity: 0; pointer-events: none; z-index: 5;
-            transition: opacity 0.1s;
-        }
-        .scan-dimmer.active { opacity: 1; }
-
-        .toast-log {
-            position: absolute; left: 20px; bottom: 80px; background: rgba(0,0,0,0.85);
-            border-left: 3px solid var(--cyber-blue); padding: 8px 14px; font-size: 11px;
-            z-index: 20; pointer-events: none; opacity: 0; transition: all 0.2s;
-        }
-        .toast-log.show { opacity: 1; }
-
-        .camera-crosshair {
-            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
-            width: 30px; height: 30px; pointer-events: none; opacity: 0.3;
-        }
-        .camera-crosshair::before, .camera-crosshair::after { content: ''; position: absolute; background: white; }
-        .camera-crosshair::before { top: 14px; left: 0; width: 30px; height: 2px; }
-        .camera-crosshair::after { left: 14px; top: 0; width: 2px; height: 30px; }
-
-        /* スマホ横画面（画面高さが小さい）専用：下段ボタンをさらに縮小 */
-        @media (max-height: 500px) {
-            .hud-left-bottom-controls {
-                padding: 0 4px;
-                gap: 4px;
-            }
-            .btn-exit-icon, .btn-zoom-toggle, .btn-camera-toggle, .btn-clear-slots {
-                height: 26px;
-                min-height: 26px;
-                padding: 0 6px;
-                font-size: 10px;
-            }
-            .hud-member-status {
-                height: 26px;
-                min-height: 26px;
-                font-size: 9px;
-                padding: 0 6px;
-            }
-            .online-dot { width: 5px; height: 5px; }
-            .hud-right { padding: 3px; gap: 2px; }
-            .hud-panel-title { font-size: 8px; padding-bottom: 1px; }
-            .hud-slot-list { gap: 2px; }
-            .hud-slot-row { padding: 1px; gap: 3px; }
-            .hud-slot-row input { width: 28px; min-width: 28px; font-size: 12px; }
-            .hud-slot-ans-zone { padding: 1px; gap: 1px; }
-            .hud-slot-ans-zone .no-img-text,
-            .hud-slot-ans-zone .err-text { font-size: 8px; }
-            .hud-control-bottom { gap: 2px; padding-top: 2px; }
-            .stocks-counter { font-size: 8px; }
-            .shutter-grid { gap: 3px; }
-            .btn-shutter-target, .btn-shutter-quest {
-                padding: 16px 0;
-                font-size: 10px;
-                border-width: 1px;
-            }
-            .toast-log { bottom: 60px; padding: 4px 8px; font-size: 9px; }
-        }
-    </style>
-  <meta property="og:image" content="https://bolt.new/static/og_default.png">
-    <meta name="twitter:card" content="summary_large_image">
-    <meta name="twitter:image" content="https://bolt.new/static/og_default.png">
+@media (max-height:500px){
+.hud-left-bottom-controls{padding:0 4px;gap:4px;}
+.btn-exit-icon,.btn-zoom-toggle,.btn-clear-slots{height:26px;min-height:26px;padding:0 6px;font-size:10px;}
+.hud-right{padding:3px;gap:2px;}
+.hud-panel-title{font-size:8px;padding-bottom:1px;}
+.hud-slot-list{gap:2px;}
+.hud-slot-row{padding:1px;gap:3px;}
+.hud-slot-row input{width:28px;min-width:28px;font-size:12px;}
+.hud-slot-ans-zone{padding:1px;gap:1px;}
+.hud-slot-ans-zone .no-img-text,.hud-slot-ans-zone .err-text{font-size:8px;}
+.hud-control-bottom{gap:2px;padding-top:2px;}
+.stocks-counter{font-size:8px;}
+.shutter-grid{gap:3px;}
+.btn-shutter-target,.btn-shutter-quest{padding:16px 0;font-size:10px;border-width:1px;}
+.toast-log{bottom:60px;padding:4px 8px;font-size:9px;}
+}
+</style>
+<meta property="og:image" content="https://bolt.new/static/og_default.png">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://bolt.new/static/og_default.png">
 </head>
 <body>
 
-    <!-- PHASE 1: 設定画面 -->
-    <div id="setup-phase">
-        <h1>トワもんGemini</h1>
-        <div class="config-box">
-            <div>
-                <label>ROOM ID:</label>
-                <input type="text" id="room-id" placeholder="team1">
-            </div>
-            <div>
-                <label>PLAYER NAME:</label>
-                <input type="text" id="user-name" placeholder="プレイヤー名">
-            </div>
-            <div>
-                <label>PASS WORD:</label>
-                <input type="password" id="api-key" placeholder="AIzaSy...">
-            </div>
+<!-- PHASE 1: 設定画面 -->
+<div id="setup-phase">
+    <h1>トワもんGemini</h1>
+    <div class="config-box">
+        <div>
+            <label>ROOM ID:</label>
+            <input type="text" id="room-id" placeholder="team1">
         </div>
-        <div class="action-grid">
-            <button class="btn-start-scan" id="btn-enter-scan">スキャンモード</button>
-            <button class="btn-reset-system" id="btn-reset-all">ルームリセット</button>
+        <div>
+            <label>PLAYER NAME:</label>
+            <input type="text" id="user-name" placeholder="プレイヤー名">
         </div>
-        <div class="usage-guide">
-            <h2>使い方と注意点</h2>
-            <h3>使い方</h3>
-            <ul>
-                <li>ROOM ID・PLAYER NAME・PASS WORD を入力し「スキャンモード」を押すと撮影画面に移動します</li>
-                <li>「問題撮影」ボタンをタップすると問題文を撮影し、読み取った数字はスロット内に自動入力されます</li>
-                <li>再度問題文の撮影を行うと、スロット内の数字が上書きされます</li>
-                <li>「クリア」ボタンでスロットを全消去できます</li>
-                <li>「1.0/0.5」でズーム切替、「外カメ」でカメラの表/裏を切り替えられます</li>
-                <li>同じ ROOM ID のメンバーと数字・画像をリアルタイム共有します</li>
-            </ul>
-            <h3>注意点</h3>
-            <ul class="warn">
-                <li>パスワードを正しく入力しないと機能しません</li>
-                <li>カメラへのアクセス許可が必要です。ブラウザの設定で許可してください</li>
-                <li>スキャン中は手ブレやピンボケると認識精度が下がります。安定した状態で撮影してください</li>
-                <li>「ルームリセット」を押すと共有中のデータがすべて消去されます。メンバー全員に影響します</li>
-                <li>通信環境が悪いと共有に遅延が出ます。安定したネットワークでご利用ください</li>
-                <li>問題を撮影する際は、問題となる数字だけを映すようにしてください</li>
-                <li>小さすぎる数字、ぼやけた数字はうまく認識できない場合があります。必要に応じて倍率の変更を行ってください</li>
-                <li>無許可での共有、使用はしないようお願いします。バグや不具合はトワもんにご連絡ください</li>
-            </ul>
+        <div>
+            <label>PASS WORD:</label>
+            <input type="password" id="api-key" placeholder="AIzaSy...">
+        </div>
+    </div>
+    <div class="action-grid">
+        <button class="btn-start-scan" id="btn-enter-scan">スキャンモード</button>
+        <button class="btn-reset-system" id="btn-reset-all">ルームリセット</button>
+    </div>
+    <div class="usage-guide">
+        <h2>使い方と注意点</h2>
+        <h3>使い方</h3>
+        <ul>
+            <li>ROOM ID・PLAYER NAME・PASS WORD を入力し「スキャンモード」を押すと撮影画面に移動します</li>
+            <li>「問題撮影」ボタンをタップすると問題文を撮影し、読み取った数字はスロット内に自動入力されます</li>
+            <li>再度問題文の撮影を行うと、スロット内の数字が上書きされます</li>
+            <li>「クリア」ボタンでスロットを全消去できます</li>
+            <li>「1.0/0.5」でズームを切り替えられます</li>
+            <li>同じ ROOM ID のメンバーと数字・画像をリアルタイム共有します</li>
+        </ul>
+        <h3>注意点</h3>
+        <ul class="warn">
+            <li>パスワードを正しく入力しないと機能しません</li>
+            <li>カメラへのアクセス許可が必要です。ブラウザの設定で許可してください</li>
+            <li>スキャン中は手ブレやピンボケると認識精度が下がります。安定した状態で撮影してください</li>
+            <li>「ルームリセット」を押すと共有中のデータがすべて消去されます。メンバー全員に影響します</li>
+            <li>通信環境が悪いと共有に遅延が出ます。安定したネットワークでご利用ください</li>
+            <li>問題を撮影する際は、問題となる数字だけを映すようにしてください</li>
+            <li>小さすぎる数字、ぼやけた数字はうまく認識できない場合があります。必要に応じて倍率の変更を行ってください</li>
+            <li>無許可での共有、使用はしないようお願いします。バグや不具合はトワもんにご連絡ください</li>
+        </ul>
+    </div>
+</div>
+
+<!-- PHASE 2: 横画面スキャンHUD -->
+<div id="scan-phase">
+    <div class="hud-left">
+        <div class="finder-container">
+            <video id="camera-stream" autoplay playsinline muted></video>
+            <div class="camera-crosshair"></div>
+            <div class="scan-dimmer" id="scan-indicator"></div>
         </div>
     </div>
 
-    <!-- PHASE 2: 横画面スキャンHUD -->
-    <div id="scan-phase">
-        <div class="hud-left">
-            <div class="finder-container">
-                <video id="camera-stream" autoplay playsinline muted></video>
-                <div class="camera-crosshair"></div>
-                <div class="scan-dimmer" id="scan-indicator"></div>
+    <div class="hud-right">
+        <div class="hud-panel-title">スクショが表示されます</div>
+        <div class="hud-slot-list">
+            <div class="hud-slot-row" id="row-0">
+                <input type="tel" id="box-0" placeholder="01" maxlength="3">
+                <div class="hud-slot-ans-zone" id="zone-0" data-index="0"><span class="no-img-text">VOID</span></div>
+            </div>
+            <div class="hud-slot-row" id="row-1">
+                <input type="tel" id="box-1" placeholder="02" maxlength="3">
+                <div class="hud-slot-ans-zone" id="zone-1" data-index="1"><span class="no-img-text">VOID</span></div>
+            </div>
+            <div class="hud-slot-row" id="row-2">
+                <input type="tel" id="box-2" placeholder="03" maxlength="3">
+                <div class="hud-slot-ans-zone" id="zone-2" data-index="2"><span class="no-img-text">VOID</span></div>
+            </div>
+            <div class="hud-slot-row" id="row-3">
+                <input type="tel" id="box-3" placeholder="04" maxlength="3">
+                <div class="hud-slot-ans-zone" id="zone-3" data-index="3"><span class="no-img-text">VOID</span></div>
+            </div>
+            <div class="hud-slot-row" id="row-4">
+                <input type="tel" id="box-4" placeholder="05" maxlength="3">
+                <div class="hud-slot-ans-zone" id="zone-4" data-index="4"><span class="no-img-text">VOID</span></div>
             </div>
         </div>
-
-        <div class="hud-right">
-            <div class="hud-panel-title">スクショが表示されます</div>
-
-            <div class="hud-slot-list">
-                <div class="hud-slot-row" id="row-0">
-                    <input type="tel" id="box-0" placeholder="01" maxlength="3">
-                    <div class="hud-slot-ans-zone" id="zone-0" data-index="0"><span class="no-img-text">VOID</span></div>
-                </div>
-                <div class="hud-slot-row" id="row-1">
-                    <input type="tel" id="box-1" placeholder="02" maxlength="3">
-                    <div class="hud-slot-ans-zone" id="zone-1" data-index="1"><span class="no-img-text">VOID</span></div>
-                </div>
-                <div class="hud-slot-row" id="row-2">
-                    <input type="tel" id="box-2" placeholder="03" maxlength="3">
-                    <div class="hud-slot-ans-zone" id="zone-2" data-index="2"><span class="no-img-text">VOID</span></div>
-                </div>
-                <div class="hud-slot-row" id="row-3">
-                    <input type="tel" id="box-3" placeholder="04" maxlength="3">
-                    <div class="hud-slot-ans-zone" id="zone-3" data-index="3"><span class="no-img-text">VOID</span></div>
-                </div>
-                <div class="hud-slot-row" id="row-4">
-                    <input type="tel" id="box-4" placeholder="05" maxlength="3">
-                    <div class="hud-slot-ans-zone" id="zone-4" data-index="4"><span class="no-img-text">VOID</span></div>
-                </div>
-            </div>
-
-            <div class="hud-control-bottom">
-                <div class="stocks-counter" id="db-counter">STOCKS: 0</div>
-                <div class="shutter-grid">
-                    <button class="btn-shutter-target" id="shutter-target">スキャン連射</button>
-                    <button class="btn-shutter-quest" id="shutter-quest">問題撮影</button>
-                </div>
+        <div class="hud-control-bottom">
+            <div class="stocks-counter" id="db-counter">STOCKS: 0</div>
+            <div class="shutter-grid">
+                <button class="btn-shutter-target" id="shutter-target">スキャン連射</button>
+                <button class="btn-shutter-quest" id="shutter-quest">問題撮影</button>
             </div>
         </div>
-
-        <div class="hud-left-bottom-controls">
-            <button class="btn-exit-icon" id="btn-exit-scan">ホームへ</button>
-            <button class="btn-zoom-toggle" id="btn-toggle-lens">1.0/0.5</button>
-            <button class="btn-camera-toggle" id="btn-toggle-facing">外カメ</button>
-            <div class="hud-member-status">
-                <span class="online-dot"></span>
-                <span id="member-list-text">ONLINE: 待機中...</span>
-            </div>
-            <button class="btn-clear-slots" id="btn-clear-slots">クリア</button>
-        </div>
-
-        <div class="toast-log" id="toast-log">SCANNING...</div>
     </div>
 
-    <canvas id="split-work-canvas" style="display:none;"></canvas>
-    <script type="module">
-        import { initializeApp } from "firebase/app";
-        import { getFirestore, doc, setDoc, onSnapshot, collection, writeBatch, getDocs, deleteDoc } from "firebase/firestore";
+    <div class="hud-left-bottom-controls">
+        <button class="btn-exit-icon" id="btn-exit-scan">ホームへ</button>
+        <button class="btn-zoom-toggle" id="btn-toggle-lens">1.0/0.5</button>
+        <button class="btn-clear-slots" id="btn-clear-slots">クリア</button>
+    </div>
 
-        const firebaseConfig = {
-            apiKey: "AIzaSyAqjlpWIPNCQVJqVnl_M4Orm3gZrnCULfM",
-            authDomain: "tmon-gemini.firebaseapp.com",
-            projectId: "tmon-gemini",
-            storageBucket: "tmon-gemini.firebasestorage.app",
-            messagingSenderId: "90913647133",
-            appId: "1:90913647133:web:10185c7981f69e10f95c34"
-        };
+    <div class="toast-log" id="toast-log">SCANNING...</div>
+</div>
 
-        const app = initializeApp(firebaseConfig);
-        const db = getFirestore(app);
+<canvas id="split-work-canvas" style="display:none;"></canvas>
+<script type="module">
+import { initializeApp } from "firebase/app";
+import { getFirestore, doc, setDoc, onSnapshot, collection, writeBatch, getDocs, deleteDoc } from "firebase/firestore";
 
-        let localStream = null;
-        let allPhotosMap = {};
-        let unsubscribeRoom = null;
-        let unsubscribePhotos = null;
-        let cloudPhotosMap = {};   // サブコレクションから取得したストック
-        let legacyPhotosMap = {};  // ルーム文書photoMapから取得したストック（旧形式・代替経路）
-        let photosListenError = false; // サブコレクションが使えない環境での代替経路切替フラグ
-        let presenceInterval = null;
-        let isUltraWideMode = true;
-        let isFrontCamera = false;
+const firebaseConfig = {
+    apiKey: "AIzaSyAqjlpWIPNCQVJqVnl_M4Orm3gZrnCULfM",
+    authDomain: "tmon-gemini.firebaseapp.com",
+    projectId: "tmon-gemini",
+    storageBucket: "tmon-gemini.firebasestorage.app",
+    messagingSenderId: "90913647133",
+    appId: "1:90913647133:web:10185c7981f69e10f95c34"
+};
 
-        let slotPatternIndexes = [0, 0, 0, 0, 0];
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
 
-        // 連続スキャン状態
-        let isContinuousScanning = false;
-        let continuousSessionSeen = []; // [{text, cx, cy}] 直前の認識結果（重複判定用）
-        const SCAN_INTERVAL_MS = 500;
-        // 重複判定しきい値はキャプチャ幅に対する比率で算出（4Kでも手ブレで過剰ストックしない）
-        const POS_DUP_FRAC = 0.05;
-        const MAX_CANDIDATES = 3; // 同一数字あたりの候補スクショは常に3枚
+let localStream = null;
+let allPhotosMap = {};
+let unsubscribeRoom = null;
+let unsubscribePhotos = null;
+let cloudPhotosMap = {};   // サブコレクションから取得したストック
+let legacyPhotosMap = {};  // ルーム文書photoMapから取得したストック（旧形式・代替経路）
+let photosListenError = false; // サブコレクションが使えない環境での代替経路切替フラグ
+let isUltraWideMode = true;
 
-        // タイル分割設定
-        const TILE_COLS = 4;
-        const TILE_ROWS = 2;
-        const TILE_OVERLAP = 0.15;
+let slotPatternIndexes = [0, 0, 0, 0, 0];
 
-        // 画質向上: APIへ送るJPEGの品質
-        const FULL_JPEG_QUALITY = 0.82;
-        const TILE_JPEG_QUALITY = 0.82;
-        const CROP_JPEG_QUALITY = 0.80;
-        // 負荷軽減: APIへ送る画像を最大辺1024pxに縮小（データ量削減で応答高速化）
-        const API_MAX_DIM = 1024;
+// 連続スキャン状態
+let isContinuousScanning = false;
+let continuousSessionSeen = []; // [{text, cx, cy}] 直前の認識結果
+const SCAN_INTERVAL_MS = 500;
+const POS_DUP_FRAC = 0.05;
+const MAX_CANDIDATES = 3; // 同一数字あたりの候補スクショは常に3枚
 
-        // ストックはリセットされるまで端末内にも保存し、再入場・再読み込み後も復元できるようにする
-        let roomResetAt = 0;
-        function stocksKey(roomId) { return `cyber_stocks_${roomId}`; }
-        function persistStocks() {
-            const roomId = document.getElementById('room-id').value.trim() || 'default_room';
-            try { localStorage.setItem(stocksKey(roomId), JSON.stringify(allPhotosMap)); } catch(e) {}
+// タイル分割設定
+const TILE_COLS = 4;
+const TILE_ROWS = 2;
+const TILE_OVERLAP = 0.15;
+
+// 画質設定
+const FULL_JPEG_QUALITY = 0.82;
+const TILE_JPEG_QUALITY = 0.82;
+const CROP_JPEG_QUALITY = 0.72; // スクショ（表示用）の品質
+const CROP_W = 96;              // スクショ（表示用）の幅
+const CROP_H = 128;             // スクショ（表示用）の高さ
+const API_MAX_DIM = 1024;       // OCR用画像の最大辺
+
+// ストックは端末内にも保存し、再入場・再読み込み後も復元できるようにする
+let roomResetAt = 0;
+function stocksKey(roomId) { return `cyber_stocks_${roomId}`; }
+let persistTimer = null;
+function persistStocks() {
+    clearTimeout(persistTimer);
+    persistTimer = setTimeout(() => {
+        const roomId = document.getElementById('room-id').value.trim() || 'default_room';
+        try { localStorage.setItem(stocksKey(roomId), JSON.stringify(allPhotosMap)); } catch(e) {}
+    }, 2000);
+}
+function restoreStocks(roomId) {
+    try {
+        const raw = localStorage.getItem(stocksKey(roomId));
+        if (raw) { const m = JSON.parse(raw); if (m && typeof m === 'object') return m; }
+    } catch(e) {}
+    return {};
+}
+
+const setupPhase = document.getElementById('setup-phase');
+const scanPhase = document.getElementById('scan-phase');
+const searchBoxes = [
+    document.getElementById('box-0'), document.getElementById('box-1'),
+    document.getElementById('box-2'), document.getElementById('box-3'),
+    document.getElementById('box-4')
+];
+const ansZones = [
+    document.getElementById('zone-0'), document.getElementById('zone-1'),
+    document.getElementById('zone-2'), document.getElementById('zone-3'),
+    document.getElementById('zone-4')
+];
+    window.addEventListener('DOMContentLoaded', () => {
+    loadConfig();
+    initEventListeners();
+});
+
+function initEventListeners() {
+    document.getElementById('btn-enter-scan').addEventListener('click', () => { isUltraWideMode = true; startCameraEngine(); });
+    document.getElementById('btn-exit-scan').addEventListener('click', exitScanMode);
+    document.getElementById('btn-reset-all').addEventListener('click', resetSystem);
+    document.getElementById('btn-toggle-lens').addEventListener('click', toggleCameraLens);
+    document.getElementById('btn-clear-slots').addEventListener('click', clearAllSlots);
+
+    // スキャン：タップで連射ON/OFF切替
+    const shutterTarget = document.getElementById('shutter-target');
+    shutterTarget.addEventListener('click', () => {
+        if (isContinuousScanning) {
+            stopContinuousScan();
+        } else {
+            startContinuousScan();
         }
-        function restoreStocks(roomId) {
-            try {
-                const raw = localStorage.getItem(stocksKey(roomId));
-                if (raw) { const m = JSON.parse(raw); if (m && typeof m === 'object') return m; }
-            } catch(e) {}
-            return {};
-        }
+    });
+    shutterTarget.addEventListener('contextmenu', (e) => e.preventDefault());
 
-        const setupPhase = document.getElementById('setup-phase');
-        const scanPhase = document.getElementById('scan-phase');
-        const searchBoxes = [
-            document.getElementById('box-0'), document.getElementById('box-1'),
-            document.getElementById('box-2'), document.getElementById('box-3'),
-            document.getElementById('box-4')
-        ];
-        const ansZones = [
-            document.getElementById('zone-0'), document.getElementById('zone-1'),
-            document.getElementById('zone-2'), document.getElementById('zone-3'),
-            document.getElementById('zone-4')
-        ];
-
-        window.addEventListener('DOMContentLoaded', () => {
-            loadConfig();
-            initEventListeners();
+    // 問題撮影：タップで1回撮影
+    document.getElementById('shutter-quest').addEventListener('click', () => {
+        processCaptureOCR("question").catch(err => {
+            showToast("撮影エラー: " + (err.message || "").slice(0, 30));
         });
+    });
 
-        function initEventListeners() {
-            document.getElementById('btn-enter-scan').addEventListener('click', () => { isUltraWideMode = true; isFrontCamera = false; updateFacingButtonLabel(); startCameraEngine(); });
-            document.getElementById('btn-exit-scan').addEventListener('click', exitScanMode);
-            document.getElementById('btn-reset-all').addEventListener('click', resetSystem);
-            document.getElementById('btn-toggle-lens').addEventListener('click', toggleCameraLens);
-            document.getElementById('btn-toggle-facing').addEventListener('click', toggleFacingCamera);
-            document.getElementById('btn-clear-slots').addEventListener('click', clearAllSlots);
+    ['room-id', 'user-name', 'api-key'].forEach(id => {
+        document.getElementById(id).addEventListener('input', saveConfig);
+    });
 
-            // スキャン：タップで連射ON/OFF切替
-            const shutterTarget = document.getElementById('shutter-target');
-            shutterTarget.addEventListener('click', () => {
-                if (isContinuousScanning) {
-                    stopContinuousScan();
-                } else {
-                    startContinuousScan();
-                }
-            });
-            shutterTarget.addEventListener('contextmenu', (e) => e.preventDefault());
-
-            // 問題撮影：タップで1回撮影
-            document.getElementById('shutter-quest').addEventListener('click', () => {
-                processCaptureOCR("question").catch(err => {
-                    showToast("撮影エラー: " + (err.message || "").slice(0, 30));
-                });
-            });
-
-            ['room-id', 'user-name', 'api-key'].forEach(id => {
-                document.getElementById(id).addEventListener('input', saveConfig);
-            });
-
-            searchBoxes.forEach((box) => {
-                box.addEventListener('input', () => {
-                    syncInputsToFirebase();
-                    executeSearch();
-                });
-            });
-
-            ansZones.forEach((zone, idx) => {
-                zone.addEventListener('click', () => {
-                    const query = searchBoxes[idx].value.trim();
-                    if (!query || !allPhotosMap[query]) return;
-
-                    const imgList = allPhotosMap[query].croppedImgs || [];
-                    if (imgList.length <= 1) return;
-
-                    slotPatternIndexes[idx] = (slotPatternIndexes[idx] + 1) % imgList.length;
-                    executeSearch();
-                });
-            });
-        }
-
-        function startContinuousScan() {
-            if (isContinuousScanning) return;
-            if (!localStream || !document.getElementById('api-key').value.trim()) {
-                showToast("CAMERA OR KEY MISSING");
-                return;
-            }
-            isContinuousScanning = true;
-            continuousSessionSeen = [];
-            const btn = document.getElementById('shutter-target');
-            btn.classList.add('scanning-active');
-            btn.innerText = "スキャン中 (タップで停止)";
-            showToast("連射スキャン開始");
-            continuousScanLoop();
-        }
-
-        let continuousErrorCount = 0;
-        async function continuousScanLoop() {
-            while (isContinuousScanning) {
-                try {
-                    await processCaptureOCR("target", true);
-                    continuousErrorCount = 0;
-                } catch (err) {
-                    continuousErrorCount++;
-                    if (continuousErrorCount <= 2) {
-                        showToast("スキャンエラー リトライ中...");
-                    }
-                }
-                if (!isContinuousScanning) break;
-                await new Promise(r => setTimeout(r, SCAN_INTERVAL_MS));
-            }
-        }
-
-        function stopContinuousScan() {
-            if (!isContinuousScanning) return;
-            isContinuousScanning = false;
-            const btn = document.getElementById('shutter-target');
-            btn.classList.remove('scanning-active');
-            btn.innerText = "スキャン連射";
-            showToast("連射スキャン停止");
-        }
-
-        function clearAllSlots() {
-            searchBoxes.forEach(box => box.value = "");
-            slotPatternIndexes = [0, 0, 0, 0, 0];
+    searchBoxes.forEach((box) => {
+        box.addEventListener('input', () => {
             syncInputsToFirebase();
             executeSearch();
-            showToast("SLOTS CLEARED");
-        }
+        });
+    });
 
-        // 段階的に制約を緩めてカメラを取得するヘルパー。失敗時は null を返す。
-        async function acquireStream(constraintList) {
-            for (let i = 0; i < constraintList.length; i++) {
-                try {
-                    const stream = await navigator.mediaDevices.getUserMedia(constraintList[i]);
-                    return stream;
-                } catch (err) {
-                    // 次の緩い制約へ
-                }
-            }
-            return null;
-        }
+    ansZones.forEach((zone, idx) => {
+        zone.addEventListener('click', () => {
+            const query = searchBoxes[idx].value.trim();
+            if (!query || !allPhotosMap[query]) return;
 
-        // 画質向上: 取得したトラックに高解像度・オートフォーカス・自動露出・手ブレ補正を適用
-        async function enhanceTrack(track) {
-            if (!track) return;
-            const capabilities = track.getCapabilities ? track.getCapabilities() : {};
-            const constraints = {};
-            // 可能なら最高解像度を要求
-            if (capabilities.width && capabilities.height) {
-                constraints.width = { ideal: capabilities.width.max };
-                constraints.height = { ideal: capabilities.height.max };
+            const imgList = allPhotosMap[query].croppedImgs || [];
+            if (imgList.length <= 1) return;
+
+            slotPatternIndexes[idx] = (slotPatternIndexes[idx] + 1) % imgList.length;
+            executeSearch();
+        });
+    });
+}
+
+function startContinuousScan() {
+    if (isContinuousScanning) return;
+    if (!localStream || !document.getElementById('api-key').value.trim()) {
+        showToast("CAMERA OR KEY MISSING");
+        return;
+    }
+    isContinuousScanning = true;
+    continuousSessionSeen = [];
+    const btn = document.getElementById('shutter-target');
+    btn.classList.add('scanning-active');
+    btn.innerText = "スキャン中 (タップで停止)";
+    showToast("連射スキャン開始");
+    continuousScanLoop();
+}
+
+let continuousErrorCount = 0;
+async function continuousScanLoop() {
+    while (isContinuousScanning) {
+        try {
+            await processCaptureOCR("target", true);
+            continuousErrorCount = 0;
+        } catch (err) {
+            continuousErrorCount++;
+            if (continuousErrorCount <= 2) {
+                showToast("スキャンエラー リトライ中...");
             }
-            // 連続オートフォーカス（ぼやけ防止）
-            if (capabilities.focusMode && capabilities.focusMode.includes('continuous')) {
-                constraints.focusMode = 'continuous';
-            } else if (capabilities.focusDistance !== undefined) {
-                constraints.focusDistance = { ideal: 0 };
-            }
-            // 連続自動露出（明るすぎ/暗すぎ防止）
-            if (capabilities.exposureMode && capabilities.exposureMode.includes('continuous')) {
-                constraints.exposureMode = 'continuous';
-            }
-            // 手ブレ補正
-            if (capabilities.imageStabilization !== undefined) {
-                constraints.imageStabilization = true;
-            }
+        }
+        if (!isContinuousScanning) break;
+        await new Promise(r => setTimeout(r, SCAN_INTERVAL_MS));
+    }
+}
+
+function stopContinuousScan() {
+    if (!isContinuousScanning) return;
+    isContinuousScanning = false;
+    const btn = document.getElementById('shutter-target');
+    btn.classList.remove('scanning-active');
+    btn.innerText = "スキャン連射";
+    showToast("連射スキャン停止");
+}
+
+function clearAllSlots() {
+    searchBoxes.forEach(box => box.value = "");
+    slotPatternIndexes = [0, 0, 0, 0, 0];
+    syncInputsToFirebase();
+    executeSearch();
+    showToast("SLOTS CLEARED");
+}
+
+// 段階的に制約を緩めてカメラを取得するヘルパー。失敗時は null を返す。
+async function acquireStream(constraintList) {
+    for (let i = 0; i < constraintList.length; i++) {
+        try {
+            const stream = await navigator.mediaDevices.getUserMedia(constraintList[i]);
+            return stream;
+        } catch (err) {
+            // 次の緩い制約へ
+        }
+    }
+    return null;
+}
+
+// 取得したトラックに高解像度・オートフォーカス・自動露出・手ブレ補正を適用
+async function enhanceTrack(track) {
+    if (!track) return;
+    const capabilities = track.getCapabilities ? track.getCapabilities() : {};
+    const constraints = {};
+    if (capabilities.width && capabilities.height) {
+        constraints.width = { ideal: capabilities.width.max };
+        constraints.height = { ideal: capabilities.height.max };
+    }
+    if (capabilities.focusMode && capabilities.focusMode.includes('continuous')) {
+        constraints.focusMode = 'continuous';
+    } else if (capabilities.focusDistance !== undefined) {
+        constraints.focusDistance = { ideal: 0 };
+    }
+    if (capabilities.exposureMode && capabilities.exposureMode.includes('continuous')) {
+        constraints.exposureMode = 'continuous';
+    }
+    if (capabilities.imageStabilization !== undefined) {
+        constraints.imageStabilization = true;
+    }
+    try {
+        if (Object.keys(constraints).length > 0) {
+            await track.applyConstraints(constraints);
+        }
+    } catch (e) {}
+}
+
+// 取得したトラックが外カメ（背面）かを判定する。
+// true=一致確認, false=不一致確認, null=判定不能（未知なら破棄しない）。
+function checkTrackFacing(track) {
+    try {
+        const s = track.getSettings() || {};
+        const label = (track.label || s.label || '').toLowerCase();
+        if (s.facingMode === 'environment') return true;
+        if (s.facingMode === 'user') return false;
+        if (/back|rear|environment|背面|外/.test(label)) return true;
+        if (/front|user|前面|内|face/.test(label)) return false;
+        return null;
+    } catch (e) { return null; }
+}
+
+async function startCameraEngine() {
+    setupPhase.style.display = 'none';
+    scanPhase.style.display = 'grid';
+
+    // 1. 外カメを高解像度優先で取得: 4K → 1080p → 制約なし
+    let newStream = await acquireStream([
+        { video: { facingMode: { ideal: "environment" }, width: { ideal: 3840 }, height: { ideal: 2160 } }, audio: false },
+        { video: { facingMode: { ideal: "environment" }, width: { ideal: 1920 }, height: { ideal: 1080 } }, audio: false },
+        { video: { facingMode: { ideal: "environment" } }, audio: false },
+        { video: { facingMode: "environment" }, audio: false }
+    ]);
+
+    // 2. 確実に内カメと分かる場合のみ破棄
+    if (newStream) {
+        const track = newStream.getVideoTracks()[0];
+        const facing = track ? checkTrackFacing(track) : null;
+        if (facing === false) {
+            newStream.getTracks().forEach(t => t.stop());
+            newStream = null;
+        }
+    }
+
+    // 3. facingMode 方式で失敗した場合、deviceId ベースで全カメラを順次試行
+    if (!newStream) {
+        const permStream = await acquireStream([{ video: true, audio: false }]);
+        if (permStream) {
+            let videoDevices = [];
             try {
-                if (Object.keys(constraints).length > 0) {
-                    await track.applyConstraints(constraints);
-                }
+                const devices = await navigator.mediaDevices.enumerateDevices();
+                videoDevices = devices.filter(d => d.kind === 'videoinput' && d.deviceId);
             } catch (e) {}
-        }
+            permStream.getTracks().forEach(t => t.stop());
 
-        // facingMode が信頼できない端末向けに、取得したトラックの設定から
-        // 前/後面カメラを判定する。true=一致確認, false=不一致確認, null=判定不能。
-        // iOS 26.52 等では facingMode や label が空になることがあるため、
-        // 確実に不一致と分かる場合のみ false を返す（未知なら null で破棄を防ぐ）。
-        function checkTrackFacing(track, want) {
-            try {
-                const s = track.getSettings() || {};
-                const label = (track.label || s.label || '').toLowerCase();
-                if (want === 'environment') {
-                    if (s.facingMode === 'environment') return true;
-                    if (s.facingMode === 'user') return false;
-                    if (/back|rear|environment|背面|外/.test(label)) return true;
-                    if (/front|user|前面|内|face/.test(label)) return false;
-                    return null;
-                } else {
-                    if (s.facingMode === 'user') return true;
-                    if (s.facingMode === 'environment') return false;
-                    if (/front|user|前面|内|face/.test(label)) return true;
-                    if (/back|rear|environment|背面|外/.test(label)) return false;
-                    return null;
-                }
-            } catch (e) { return null; }
-        }
+            const sorted = [...videoDevices].sort((a, b) => {
+                const aBack = /back|rear|environment|背面|外/i.test(a.label) ? 0 : 1;
+                const bBack = /back|rear|environment|背面|外/i.test(b.label) ? 0 : 1;
+                return aBack - bBack;
+            });
 
-        async function startCameraEngine() {
-            setupPhase.style.display = 'none';
-            scanPhase.style.display = 'grid';
-
-            let newStream = null;
-
-            // 画質向上: 4K優先 → 1920x1080 → 制約なし の順で高解像度を狙う
-            if (isFrontCamera) {
-                newStream = await acquireStream([
-                    { video: { facingMode: { ideal: "user" }, width: { ideal: 3840 }, height: { ideal: 2160 } }, audio: false },
-                    { video: { facingMode: { ideal: "user" }, width: { ideal: 1920 }, height: { ideal: 1080 } }, audio: false },
-                    { video: { facingMode: { ideal: "user" } }, audio: false },
-                    { video: { facingMode: "user" }, audio: false }
-                ]);
-            } else {
-                newStream = await acquireStream([
-                    { video: { facingMode: { ideal: "environment" }, width: { ideal: 3840 }, height: { ideal: 2160 } }, audio: false },
-                    { video: { facingMode: { ideal: "environment" }, width: { ideal: 1920 }, height: { ideal: 1080 } }, audio: false },
-                    { video: { facingMode: { ideal: "environment" } }, audio: false },
-                    { video: { facingMode: "environment" }, audio: false }
-                ]);
-            }
-
-            // 2. 取得できた場合、望みの面と一致するか確認。確実に不一致の場合のみ破棄。
-            if (newStream) {
-                const track = newStream.getVideoTracks()[0];
-                const wantFace = isFrontCamera ? 'user' : 'environment';
-                const facing = track ? checkTrackFacing(track, wantFace) : null;
-                if (facing === false) {
-                    newStream.getTracks().forEach(t => t.stop());
-                    newStream = null;
-                }
-            }
-
-            // 3. facingMode 方式で失敗/不一致の場合、deviceId ベースで全カメラを順次試行。
-            if (!newStream) {
-                const permStream = await acquireStream([{ video: true, audio: false }]);
-                if (permStream) {
-                    let videoDevices = [];
-                    try {
-                        const devices = await navigator.mediaDevices.enumerateDevices();
-                        videoDevices = devices.filter(d => d.kind === 'videoinput' && d.deviceId);
-                    } catch (e) {}
-                    permStream.getTracks().forEach(t => t.stop());
-
-                    const wantFace = isFrontCamera ? 'user' : 'environment';
-                    const sorted = [...videoDevices].sort((a, b) => {
-                        const aBack = /back|rear|environment|背面|外/i.test(a.label) ? 0 : 1;
-                        const bBack = /back|rear|environment|背面|外/i.test(b.label) ? 0 : 1;
-                        if (isFrontCamera) return (/front|user|前面|内|face/i.test(a.label) ? 0 : 1) - (/front|user|前面|内|face/i.test(b.label) ? 0 : 1);
-                        return aBack - bBack;
-                    });
-
-                    for (const dev of sorted) {
-                        try {
-                            // 画質向上: deviceId方式でも4K優先
-                            const s = await acquireStream([
-                                { video: { deviceId: { exact: dev.deviceId }, width: { ideal: 3840 }, height: { ideal: 2160 } }, audio: false },
-                                { video: { deviceId: { exact: dev.deviceId }, width: { ideal: 1920 }, height: { ideal: 1080 } }, audio: false },
-                                { video: { deviceId: { exact: dev.deviceId } }, audio: false }
-                            ]);
-                            if (s) {
-                                const track = s.getVideoTracks()[0];
-                                const facing = track ? checkTrackFacing(track, wantFace) : null;
-                                if (facing !== false) {
-                                    newStream = s;
-                                    break;
-                                }
-                                s.getTracks().forEach(t => t.stop());
-                            }
-                        } catch (e) {}
-                    }
-
-                    if (!newStream && sorted.length > 0) {
-                        const labelMatch = isFrontCamera
-                            ? sorted.find(d => /front|user|前面|内|face/i.test(d.label))
-                            : sorted.find(d => /back|rear|environment|背面|外/i.test(d.label));
-                        const fallbackDev = labelMatch || sorted[0];
-                        if (fallbackDev) {
-                            newStream = await acquireStream([
-                                { video: { deviceId: { exact: fallbackDev.deviceId }, width: { ideal: 3840 }, height: { ideal: 2160 } }, audio: false },
-                                { video: { deviceId: { exact: fallbackDev.deviceId }, width: { ideal: 1920 }, height: { ideal: 1080 } }, audio: false },
-                                { video: { deviceId: { exact: fallbackDev.deviceId } }, audio: false },
-                                { video: { deviceId: { ideal: fallbackDev.deviceId } }, audio: false }
-                            ]);
-                        }
-                    }
-                }
-            }
-
-            // 5. 外カメで複数レンズがある場合、0.5x/1.0x 切替を deviceId で試みる
-            if (newStream && !isFrontCamera) {
-                let videoDevices = [];
+            for (const dev of sorted) {
                 try {
-                    const devices = await navigator.mediaDevices.enumerateDevices();
-                    videoDevices = devices.filter(d => d.kind === 'videoinput' && d.deviceId &&
-                        /back|rear|environment|背面|外/i.test(d.label));
+                    const s = await acquireStream([
+                        { video: { deviceId: { exact: dev.deviceId }, width: { ideal: 3840 }, height: { ideal: 2160 } }, audio: false },
+                        { video: { deviceId: { exact: dev.deviceId }, width: { ideal: 1920 }, height: { ideal: 1080 } }, audio: false },
+                        { video: { deviceId: { exact: dev.deviceId } }, audio: false }
+                    ]);
+                    if (s) {
+                        const track = s.getVideoTracks()[0];
+                        const facing = track ? checkTrackFacing(track) : null;
+                        if (facing !== false) {
+                            newStream = s;
+                            break;
+                        }
+                        s.getTracks().forEach(t => t.stop());
+                    }
                 } catch (e) {}
+            }
 
-                if (videoDevices.length > 1) {
-                    let targetId = null;
-                    if (isUltraWideMode) {
-                        const ultra = videoDevices.find(d =>
-                            /ultra|0\.5|super|超広角|ウルトラ|3/i.test(d.label));
-                        targetId = ultra ? ultra.deviceId : videoDevices[Math.min(1, videoDevices.length - 1)].deviceId;
-                    } else {
-                        const main = videoDevices.find(d =>
-                            /main|wide|広角|1\.0|1x/i.test(d.label)) || videoDevices[0];
-                        targetId = main.deviceId;
-                    }
-
-                    if (targetId) {
-                        const lensStream = await acquireStream([
-                            // 画質向上: レンズ切替でも4K優先
-                            { video: { deviceId: { exact: targetId }, width: { ideal: 3840 }, height: { ideal: 2160 } }, audio: false },
-                            { video: { deviceId: { exact: targetId }, width: { ideal: 1920 }, height: { ideal: 1080 } }, audio: false },
-                            { video: { deviceId: { exact: targetId } }, audio: false },
-                            { video: { deviceId: { ideal: targetId } }, audio: false }
-                        ]);
-                        if (lensStream) {
-                            newStream.getTracks().forEach(t => t.stop());
-                            newStream = lensStream;
-                        }
-                    }
+            if (!newStream && sorted.length > 0) {
+                const labelMatch = sorted.find(d => /back|rear|environment|背面|外/i.test(d.label));
+                const fallbackDev = labelMatch || sorted[0];
+                if (fallbackDev) {
+                    newStream = await acquireStream([
+                        { video: { deviceId: { exact: fallbackDev.deviceId }, width: { ideal: 3840 }, height: { ideal: 2160 } }, audio: false },
+                        { video: { deviceId: { exact: fallbackDev.deviceId }, width: { ideal: 1920 }, height: { ideal: 1080 } }, audio: false },
+                        { video: { deviceId: { exact: fallbackDev.deviceId } }, audio: false },
+                        { video: { deviceId: { ideal: fallbackDev.deviceId } }, audio: false }
+                    ]);
                 }
             }
+        }
+    }
 
-            // 6. 全て失敗なら現状維持（画面を黒くしない）
-            if (!newStream) {
-                if (localStream) {
-                    showToast("CAMERA SWITCH FAILED - KEEPING CURRENT");
-                } else {
-                    showToast("CAMERA INITIALIZE FAILED");
+    // 4. 複数レンズがある場合、0.5x/1.0x 切替を deviceId で試みる
+    if (newStream) {
+        let videoDevices = [];
+        try {
+            const devices = await navigator.mediaDevices.enumerateDevices();
+            videoDevices = devices.filter(d => d.kind === 'videoinput' && d.deviceId &&
+                /back|rear|environment|背面|外/i.test(d.label));
+        } catch (e) {}
+
+        if (videoDevices.length > 1) {
+            let targetId = null;
+            if (isUltraWideMode) {
+                const ultra = videoDevices.find(d =>
+                    /ultra|0\.5|super|超広角|ウルトラ|3/i.test(d.label));
+                targetId = ultra ? ultra.deviceId : videoDevices[Math.min(1, videoDevices.length - 1)].deviceId;
+            } else {
+                const main = videoDevices.find(d =>
+                    /main|wide|広角|1\.0|1x/i.test(d.label)) || videoDevices[0];
+                targetId = main.deviceId;
+            }
+
+            if (targetId) {
+                const lensStream = await acquireStream([
+                    { video: { deviceId: { exact: targetId }, width: { ideal: 3840 }, height: { ideal: 2160 } }, audio: false },
+                    { video: { deviceId: { exact: targetId }, width: { ideal: 1920 }, height: { ideal: 1080 } }, audio: false },
+                    { video: { deviceId: { exact: targetId } }, audio: false },
+                    { video: { deviceId: { ideal: targetId } }, audio: false }
+                ]);
+                if (lensStream) {
+                    newStream.getTracks().forEach(t => t.stop());
+                    newStream = lensStream;
                 }
-                return;
             }
+        }
+    }
 
-            // 画質向上: 最終ストリームのトラックにフォーカス・露出・手ブレ補正を適用
-            await enhanceTrack(newStream.getVideoTracks()[0]);
+    // 5. 全て失敗なら現状維持（画面を黒くしない）
+    if (!newStream) {
+        if (localStream) {
+            showToast("CAMERA SWITCH FAILED - KEEPING CURRENT");
+        } else {
+            showToast("CAMERA INITIALIZE FAILED");
+        }
+        return;
+    }
 
-            // 7. 新ストリームに切り替え
-            if (localStream) { localStream.getTracks().forEach(track => track.stop()); }
-            localStream = newStream;
-            document.getElementById('camera-stream').srcObject = localStream;
-            if (scanPhase.requestFullscreen && !document.fullscreenElement) {
-                scanPhase.requestFullscreen().catch(() => {});
+    // 6. 最終ストリームにフォーカス・露出・手ブレ補正を適用
+    await enhanceTrack(newStream.getVideoTracks()[0]);
+
+    // 7. 新ストリームに切り替え
+    if (localStream) { localStream.getTracks().forEach(track => track.stop()); }
+    localStream = newStream;
+    document.getElementById('camera-stream').srcObject = localStream;
+    if (scanPhase.requestFullscreen && !document.fullscreenElement) {
+        scanPhase.requestFullscreen().catch(() => {});
+    }
+
+    startFirebaseRoomSync();
+    showToast(`LENS: ${isUltraWideMode ? '0.5x' : '1.0x'} BACK`);
+}
+
+function toggleCameraLens() {
+    isUltraWideMode = !isUltraWideMode;
+    showToast(isUltraWideMode ? "SWITCHING TO 0.5x..." : "SWITCHING TO 1.0x...");
+    startCameraEngine();
+}
+
+function exitScanMode() {
+    stopContinuousScan();
+    if(localStream) { localStream.getTracks().forEach(track => track.stop()); localStream = null; }
+    if (document.exitFullscreen) { document.exitFullscreen().catch(()=>{}); }
+    if(unsubscribeRoom) { unsubscribeRoom(); unsubscribeRoom = null; }
+    if(unsubscribePhotos) { unsubscribePhotos(); unsubscribePhotos = null; }
+    scanPhase.style.display = 'none';
+    setupPhase.style.display = 'flex';
+}
+
+function startFirebaseRoomSync() {
+    // すでに接続済みなら何もしない（倍率切替のたびに全ストックを読み直さないため）
+    if (unsubscribeRoom && unsubscribePhotos) return;
+
+    const roomId = document.getElementById('room-id').value.trim() || 'default_room';
+
+    // 端末内に保存済みのストックを復元（リセットするまで消えない）
+    const storedStocks = restoreStocks(roomId);
+    for (const k of Object.keys(storedStocks)) {
+        if (!allPhotosMap[k]) allPhotosMap[k] = storedStocks[k];
+    }
+    document.getElementById('db-counter').innerText = `STOCKS: ${Object.keys(allPhotosMap).length}`;
+
+    if (unsubscribeRoom) { unsubscribeRoom(); unsubscribeRoom = null; }
+    unsubscribeRoom = onSnapshot(doc(db, "rooms", roomId), (snapshot) => {
+        if (!snapshot.exists()) return;
+        const data = snapshot.data();
+
+        if (typeof data.resetAt === 'number') {
+            roomResetAt = data.resetAt;
+        }
+
+        // ルーム文書のphotoMap（旧形式・代替共有経路）も取り込んで共有する
+        const pm = data.photoMap;
+        const legacy = {};
+        if (pm && typeof pm === 'object') {
+            for (const k of Object.keys(pm)) {
+                const v = pm[k];
+                if (v && Array.isArray(v.croppedImgs) && v.croppedImgs.length > 0) {
+                    legacy[k] = { croppedImgs: v.croppedImgs, timestamp: v.timestamp || 0, letter: v.letter || null };
+                }
             }
-
-            startFirebaseRoomSync();
-            showToast(isFrontCamera ? "LENS: FRONT (内カメ)" : `LENS: ${isUltraWideMode ? '0.5x' : '1.0x'} BACK`);
         }
+        legacyPhotosMap = legacy;
+        rebuildPhotosMap();
 
-        function toggleCameraLens() {
-            isUltraWideMode = !isUltraWideMode;
-            showToast(isUltraWideMode ? "SWITCHING TO 0.5x..." : "SWITCHING TO 1.0x...");
-            startCameraEngine();
+        if (data.currentQueries) {
+            data.currentQueries.forEach((q, idx) => {
+                if (document.activeElement !== searchBoxes[idx]) {
+                    searchBoxes[idx].value = q || "";
+                }
+            });
         }
+        executeSearch();
+    });
 
-        function toggleFacingCamera() {
-            isFrontCamera = !isFrontCamera;
-            updateFacingButtonLabel();
-            showToast(isFrontCamera ? "SWITCHING TO 内カメ..." : "SWITCHING TO 外カメ...");
-            startCameraEngine();
-        }
-
-        function updateFacingButtonLabel() {
-            const btn = document.getElementById('btn-toggle-facing');
-            if (btn) btn.innerText = isFrontCamera ? "内カメ" : "外カメ";
-        }
-
-        function exitScanMode() {
-            stopContinuousScan();
-            if(localStream) { localStream.getTracks().forEach(track => track.stop()); localStream = null; }
-            if (document.exitFullscreen) { document.exitFullscreen().catch(()=>{}); }
-            if(unsubscribeRoom) { unsubscribeRoom(); unsubscribeRoom = null; }
-            if(unsubscribePhotos) { unsubscribePhotos(); unsubscribePhotos = null; }
-            clearInterval(presenceInterval);
-            scanPhase.style.display = 'none';
-            setupPhase.style.display = 'flex';
-        }
-
-        function startFirebaseRoomSync() {
-            const roomId = document.getElementById('room-id').value.trim() || 'default_room';
-            const user = document.getElementById('user-name').value.trim() || 'Unknown';
-
-            // 端末内に保存済みのストックを復元（リセットするまで消えない）
-            const storedStocks = restoreStocks(roomId);
-            for (const k of Object.keys(storedStocks)) {
-                if (!allPhotosMap[k]) allPhotosMap[k] = storedStocks[k];
+    // ストックの共有は2経路:
+    //   メイン: 「1数字=1ドキュメント」のサブコレクション（1MB制限対策）
+    //   代替:   ルーム文書のphotoMap（サブコレクションが使えない環境用の予備経路）
+    if (unsubscribePhotos) { unsubscribePhotos(); unsubscribePhotos = null; }
+    unsubscribePhotos = onSnapshot(collection(db, "rooms", roomId, "photos"), (snap) => {
+        const m = {};
+        snap.forEach(d => {
+            const v = d.data();
+            if (v && Array.isArray(v.croppedImgs) && v.croppedImgs.length > 0) {
+                m[d.id] = { croppedImgs: v.croppedImgs, timestamp: v.timestamp || 0, letter: v.letter || null };
             }
-            document.getElementById('db-counter').innerText = `STOCKS: ${Object.keys(allPhotosMap).length}`;
+        });
+        cloudPhotosMap = m;
+        rebuildPhotosMap();
+    }, (err) => {
+        photosListenError = true;
+        showToast("共有経路を切替");
+    });
+}
 
-            if(presenceInterval) clearInterval(presenceInterval);
-            const reportPresence = async () => {
-                const rId = document.getElementById('room-id').value.trim() || 'default_room';
-                const uName = document.getElementById('user-name').value.trim() || 'Unknown';
-                try { await setDoc(doc(db, "rooms", rId), { members: { [uName]: Date.now() } }, { merge: true }); } catch(e){}
+// 2つの共有経路＋自端末の未反映ストックを統合して画面と保存に反映する
+function rebuildPhotosMap() {
+    const map = {};
+    [legacyPhotosMap, cloudPhotosMap].forEach(src => {
+        for (const k of Object.keys(src)) {
+            const v = src[k];
+            const cur = map[k];
+            if (!cur || (v.timestamp || 0) > (cur.timestamp || 0)) map[k] = v;
+        }
+    });
+    if (Date.now() >= resetGuardUntil) {
+        for (const k of Object.keys(allPhotosMap)) {
+            const local = allPhotosMap[k];
+            // リセット以前の古いストックは復活させない
+            if (!local || (local.timestamp || 0) <= roomResetAt) continue;
+            const cur = map[k];
+            if (!cur || (local.timestamp || 0) > (cur.timestamp || 0)) map[k] = local;
+        }
+    }
+    allPhotosMap = map;
+    document.getElementById('db-counter').innerText = `STOCKS: ${Object.keys(map).length}`;
+    persistStocks();
+    executeSearch();
+}
+
+async function syncInputsToFirebase() {
+    const roomId = document.getElementById('room-id').value.trim() || 'default_room';
+    const queries = searchBoxes.map(b => b.value.trim());
+    try {
+        await setDoc(doc(db, "rooms", roomId), { currentQueries: queries }, { merge: true });
+    } catch(e) {}
+}
+    // ─── タイル画像生成 ───
+function buildTiles(srcW, srcH) {
+    const stepX = srcW / TILE_COLS;
+    const stepY = srcH / TILE_ROWS;
+    const tileW = Math.floor(stepX * (1 + TILE_OVERLAP));
+    const tileH = Math.floor(stepY * (1 + TILE_OVERLAP));
+
+    const srcCanvas = document.getElementById('split-work-canvas');
+    srcCanvas.width = srcW;
+    srcCanvas.height = srcH;
+    const sCtx = srcCanvas.getContext('2d');
+    const videoEl = document.getElementById('camera-stream');
+    sCtx.drawImage(videoEl, 0, 0, srcW, srcH);
+
+    const tiles = [];
+    for (let r = 0; r < TILE_ROWS; r++) {
+        for (let c = 0; c < TILE_COLS; c++) {
+            const cx = Math.floor(c * stepX + stepX / 2 - tileW / 2);
+            const cy = Math.floor(r * stepY + stepY / 2 - tileH / 2);
+            const ox = Math.max(0, Math.min(cx, srcW - tileW));
+            const oy = Math.max(0, Math.min(cy, srcH - tileH));
+
+            const tc = document.createElement('canvas');
+            tc.width = tileW;
+            tc.height = tileH;
+            tc.getContext('2d').drawImage(srcCanvas, ox, oy, tileW, tileH, 0, 0, tileW, tileH);
+            tiles.push({ canvas: tc, offsetX: ox, offsetY: oy, tileW, tileH });
+        }
+    }
+    return tiles;
+}
+
+// API送信用に巨大キャンバスを最大辺maxDimへ縮小。元の座標へ戻すための倍率も返す。
+function downscaleForAPI(srcCanvas, maxDim) {
+    const w = srcCanvas.width, h = srcCanvas.height;
+    if (w <= maxDim && h <= maxDim) {
+        return { canvas: srcCanvas, scaleX: 1, scaleY: 1 };
+    }
+    const scale = Math.min(maxDim / w, maxDim / h);
+    const nw = Math.max(1, Math.round(w * scale));
+    const nh = Math.max(1, Math.round(h * scale));
+    const dc = document.createElement('canvas');
+    dc.width = nw; dc.height = nh;
+    dc.getContext('2d').drawImage(srcCanvas, 0, 0, nw, nh);
+    return { canvas: dc, scaleX: w / nw, scaleY: h / nh };
+}
+
+// ─── Vision API 呼び出し ───
+const API_TIMEOUT_MS = 20000; // 20秒でタイムアウト（永遠に待たない）
+async function callVisionAPI(apiKey, base64Image) {
+    const url = `https://vision.googleapis.com/v1/images:annotate?key=${apiKey}`;
+    const requestBody = {
+        requests: [{
+            image: { content: base64Image },
+            features: [{ type: "TEXT_DETECTION" }]
+        }]
+    };
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), API_TIMEOUT_MS);
+    try {
+        const response = await fetch(url, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(requestBody),
+            signal: controller.signal
+        });
+        if (!response.ok) {
+            let detail = response.status.toString();
+            try { const ej = await response.json(); if (ej.error && ej.error.message) detail = ej.error.message.slice(0, 60); } catch (_) {}
+            throw new Error(`API ${response.status}: ${detail}`);
+        }
+        const resData = await response.json();
+        if (!resData.responses || !resData.responses[0]) return [];
+        if (resData.responses[0].error) {
+            throw new Error(resData.responses[0].error.message.slice(0, 60));
+        }
+        if (!resData.responses[0].textAnnotations) return [];
+        return resData.responses[0].textAnnotations;
+    } finally {
+        clearTimeout(timer);
+    }
+}
+
+// annotations から3桁数字と汎用ブロックを抽出。ang は文字列の向き（ラジアン）。
+function extractAnnotations(annotations, offsetX, offsetY, scaleX = 1, scaleY = 1) {
+    const fullList = annotations.slice(1);
+    const numbersList = [];
+    const genericBlocks = [];
+
+    fullList.forEach(item => {
+        const text = item.description.trim();
+        const box = item.boundingPoly.vertices;
+        if (!box || box.length < 4) return;
+
+        const localCx = ((box[0]?.x ?? 0) + (box[1]?.x ?? 0) + (box[2]?.x ?? 0) + (box[3]?.x ?? 0)) / 4;
+        const localCy = ((box[0]?.y ?? 0) + (box[1]?.y ?? 0) + (box[2]?.y ?? 0) + (box[3]?.y ?? 0)) / 4;
+        // 縮小画像の座標を元の座標へ戻してからオフセットを加える
+        const cx = (localCx * scaleX) + offsetX;
+        const cy = (localCy * scaleY) + offsetY;
+
+        const h = (Math.max(box[0]?.y ?? 0, box[1]?.y ?? 0, box[2]?.y ?? 0, box[3]?.y ?? 0) - Math.min(box[0]?.y ?? 0, box[1]?.y ?? 0, box[2]?.y ?? 0, box[3]?.y ?? 0)) * scaleY;
+        const w = (Math.max(box[0]?.x ?? 0, box[1]?.x ?? 0, box[2]?.x ?? 0, box[3]?.x ?? 0) - Math.min(box[0]?.x ?? 0, box[1]?.x ?? 0, box[2]?.x ?? 0, box[3]?.x ?? 0)) * scaleX;
+
+        // 文字列の向き（左上→右上の角度）。傾いたタイルの「下方向」を求めるために使う
+        const ang = Math.atan2((box[1]?.y ?? 0) - (box[0]?.y ?? 0), (box[1]?.x ?? 0) - (box[0]?.x ?? 0));
+
+        const info = { text, cx, cy, w, h, ang };
+
+        if (/^\d{3}$/.test(text)) {
+            numbersList.push(info);
+        } else {
+            genericBlocks.push(info);
+        }
+    });
+
+    return { numbersList, genericBlocks };
+}
+
+// 同じ数字テキストで位置が近いものはマージして1つにまとめる。
+function dedupNumbers(allNumbers, posDupPx) {
+    const merged = [];
+    allNumbers.forEach(num => {
+        const existing = merged.find(m =>
+            m.text === num.text &&
+            Math.abs(m.cx - num.cx) < posDupPx &&
+            Math.abs(m.cy - num.cy) < posDupPx
+        );
+        if (existing) {
+            if (num.w * num.h > existing.w * existing.h) {
+                existing.cx = num.cx; existing.cy = num.cy;
+                existing.w = num.w; existing.h = num.h; existing.ang = num.ang;
+            }
+        } else {
+            merged.push({ ...num });
+        }
+    });
+    return merged;
+}
+
+// 数字の向きから「タイルの下方向」を求め、その先にあるアルファベット1文字を返す。
+// 見つからなければ null。
+function findPairLetter(numObj, genericBlocks) {
+    const ang = numObj.ang || 0;
+    const dx = -Math.sin(ang), dy = Math.cos(ang); // 下方向
+    const ux = Math.cos(ang),  uy = Math.sin(ang); // 右方向
+    let best = null, bestAlong = Infinity;
+    genericBlocks.forEach(b => {
+        if (!/^[A-Za-z]$/.test(b.text)) return;
+        const vx = b.cx - numObj.cx, vy = b.cy - numObj.cy;
+        const along = vx * dx + vy * dy;
+        const side = vx * ux + vy * uy;
+        if (along <= 0 || along > numObj.h * 8) return;
+        if (Math.abs(side) > numObj.w * 1.2) return;
+        if (along < bestAlong) { bestAlong = along; best = b.text.toUpperCase(); }
+    });
+    return best;
+}
+
+// ─── メイン撮影・OCR ───
+async function processCaptureOCR(mode, isContinuous = false) {
+    const videoEl = document.getElementById('camera-stream');
+    const apiKey = document.getElementById('api-key').value.trim();
+    if (!localStream || !apiKey) {
+        if (!isContinuous) showToast("CAMERA OR KEY MISSING");
+        return;
+    }
+
+    const srcW = videoEl.videoWidth;
+    const srcH = videoEl.videoHeight;
+    if (!srcW || !srcH) {
+        if (!isContinuous) showToast("CAMERA NOT READY");
+        return;
+    }
+
+    if (!isContinuous) {
+        const indicator = document.getElementById('scan-indicator');
+        indicator.classList.add('active');
+        setTimeout(() => indicator.classList.remove('active'), 120);
+        showToast("SCANNING...");
+    }
+
+    // 全画面キャプチャ (高解像度維持: クロップ品質のため)。AI送信は別途ダウンスケール。
+    const fullCanvas = document.getElementById('split-work-canvas');
+    fullCanvas.width = srcW;
+    fullCanvas.height = srcH;
+    fullCanvas.getContext('2d').drawImage(videoEl, 0, 0, srcW, srcH);
+
+    // AI送信用ダウンスケール
+    const fullForAPI = downscaleForAPI(fullCanvas, API_MAX_DIM);
+    const fullBase64 = fullForAPI.canvas.toDataURL('image/jpeg', FULL_JPEG_QUALITY).split(',')[1];
+    const fullScaleX = fullForAPI.scaleX, fullScaleY = fullForAPI.scaleY;
+
+    if (mode === "question") {
+        try {
+            const annotations = await callVisionAPI(apiKey, fullBase64);
+            await analyzeQuestionModeAdvanced(annotations);
+        } catch (err) {
+            if (!isContinuous) showToast("API DETECT ERROR");
+        }
+        return;
+    }
+
+    // ── target モード ──
+    // まず画面全体を1枚だけAIへ送り、3桁数字を認識する。
+    // 数字が1つも見つからなかった場合だけ、タイル分割で再スキャンする。
+    let allNumbers = [];
+    let allGeneric = [];
+
+    try {
+        const fullAnnotations = await callVisionAPI(apiKey, fullBase64);
+        const r = extractAnnotations(fullAnnotations, 0, 0, fullScaleX, fullScaleY);
+        allNumbers = allNumbers.concat(r.numbersList);
+        allGeneric = allGeneric.concat(r.genericBlocks);
+    } catch (err) {
+        const msg = "APIエラー: " + (err.message || "").slice(0, 40);
+        if (!isContinuous) showToast(msg);
+        throw err;
+    }
+
+    if (allNumbers.length === 0) {
+        const tiles = buildTiles(srcW, srcH);
+        const tileAPIData = tiles.map(t => {
+            const d = downscaleForAPI(t.canvas, API_MAX_DIM);
+            return {
+                base64: d.canvas.toDataURL('image/jpeg', TILE_JPEG_QUALITY).split(',')[1],
+                scaleX: d.scaleX, scaleY: d.scaleY,
+                offsetX: t.offsetX, offsetY: t.offsetY
             };
-            reportPresence();
-            presenceInterval = setInterval(reportPresence, 4000);
+        });
+        const tilePromises = tileAPIData.map(t => callVisionAPI(apiKey, t.base64));
+        const settledResults = await Promise.allSettled(tilePromises);
+        for (let i = 0; i < tileAPIData.length; i++) {
+            const res = settledResults[i];
+            if (res.status !== 'fulfilled') continue;
+            const t = tileAPIData[i];
+            const r = extractAnnotations(res.value, t.offsetX, t.offsetY, t.scaleX, t.scaleY);
+            allNumbers = allNumbers.concat(r.numbersList);
+            allGeneric = allGeneric.concat(r.genericBlocks);
+        }
+    }
 
-            if (unsubscribeRoom) { unsubscribeRoom(); unsubscribeRoom = null; }
-            unsubscribeRoom = onSnapshot(doc(db, "rooms", roomId), (snapshot) => {
-                if (!snapshot.exists()) return;
-                const data = snapshot.data();
+    const posDupPx = Math.max(60, srcW * POS_DUP_FRAC);
+    const mergedNumbers = dedupNumbers(allNumbers, posDupPx);
 
-                if (data.members) {
-                    const now = Date.now();
-                    const activeMembers = Object.keys(data.members).filter(name => (now - data.members[name]) < 10000);
-                    document.getElementById('member-list-text').innerText = `ONLINE: ${activeMembers.join(', ')}`;
-                }
+    if (mergedNumbers.length === 0) {
+        showToast("NO 3-DIGIT TARGETS");
+        return;
+    }
 
-                if (typeof data.resetAt === 'number') {
-                    roomResetAt = data.resetAt;
-                }
+    await analyzeTargetModeWithAdvancedMatching(mergedNumbers, allGeneric, fullCanvas, isContinuous, posDupPx);
+}
 
-                // ルーム文書のphotoMap（旧形式・代替共有経路）も取り込んで共有する
-                const pm = data.photoMap;
-                const legacy = {};
-                if (pm && typeof pm === 'object') {
-                    for (const k of Object.keys(pm)) {
-                        const v = pm[k];
-                        if (v && Array.isArray(v.croppedImgs) && v.croppedImgs.length > 0) {
-                            legacy[k] = { croppedImgs: v.croppedImgs, timestamp: v.timestamp || 0 };
-                        }
-                    }
-                }
-                legacyPhotosMap = legacy;
-                rebuildPhotosMap();
+// 3パターンのスクショを生成してストック。数字が画面上部にくるようクロップする。
+// 登録済みの数字は、ペアのアルファベットが前回と違うと判断したときだけ撮り直す。
+async function analyzeTargetModeWithAdvancedMatching(numbersList, genericBlocks, originalCanvas, isContinuous, posDupPx) {
+    const updates = {};
+    const newNums = [];  // 新規にストックした数字
+    const updNums = [];  // 上書きした数字
 
-                if (data.currentQueries) {
-                    data.currentQueries.forEach((q, idx) => {
-                        if (document.activeElement !== searchBoxes[idx]) {
-                            searchBoxes[idx].value = q || "";
-                        }
-                    });
-                }
-                executeSearch();
-            });
-
-            // ストックの共有は2経路:
-            //   メイン: 「1数字=1ドキュメント」のサブコレクション（1MB制限対策）
-            //   代替:   ルーム文書のphotoMap（サブコレクションへの書き込み/監視が
-            //           失敗する環境でも共有が続くようにする予備経路）
-            if (unsubscribePhotos) { unsubscribePhotos(); unsubscribePhotos = null; }
-            unsubscribePhotos = onSnapshot(collection(db, "rooms", roomId, "photos"), (snap) => {
-                const m = {};
-                snap.forEach(d => {
-                    const v = d.data();
-                    if (v && Array.isArray(v.croppedImgs) && v.croppedImgs.length > 0) {
-                        m[d.id] = { croppedImgs: v.croppedImgs, timestamp: v.timestamp || 0 };
-                    }
-                });
-                cloudPhotosMap = m;
-                rebuildPhotosMap();
-            }, (err) => {
-                // サブコレクションの監視に失敗した場合はphotoMap経路へ切り替える
-                photosListenError = true;
-                showToast("共有経路を切替");
-            });
+    numbersList.forEach(numObj => {
+        const letter = findPairLetter(numObj, genericBlocks);
+        const stock = allPhotosMap[numObj.text];
+        let isUpdate = false;
+        if (stock) {
+            // 登録済み: アルファベットが読めない/前回と同じなら何もしない
+            if (!letter || stock.letter === letter) return;
+            isUpdate = true;
         }
 
-        // 2つの共有経路＋自端末の未反映ストックを統合して画面と保存に反映する
-        function rebuildPhotosMap() {
-            const map = {};
-            [legacyPhotosMap, cloudPhotosMap].forEach(src => {
-                for (const k of Object.keys(src)) {
-                    const v = src[k];
-                    const cur = map[k];
-                    if (!cur || (v.timestamp || 0) > (cur.timestamp || 0)) map[k] = v;
-                }
-            });
-            if (Date.now() >= resetGuardUntil) {
+        const verticalCandidates = genericBlocks.filter(b => {
+            const xDiff = Math.abs(numObj.cx - b.cx);
+            const yDiff = b.cy - numObj.cy;
+            return (xDiff < numObj.w * 0.5) && (yDiff > 0) && (yDiff < numObj.h * 5);
+        });
+
+        // 数字をクロップ上部に配置し、下の正方形も映るようにする
+        let cropCx = numObj.cx;
+        let cropTopY = numObj.cy - numObj.h * 0.5;
+        let baseCropW = numObj.w * 2.8;
+        let baseCropH = numObj.h * 5.2;
+
+        if (verticalCandidates.length > 0) {
+            verticalCandidates.sort((a, b) => Math.abs(numObj.cx - a.cx) - Math.abs(numObj.cx - b.cx));
+            const bestBlock = verticalCandidates[0];
+            cropCx = (numObj.cx + bestBlock.cx) / 2;
+            const blockBottom = bestBlock.cy + bestBlock.h * 0.5;
+            baseCropH = Math.max(baseCropH, (blockBottom - cropTopY) * 1.1);
+            baseCropW = Math.max(baseCropW, bestBlock.w * 2.0, bestBlock.h * 2.0);
+        }
+
+        const cropCanvas = document.createElement('canvas');
+        cropCanvas.width = CROP_W; cropCanvas.height = CROP_H;
+        const cCtx = cropCanvas.getContext('2d');
+
+        // パターン1: 標準（数字上部＋正方形）
+        const cropX1 = Math.max(0, cropCx - (baseCropW / 2));
+        const cropY1 = Math.max(0, cropTopY);
+        cCtx.clearRect(0, 0, CROP_W, CROP_H);
+        cCtx.drawImage(originalCanvas, cropX1, cropY1, baseCropW, baseCropH, 0, 0, CROP_W, CROP_H);
+        const img1 = cropCanvas.toDataURL('image/jpeg', CROP_JPEG_QUALITY);
+
+        // パターン2: ワイド（広めに切り出し）
+        const wideCropW = baseCropW * 1.3;
+        const wideCropH = baseCropH * 1.15;
+        const cropX2 = Math.max(0, cropCx - (wideCropW / 2));
+        const cropY2 = Math.max(0, cropTopY - baseCropH * 0.05);
+        cCtx.clearRect(0, 0, CROP_W, CROP_H);
+        cCtx.drawImage(originalCanvas, cropX2, cropY2, wideCropW, wideCropH, 0, 0, CROP_W, CROP_H);
+        const img2 = cropCanvas.toDataURL('image/jpeg', CROP_JPEG_QUALITY);
+
+        // パターン3: ズーム（やや寄る）
+        const zoomCropW = baseCropW * 0.8;
+        const zoomCropH = baseCropH * 0.85;
+        const cropX3 = Math.max(0, cropCx - (zoomCropW / 2));
+        const cropY3 = Math.max(0, cropTopY + baseCropH * 0.03);
+        cCtx.clearRect(0, 0, CROP_W, CROP_H);
+        cCtx.drawImage(originalCanvas, cropX3, cropY3, zoomCropW, zoomCropH, 0, 0, CROP_W, CROP_H);
+        const img3 = cropCanvas.toDataURL('image/jpeg', CROP_JPEG_QUALITY);
+
+        // 常に3枚のみ保持
+        if (!updates[numObj.text]) {
+            updates[numObj.text] = { croppedImgs: [], timestamp: Date.now(), letter: letter || null };
+            (isUpdate ? updNums : newNums).push(numObj.text);
+        }
+        updates[numObj.text].croppedImgs.push(img1, img2, img3);
+    });
+
+    if (isContinuous) {
+        // セッション全体で蓄積した認識位置の記録（参考用）
+        numbersList.forEach(n => {
+            const already = continuousSessionSeen.some(s =>
+                s.text === n.text &&
+                Math.abs(s.cx - n.cx) < posDupPx &&
+                Math.abs(s.cy - n.cy) < posDupPx
+            );
+            if (!already) {
+                continuousSessionSeen.push({ text: n.text, cx: n.cx, cy: n.cy });
+            }
+        });
+    }
+
+    const matchCount = Object.keys(updates).length;
+    if (matchCount > 0 && Date.now() >= resetGuardUntil) {
+        const roomId = document.getElementById('room-id').value.trim() || 'default_room';
+        Object.keys(updates).forEach(num => {
+            allPhotosMap[num] = {
+                croppedImgs: updates[num].croppedImgs.slice(0, MAX_CANDIDATES),
+                timestamp: Date.now(),
+                letter: updates[num].letter
+            };
+        });
+        document.getElementById('db-counter').innerText = `STOCKS: ${Object.keys(allPhotosMap).length}`;
+        persistStocks();
+        executeSearch();
+
+        // 共有書き込み: メインはサブコレクション、失敗時はルーム文書のphotoMapに代替
+        const fallbackWrite = async () => {
+            try {
+                const photoMap = {};
                 for (const k of Object.keys(allPhotosMap)) {
                     const local = allPhotosMap[k];
-                    // リセット以前の古いストックは復活させない
                     if (!local || (local.timestamp || 0) <= roomResetAt) continue;
-                    const cur = map[k];
-                    if (!cur || (local.timestamp || 0) > (cur.timestamp || 0)) map[k] = local;
+                    photoMap[k] = { croppedImgs: local.croppedImgs, timestamp: local.timestamp, letter: local.letter || null };
                 }
-            }
-            allPhotosMap = map;
-            document.getElementById('db-counter').innerText = `STOCKS: ${Object.keys(map).length}`;
-            persistStocks();
-            executeSearch();
-        }
-
-        async function syncInputsToFirebase() {
-            const roomId = document.getElementById('room-id').value.trim() || 'default_room';
-            const queries = searchBoxes.map(b => b.value.trim());
-            try {
-                await setDoc(doc(db, "rooms", roomId), { currentQueries: queries }, { merge: true });
-            } catch(e) {}
-        }
-
-        // ─── タイル画像生成 ───
-        function buildTiles(srcW, srcH) {
-            const stepX = srcW / TILE_COLS;
-            const stepY = srcH / TILE_ROWS;
-            const tileW = Math.floor(stepX * (1 + TILE_OVERLAP));
-            const tileH = Math.floor(stepY * (1 + TILE_OVERLAP));
-
-            const srcCanvas = document.getElementById('split-work-canvas');
-            srcCanvas.width = srcW;
-            srcCanvas.height = srcH;
-            const sCtx = srcCanvas.getContext('2d');
-            const videoEl = document.getElementById('camera-stream');
-            sCtx.drawImage(videoEl, 0, 0, srcW, srcH);
-
-            const tiles = [];
-            for (let r = 0; r < TILE_ROWS; r++) {
-                for (let c = 0; c < TILE_COLS; c++) {
-                    const cx = Math.floor(c * stepX + stepX / 2 - tileW / 2);
-                    const cy = Math.floor(r * stepY + stepY / 2 - tileH / 2);
-                    const ox = Math.max(0, Math.min(cx, srcW - tileW));
-                    const oy = Math.max(0, Math.min(cy, srcH - tileH));
-
-                    const tc = document.createElement('canvas');
-                    tc.width = tileW;
-                    tc.height = tileH;
-                    tc.getContext('2d').drawImage(srcCanvas, ox, oy, tileW, tileH, 0, 0, tileW, tileH);
-                    tiles.push({ canvas: tc, offsetX: ox, offsetY: oy, tileW, tileH });
-                }
-            }
-            return tiles;
-        }
-
-        // API送信用に巨大キャンバスを最大辺maxDimへ縮小。元の4K座標へ戻すための倍率も返す。
-        function downscaleForAPI(srcCanvas, maxDim) {
-            const w = srcCanvas.width, h = srcCanvas.height;
-            if (w <= maxDim && h <= maxDim) {
-                return { canvas: srcCanvas, scaleX: 1, scaleY: 1 };
-            }
-            const scale = Math.min(maxDim / w, maxDim / h);
-            const nw = Math.max(1, Math.round(w * scale));
-            const nh = Math.max(1, Math.round(h * scale));
-            const dc = document.createElement('canvas');
-            dc.width = nw; dc.height = nh;
-            dc.getContext('2d').drawImage(srcCanvas, 0, 0, nw, nh);
-            return { canvas: dc, scaleX: w / nw, scaleY: h / nh };
-        }
-
-        // ─── Vision API 呼び出し ───
-        const API_TIMEOUT_MS = 20000; // 20秒でタイムアウト（永远に待たない）
-        async function callVisionAPI(apiKey, base64Image) {
-            const url = `https://vision.googleapis.com/v1/images:annotate?key=${apiKey}`;
-            const requestBody = {
-                requests: [{
-                    image: { content: base64Image },
-                    features: [{ type: "TEXT_DETECTION" }]
-                }]
-            };
-            const controller = new AbortController();
-            const timer = setTimeout(() => controller.abort(), API_TIMEOUT_MS);
-            try {
-                const response = await fetch(url, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(requestBody),
-                    signal: controller.signal
-                });
-                if (!response.ok) {
-                    let detail = response.status.toString();
-                    try { const ej = await response.json(); if (ej.error && ej.error.message) detail = ej.error.message.slice(0, 60); } catch (_) {}
-                    throw new Error(`API ${response.status}: ${detail}`);
-                }
-                const resData = await response.json();
-                if (!resData.responses || !resData.responses[0]) return [];
-                if (resData.responses[0].error) {
-                    throw new Error(resData.responses[0].error.message.slice(0, 60));
-                }
-                if (!resData.responses[0].textAnnotations) return [];
-                return resData.responses[0].textAnnotations;
-            } finally {
-                clearTimeout(timer);
-            }
-        }
-
-        // annotations から3桁数字と汎用ブロックを抽出。
-        function extractAnnotations(annotations, offsetX, offsetY, scaleX = 1, scaleY = 1) {
-            const fullList = annotations.slice(1);
-            const numbersList = [];
-            const genericBlocks = [];
-
-            fullList.forEach(item => {
-                const text = item.description.trim();
-                const box = item.boundingPoly.vertices;
-                if (!box || box.length < 4) return;
-
-                const localCx = ((box[0]?.x ?? 0) + (box[1]?.x ?? 0) + (box[2]?.x ?? 0) + (box[3]?.x ?? 0)) / 4;
-                const localCy = ((box[0]?.y ?? 0) + (box[1]?.y ?? 0) + (box[2]?.y ?? 0) + (box[3]?.y ?? 0)) / 4;
-                // 縮小画像の座標を元の4K座標へ戻してからオフセットを加える
-                const cx = (localCx * scaleX) + offsetX;
-                const cy = (localCy * scaleY) + offsetY;
-
-                const h = (Math.max(box[0]?.y ?? 0, box[1]?.y ?? 0, box[2]?.y ?? 0, box[3]?.y ?? 0) - Math.min(box[0]?.y ?? 0, box[1]?.y ?? 0, box[2]?.y ?? 0, box[3]?.y ?? 0)) * scaleY;
-                const w = (Math.max(box[0]?.x ?? 0, box[1]?.x ?? 0, box[2]?.x ?? 0, box[3]?.x ?? 0) - Math.min(box[0]?.x ?? 0, box[1]?.x ?? 0, box[2]?.x ?? 0, box[3]?.x ?? 0)) * scaleX;
-
-                const info = { text, cx, cy, w, h };
-
-                if (/^\d{3}$/.test(text)) {
-                    numbersList.push(info);
-                } else {
-                    genericBlocks.push(info);
-                }
-            });
-
-            return { numbersList, genericBlocks };
-        }
-
-        // 同じ数字テキストで位置が近いものはマージして1つにまとめる。
-        function dedupNumbers(allNumbers, posDupPx) {
-            const merged = [];
-            allNumbers.forEach(num => {
-                const existing = merged.find(m =>
-                    m.text === num.text &&
-                    Math.abs(m.cx - num.cx) < posDupPx &&
-                    Math.abs(m.cy - num.cy) < posDupPx
-                );
-                if (existing) {
-                    if (num.w * num.h > existing.w * existing.h) {
-                        existing.cx = num.cx; existing.cy = num.cy;
-                        existing.w = num.w; existing.h = num.h;
-                    }
-                } else {
-                    merged.push({ ...num });
-                }
-            });
-            return merged;
-        }
-
-        // ─── メイン撮影・OCR ───
-        async function processCaptureOCR(mode, isContinuous = false) {
-            const videoEl = document.getElementById('camera-stream');
-            const apiKey = document.getElementById('api-key').value.trim();
-            if (!localStream || !apiKey) {
-                if (!isContinuous) showToast("CAMERA OR KEY MISSING");
-                return;
-            }
-
-            const srcW = videoEl.videoWidth;
-            const srcH = videoEl.videoHeight;
-            if (!srcW || !srcH) {
-                if (!isContinuous) showToast("CAMERA NOT READY");
-                return;
-            }
-
-            if (!isContinuous) {
-                const indicator = document.getElementById('scan-indicator');
-                indicator.classList.add('active');
-                setTimeout(() => indicator.classList.remove('active'), 120);
-                showToast("SCANNING...");
-            }
-
-            // 全画面キャプチャ (4K維持: クロップ品質のため)。AI送信は別途ダウンスケール。
-            const fullCanvas = document.getElementById('split-work-canvas');
-            fullCanvas.width = srcW;
-            fullCanvas.height = srcH;
-            fullCanvas.getContext('2d').drawImage(videoEl, 0, 0, srcW, srcH);
-
-            // AI送信用ダウンスケール (4Kのまま送るとAPIがタイムアウト/拒否して認識0になる原因)
-            const fullForAPI = downscaleForAPI(fullCanvas, API_MAX_DIM);
-            const fullBase64 = fullForAPI.canvas.toDataURL('image/jpeg', FULL_JPEG_QUALITY).split(',')[1];
-            const fullScaleX = fullForAPI.scaleX, fullScaleY = fullForAPI.scaleY;
-
-            if (mode === "question") {
-                try {
-                    const annotations = await callVisionAPI(apiKey, fullBase64);
-                    await analyzeQuestionModeAdvanced(annotations);
-                } catch (err) {
-                    if (!isContinuous) showToast("API DETECT ERROR");
-                }
-                return;
-            }
-
-            // ── target モード ──
-            // まず画面全体を1枚だけAIへ送り、3桁数字を認識する。
-            // （従来は全体1枚＋タイル8枚の計9枚を同時送信していたが、
-            //   これがAPIの並列制限に引っかかってすべて失敗しスキャンできなかった原因。
-            //   まず全体1枚で確実に認識し、数字が1つも見つからなかった場合だけ
-            //   タイル分割で再スキャンするフォールバックに変更。）
-            let allNumbers = [];
-            let allGeneric = [];
-
-            try {
-                const fullAnnotations = await callVisionAPI(apiKey, fullBase64);
-                const r = extractAnnotations(fullAnnotations, 0, 0, fullScaleX, fullScaleY);
-                allNumbers = allNumbers.concat(r.numbersList);
-                allGeneric = allGeneric.concat(r.genericBlocks);
-            } catch (err) {
-                // 全体取得すら失敗した場合はタイルも試さずエラー
-                const msg = "APIエラー: " + (err.message || "").slice(0, 40);
-                if (!isContinuous) showToast(msg);
-                throw err;
-            }
-
-            // 全体で3桁数字が1つも見つからなかった場合だけ、タイル分割で再スキャン
-            if (allNumbers.length === 0) {
-                const tiles = buildTiles(srcW, srcH);
-                const tileAPIData = tiles.map(t => {
-                    const d = downscaleForAPI(t.canvas, API_MAX_DIM);
-                    return {
-                        base64: d.canvas.toDataURL('image/jpeg', TILE_JPEG_QUALITY).split(',')[1],
-                        scaleX: d.scaleX, scaleY: d.scaleY,
-                        offsetX: t.offsetX, offsetY: t.offsetY
-                    };
-                });
-                const tilePromises = tileAPIData.map(t => callVisionAPI(apiKey, t.base64));
-                const settledResults = await Promise.allSettled(tilePromises);
-                for (let i = 0; i < tileAPIData.length; i++) {
-                    const res = settledResults[i];
-                    if (res.status !== 'fulfilled') continue;
-                    const t = tileAPIData[i];
-                    const r = extractAnnotations(res.value, t.offsetX, t.offsetY, t.scaleX, t.scaleY);
-                    allNumbers = allNumbers.concat(r.numbersList);
-                    allGeneric = allGeneric.concat(r.genericBlocks);
-                }
-            }
-
-            const posDupPx = Math.max(60, srcW * POS_DUP_FRAC);
-            const mergedNumbers = dedupNumbers(allNumbers, posDupPx);
-
-            if (mergedNumbers.length === 0) {
-                // 連続スキャン中でも「数字が見つからない」ことを通知（無反応に見えるのを防ぐ）
-                showToast("NO 3-DIGIT TARGETS");
-                return;
-            }
-
-            await analyzeTargetModeWithAdvancedMatching(mergedNumbers, allGeneric, fullCanvas, isContinuous, posDupPx);
-        }
-
-        // 3パターンのスクショを生成してストック。数字が画面上部にくるようクロップする。
-        async function analyzeTargetModeWithAdvancedMatching(numbersList, genericBlocks, originalCanvas, isContinuous, posDupPx) {
-            const updates = {};
-            const newNumbers = [];
-
-            numbersList.forEach(numObj => {
-                if (isContinuous) {
-                    const wasSeen = continuousSessionSeen.some(s =>
-                        s.text === numObj.text &&
-                        Math.abs(s.cx - numObj.cx) < posDupPx &&
-                        Math.abs(s.cy - numObj.cy) < posDupPx
-                    );
-                    if (wasSeen) return;
-                }
-
-                const verticalCandidates = genericBlocks.filter(b => {
-                    const xDiff = Math.abs(numObj.cx - b.cx);
-                    const yDiff = b.cy - numObj.cy;
-                    return (xDiff < numObj.w * 0.5) && (yDiff > 0) && (yDiff < numObj.h * 5);
-                });
-
-                // 数字をクロップ上部に配置し、下の正方形も映るようにする
-                let cropCx = numObj.cx;
-                let cropTopY = numObj.cy - numObj.h * 0.5; // 数字の上端あたりから切り出し
-                let baseCropW = numObj.w * 2.8;
-                let baseCropH = numObj.h * 5.2; // 数字+下の正方形を含む高さ（やや広め）
-
-                if (verticalCandidates.length > 0) {
-                    verticalCandidates.sort((a, b) => Math.abs(numObj.cx - a.cx) - Math.abs(numObj.cx - b.cx));
-                    const bestBlock = verticalCandidates[0];
-                    cropCx = (numObj.cx + bestBlock.cx) / 2;
-                    // 正方形の下端まで含める
-                    const blockBottom = bestBlock.cy + bestBlock.h * 0.5;
-                    baseCropH = Math.max(baseCropH, (blockBottom - cropTopY) * 1.1);
-                    baseCropW = Math.max(baseCropW, bestBlock.w * 2.0, bestBlock.h * 2.0);
-                }
-
-                const cropCanvas = document.createElement('canvas');
-                cropCanvas.width = 120; cropCanvas.height = 160;
-                const cCtx = cropCanvas.getContext('2d');
-
-                // パターン1: 標準（数字上部＋正方形）
-                const cropX1 = Math.max(0, cropCx - (baseCropW / 2));
-                const cropY1 = Math.max(0, cropTopY);
-                cCtx.clearRect(0, 0, 120, 160);
-                cCtx.drawImage(originalCanvas, cropX1, cropY1, baseCropW, baseCropH, 0, 0, 120, 160);
-                const img1 = cropCanvas.toDataURL('image/jpeg', CROP_JPEG_QUALITY);
-
-                // パターン2: ワイド（広めに切り出し）
-                const wideCropW = baseCropW * 1.3;
-                const wideCropH = baseCropH * 1.15;
-                const cropX2 = Math.max(0, cropCx - (wideCropW / 2));
-                const cropY2 = Math.max(0, cropTopY - baseCropH * 0.05);
-                cCtx.clearRect(0, 0, 120, 160);
-                cCtx.drawImage(originalCanvas, cropX2, cropY2, wideCropW, wideCropH, 0, 0, 120, 160);
-                const img2 = cropCanvas.toDataURL('image/jpeg', CROP_JPEG_QUALITY);
-
-                // パターン3: ズーム（やや寄る）
-                const zoomCropW = baseCropW * 0.8;
-                const zoomCropH = baseCropH * 0.85;
-                const cropX3 = Math.max(0, cropCx - (zoomCropW / 2));
-                const cropY3 = Math.max(0, cropTopY + baseCropH * 0.03);
-                cCtx.clearRect(0, 0, 120, 160);
-                cCtx.drawImage(originalCanvas, cropX3, cropY3, zoomCropW, zoomCropH, 0, 0, 120, 160);
-                const img3 = cropCanvas.toDataURL('image/jpeg', CROP_JPEG_QUALITY);
-
-                // 常に3枚のみ保持。連続スキャンで別位置の同じ数字は3枚のいずれかを差し替え。
-                if (!updates[numObj.text]) {
-                    updates[numObj.text] = { croppedImgs: [], timestamp: Date.now() };
-                }
-                updates[numObj.text].croppedImgs.push(img1, img2, img3);
-
-                if (isContinuous) {
-                    newNumbers.push(numObj.text);
-                }
-            });
-
-            if (isContinuous) {
-                // セッション全体で蓄積: 同じ場所は再ストックせず、新しい場所だけ記憶に追加
-                numbersList.forEach(n => {
-                    const already = continuousSessionSeen.some(s =>
-                        s.text === n.text &&
-                        Math.abs(s.cx - n.cx) < posDupPx &&
-                        Math.abs(s.cy - n.cy) < posDupPx
-                    );
-                    if (!already) {
-                        continuousSessionSeen.push({ text: n.text, cx: n.cx, cy: n.cy });
-                    }
-                });
-            }
-
-            const matchCount = Object.keys(updates).length;
-            if (matchCount > 0 && Date.now() >= resetGuardUntil) {
-                const roomId = document.getElementById('room-id').value.trim() || 'default_room';
-                Object.keys(updates).forEach(num => {
-                    allPhotosMap[num] = {
-                        croppedImgs: updates[num].croppedImgs.slice(0, MAX_CANDIDATES),
-                        timestamp: Date.now()
-                    };
-                });
-                document.getElementById('db-counter').innerText = `STOCKS: ${Object.keys(allPhotosMap).length}`;
-                persistStocks();
-                executeSearch();
-
-                // 共有書き込み: メインはサブコレクション、失敗時はルーム文書のphotoMapに代替
-                const fallbackWrite = async () => {
-                    try {
-                        const photoMap = {};
-                        for (const k of Object.keys(allPhotosMap)) {
-                            const local = allPhotosMap[k];
-                            if (!local || (local.timestamp || 0) <= roomResetAt) continue;
-                            photoMap[k] = { croppedImgs: local.croppedImgs, timestamp: local.timestamp };
-                        }
-                        if (JSON.stringify(photoMap).length > 900000) {
-                            showToast("ストック数が多すぎます");
-                            return;
-                        }
-                        await setDoc(doc(db, "rooms", roomId), { photoMap }, { merge: true });
-                    } catch (e) {
-                        showToast("SYNC ERROR");
-                    }
-                };
-                const commitMain = async () => {
-                    const batch = writeBatch(db);
-                    Object.keys(updates).forEach(num => {
-                        batch.set(doc(db, "rooms", roomId, "photos", num), {
-                            croppedImgs: updates[num].croppedImgs.slice(0, MAX_CANDIDATES),
-                            timestamp: Date.now()
-                        }, { merge: true });
-                    });
-                    await batch.commit();
-                };
-                if (isContinuous) {
-                    if (newNumbers.length > 0) {
-                        showToast(`+${newNumbers.length} 新規: ${newNumbers.join(", ")}`);
-                    }
-                    (async () => {
-                        try {
-                            if (!photosListenError) await commitMain();
-                            else await fallbackWrite();
-                        } catch (e) {
-                            photosListenError = true;
-                            await fallbackWrite();
-                        }
-                    })();
-                } else {
-                    try {
-                        if (!photosListenError) await commitMain();
-                        else await fallbackWrite();
-                        showToast(`STOCKED: ${matchCount} UNITS`);
-                    } catch (e) {
-                        photosListenError = true;
-                        await fallbackWrite();
-                        showToast(`STOCKED: ${matchCount} UNITS`);
-                    }
-                }
-            } else {
-                if (!isContinuous) showToast("MATCHING CRITERIA FAILED");
-            }
-        }
-
-        async function analyzeQuestionModeAdvanced(annotations) {
-            const fullList = annotations.slice(1);
-            const foundNumbers = [];
-
-            fullList.forEach(item => {
-                const text = item.description.trim();
-                if (/^\d{3}$/.test(text)) {
-                    const box = item.boundingPoly.vertices;
-                    const cx = ((box[0]?.x ?? 0) + (box[2]?.x ?? 0)) / 2;
-                    foundNumbers.push({ text, x: cx });
-                }
-            });
-            foundNumbers.sort((a, b) => a.x - b.x);
-
-            if (foundNumbers.length >= 1) {
-                const limit = Math.min(foundNumbers.length, 5);
-                for (let i = 0; i < limit; i++) { searchBoxes[i].value = foundNumbers[i].text; }
-                showToast(`QUEST AUTOFILL: ${limit} SLOTS`);
-                syncInputsToFirebase();
-                executeSearch();
-            } else { showToast("NO NUMBERS DETECTED"); }
-        }
-
-        function executeSearch() {
-            searchBoxes.forEach((box, index) => {
-                const query = box.value.trim();
-                const zone = ansZones[index];
-                const rowDiv = document.getElementById('row-' + index);
-
-                if (!query) {
-                    zone.innerHTML = '<span class="no-img-text">VOID</span>';
-                    rowDiv.classList.remove('has-error');
+                if (JSON.stringify(photoMap).length > 900000) {
+                    showToast("ストック数が多すぎます");
                     return;
                 }
-
-                const foundMatch = allPhotosMap[query];
-
-                if (foundMatch) {
-                    const imgList = foundMatch.croppedImgs || (foundMatch.croppedImg ? [foundMatch.croppedImg] : []);
-
-                    if (imgList.length > 0) {
-                        let htmlContent = "";
-                        imgList.forEach((imgSrc) => {
-                            htmlContent += `<img src="${imgSrc}">`;
-                        });
-
-                        zone.innerHTML = htmlContent;
-                        rowDiv.classList.remove('has-error');
-                    } else {
-                        zone.innerHTML = '<span class="err-text">NONE</span>';
-                        rowDiv.classList.add('has-error');
-                    }
-                } else {
-                    zone.innerHTML = '<span class="err-text">NONE</span>';
-                    rowDiv.classList.add('has-error');
-                }
+                await setDoc(doc(db, "rooms", roomId), { photoMap }, { merge: true });
+            } catch (e) {
+                showToast("SYNC ERROR");
+            }
+        };
+        const commitMain = async () => {
+            const batch = writeBatch(db);
+            Object.keys(updates).forEach(num => {
+                batch.set(doc(db, "rooms", roomId, "photos", num), {
+                    croppedImgs: updates[num].croppedImgs.slice(0, MAX_CANDIDATES),
+                    timestamp: Date.now(),
+                    letter: updates[num].letter
+                }, { merge: true });
             });
-        }
-
-        let resetGuardUntil = 0;
-        async function resetSystem() {
-            if (!confirm("ルーム全体のデータとスロット内の数字を完全にリセットしますか？")) return;
-            const roomId = document.getElementById('room-id').value.trim() || 'default_room';
-            const wasScanning = isContinuousScanning;
-            stopContinuousScan();
-            continuousSessionSeen = [];
+            await batch.commit();
+        };
+        if (isContinuous) {
+            if (newNums.length > 0 || updNums.length > 0) {
+                const parts = [];
+                if (newNums.length > 0) parts.push(`+${newNums.length} 新規: ${newNums.join(", ")}`);
+                if (updNums.length > 0) parts.push(`更新: <span class="t-red">${updNums.join(", ")}</span>`);
+                showToast(parts.join("　"), true);
+            }
+            (async () => {
+                try {
+                    if (!photosListenError) await commitMain();
+                    else await fallbackWrite();
+                } catch (e) {
+                    photosListenError = true;
+                    await fallbackWrite();
+                }
+            })();
+        } else {
             try {
-                searchBoxes.forEach(box => box.value = "");
-                slotPatternIndexes = [0, 0, 0, 0, 0];
-                allPhotosMap = {};
-                cloudPhotosMap = {};
-                legacyPhotosMap = {};
-                photosListenError = false;
-                document.getElementById('db-counter').innerText = "STOCKS: 0";
-                executeSearch();
-
-                resetGuardUntil = Date.now() + 3000;
-                roomResetAt = Date.now();
-                try { localStorage.removeItem(stocksKey(roomId)); } catch(e) {}
-                // 全メンバーのスクショ（サブコレクション）を削除（500件ずつ分割で確実に）
-                try {
-                    const snap = await getDocs(collection(db, "rooms", roomId, "photos"));
-                    const refs = [];
-                    snap.forEach(d => refs.push(d.ref));
-                    for (let i = 0; i < refs.length; i += 450) {
-                        const batch = writeBatch(db);
-                        refs.slice(i, i + 450).forEach(ref => batch.delete(ref));
-                        await batch.commit();
-                    }
-                } catch(e) {}
-                // ルーム本体も一度削除して作り直す（旧方式の巨大データが残っていても確実にリセットする）
-                try { await deleteDoc(doc(db, "rooms", roomId)); } catch(e) {}
-                try {
-                    await setDoc(doc(db, "rooms", roomId), {
-                        currentQueries: ["", "", "", "", ""],
-                        resetAt: roomResetAt
-                    }, { merge: true });
-                } catch(e) {}
-
-                showToast("ROOM & SLOTS RESET COMPLETE");
-            } catch(e) {
-                showToast("RESET ERROR");
+                if (!photosListenError) await commitMain();
+                else await fallbackWrite();
+                showToast(`STOCKED: ${matchCount} UNITS`);
+            } catch (e) {
+                photosListenError = true;
+                await fallbackWrite();
+                showToast(`STOCKED: ${matchCount} UNITS`);
             }
         }
+    } else {
+        if (!isContinuous) showToast("MATCHING CRITERIA FAILED");
+    }
+}
 
-        function saveConfig() {
-            localStorage.setItem('cyber_ocr_api_key', document.getElementById('api-key').value);
-            localStorage.setItem('cyber_room_id', document.getElementById('room-id').value);
-            localStorage.setItem('cyber_user_name', document.getElementById('user-name').value);
+async function analyzeQuestionModeAdvanced(annotations) {
+    const fullList = annotations.slice(1);
+    const foundNumbers = [];
+
+    fullList.forEach(item => {
+        const text = item.description.trim();
+        if (/^\d{3}$/.test(text)) {
+            const box = item.boundingPoly.vertices;
+            const cx = ((box[0]?.x ?? 0) + (box[2]?.x ?? 0)) / 2;
+            foundNumbers.push({ text, x: cx });
         }
-        function loadConfig() {
-            document.getElementById('api-key').value = localStorage.getItem('cyber_ocr_api_key') || "";
-            document.getElementById('room-id').value = localStorage.getItem('cyber_room_id') || "team1";
-            document.getElementById('user-name').value = localStorage.getItem('cyber_user_name') || "";
+    });
+    foundNumbers.sort((a, b) => a.x - b.x);
+
+    if (foundNumbers.length >= 1) {
+        const limit = Math.min(foundNumbers.length, 5);
+        for (let i = 0; i < limit; i++) { searchBoxes[i].value = foundNumbers[i].text; }
+        showToast(`QUEST AUTOFILL: ${limit} SLOTS`);
+        syncInputsToFirebase();
+        executeSearch();
+    } else { showToast("NO NUMBERS DETECTED"); }
+}
+
+function executeSearch() {
+    searchBoxes.forEach((box, index) => {
+        const query = box.value.trim();
+        const zone = ansZones[index];
+        const rowDiv = document.getElementById('row-' + index);
+
+        if (!query) {
+            zone.innerHTML = '<span class="no-img-text">VOID</span>';
+            rowDiv.classList.remove('has-error');
+            return;
         }
-        function showToast(msg) {
-            const toast = document.getElementById('toast-log');
-            toast.innerText = msg; toast.classList.add('show');
-            clearTimeout(toast.timeout);
-            toast.timeout = setTimeout(() => toast.classList.remove('show'), 2500);
+
+        const foundMatch = allPhotosMap[query];
+
+        if (foundMatch) {
+            const imgList = foundMatch.croppedImgs || (foundMatch.croppedImg ? [foundMatch.croppedImg] : []);
+
+            if (imgList.length > 0) {
+                let htmlContent = "";
+                imgList.forEach((imgSrc) => {
+                    htmlContent += `<img src="${imgSrc}">`;
+                });
+
+                zone.innerHTML = htmlContent;
+                rowDiv.classList.remove('has-error');
+            } else {
+                zone.innerHTML = '<span class="err-text">NONE</span>';
+                rowDiv.classList.add('has-error');
+            }
+        } else {
+            zone.innerHTML = '<span class="err-text">NONE</span>';
+            rowDiv.classList.add('has-error');
         }
-    </script>
+    });
+}
+
+let resetGuardUntil = 0;
+async function resetSystem() {
+    if (!confirm("ルーム全体のデータとスロット内の数字を完全にリセットしますか？")) return;
+    const roomId = document.getElementById('room-id').value.trim() || 'default_room';
+    const wasScanning = isContinuousScanning;
+    stopContinuousScan();
+    continuousSessionSeen = [];
+    try {
+        searchBoxes.forEach(box => box.value = "");
+        slotPatternIndexes = [0, 0, 0, 0, 0];
+        allPhotosMap = {};
+        cloudPhotosMap = {};
+        legacyPhotosMap = {};
+        photosListenError = false;
+        document.getElementById('db-counter').innerText = "STOCKS: 0";
+        executeSearch();
+
+        resetGuardUntil = Date.now() + 3000;
+        roomResetAt = Date.now();
+        try { localStorage.removeItem(stocksKey(roomId)); } catch(e) {}
+        // 全メンバーのスクショ（サブコレクション）を削除（450件ずつ分割で確実に）
+        try {
+            const snap = await getDocs(collection(db, "rooms", roomId, "photos"));
+            const refs = [];
+            snap.forEach(d => refs.push(d.ref));
+            for (let i = 0; i < refs.length; i += 450) {
+                const batch = writeBatch(db);
+                refs.slice(i, i + 450).forEach(ref => batch.delete(ref));
+                await batch.commit();
+            }
+        } catch(e) {}
+        // ルーム本体も一度削除して作り直す（古い巨大データが残っていても確実にリセットする）
+        try { await deleteDoc(doc(db, "rooms", roomId)); } catch(e) {}
+        try {
+            await setDoc(doc(db, "rooms", roomId), {
+                currentQueries: ["", "", "", "", ""],
+                resetAt: roomResetAt
+            }, { merge: true });
+        } catch(e) {}
+
+        showToast("ROOM & SLOTS RESET COMPLETE");
+    } catch(e) {
+        showToast("RESET ERROR");
+    }
+}
+
+function saveConfig() {
+    localStorage.setItem('cyber_ocr_api_key', document.getElementById('api-key').value);
+    localStorage.setItem('cyber_room_id', document.getElementById('room-id').value);
+    localStorage.setItem('cyber_user_name', document.getElementById('user-name').value);
+}
+function loadConfig() {
+    document.getElementById('api-key').value = localStorage.getItem('cyber_ocr_api_key') || "";
+    document.getElementById('room-id').value = localStorage.getItem('cyber_room_id') || "team1";
+    document.getElementById('user-name').value = localStorage.getItem('cyber_user_name') || "";
+}
+function showToast(msg, isHtml = false) {
+    const toast = document.getElementById('toast-log');
+    if (isHtml) { toast.innerHTML = msg; } else { toast.innerText = msg; }
+    toast.classList.add('show');
+    clearTimeout(toast.timeout);
+    toast.timeout = setTimeout(() => toast.classList.remove('show'), 2500);
+}
+</script>
 </body>
 </html>
